@@ -11,6 +11,7 @@ export function renderResultsScreen({
     result,
     scene,
     update,
+    fightLogCount = 0,
 }) {
     if (results.hidden === showResults) {
         results.hidden = !showResults;
@@ -33,6 +34,7 @@ export function renderResultsScreen({
             : '';
         update(bosses, line);
         setHidden(bosses, !line);
+        setHidden(element('exportFightLog'), !fightLogCount);
         update(element('resultScore'), String(result.score));
         update(
             element('resultRegion'),

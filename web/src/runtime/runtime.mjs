@@ -5,6 +5,7 @@ import { PersonalBests, clearBrowserRecords } from '../state/records.mjs';
 import { BossRecords } from '../boss/records.mjs';
 import { CoopRun } from './coop-run.mjs';
 import { RunRecorder } from './run-recorder.mjs';
+import { FightLog } from '../boss/fight-log.mjs';
 import { WasmHost } from './wasm-host.mjs';
 
 export const STATES = [
@@ -47,6 +48,7 @@ class Runtime {
             bossRecords: this.bossRecords,
             profile,
         });
+        this.fightLog = new FightLog(storage);
         this.profile = profile;
         this.coop = null; // CoopRun while a co-op run is current
         // Solo end-of-run screen: visible, then ready for Continue once fire is released.
@@ -169,6 +171,7 @@ class Runtime {
         api.web_fire_press(+firePressed);
         api.web_actions(aimX, aimY, +laser, +precision, +shield);
         api.web_step(x, y, +fire, +click, +pause);
+        if (this.fightLog.enabled) this.fightLog.observe(this.scene());
         if (this.state === 'countdown' && previous !== 'countdown') this.#beginRun(false);
         if (
             this.recorder.run &&
@@ -188,7 +191,11 @@ class Runtime {
         this.resultsReady = false;
         this.awaitResultsRelease = false;
     }
+    #endFight() {
+        if (this.fightLog.current) this.fightLog.end(this.scene());
+    }
     #finishRun() {
+        this.#endFight();
         this.recorder.finishSolo(this.stats(), this.scene());
     }
     start(practice = false) {
@@ -201,7 +208,10 @@ class Runtime {
         this.coop = null;
         const practiceEnded = !!this.recorder.run?.rules.practice;
         if (practiceEnded) this.#finishRun();
-        else this.recorder.discardRun();
+        else {
+            this.#endFight();
+            this.recorder.discardRun();
+        }
         this.api.web_menu();
         this.#clearHold();
         this.resultsVisible = practiceEnded;
@@ -209,6 +219,7 @@ class Runtime {
     }
     abandon() {
         this.coop = null;
+        this.#endFight();
         this.recorder.discardRun();
         this.recorder.discardResult();
         this.resultsVisible = false;

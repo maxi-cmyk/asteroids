@@ -29,6 +29,25 @@ void web_test_boss(int wave, int players, int health) {
     if (health > 0) boss.health = health;
 #endif
 }
+// Stress fixture (dev/stress.html): top the boss's shot pool up to its cap of 48 and its lethal
+// hazards up to the cap of 6, so the renderer meets the heaviest scene a fight can build. Call it
+// once per tick; the pilot should be untouchable (web_test_boss_set 5).
+void web_test_boss_stress() {
+#ifdef WEB_HD
+    static const uint8_t families[] = {SF_NEEDLE, SF_SINE, SF_PELLET, SF_CURVE, SF_SPORE, SF_BOLT};
+    static const uint8_t kinds[] = {HK_LANE, HK_RING, HK_BEAM, HK_ARM, HK_LANE, HK_RING};
+    if (!boss.active) return;
+    for (unsigned i = 0; bs_shot_count() < BOSS_SHOTS && i < BOSS_SHOTS; i++)
+        bs_shot_at(families[i % 6], boss.x - 40, 30 + float((i * 37) % 210),
+                   BOSS_PI + (float(i % 9) - 4) * .07f, .5f + float(i % 4) * .15f, 0, 6000);
+    for (unsigned i = 0; bs_lethal_count() < BOSS_LETHAL_CAP && i < BOSS_LETHAL_CAP; i++) {
+        uint8_t kind = kinds[i % 6];
+        float y = 40 + float((i * 41) % 190);
+        if (kind == HK_RING) bs_hazard(kind, boss.x, boss.y, 1.0f, 110.0f + float(i) * 14, .52f, 900, 6000);
+        else bs_hazard(kind, boss.x - 20, y, BOSS_PI + (float(i) - 2) * .1f, 420, 14, 900, 6000);
+    }
+#endif
+}
 // Fairness telemetry gathered by the test build: warnings, caps, corridor.
 const float *web_test_boss_stats() {
     static float values[16];

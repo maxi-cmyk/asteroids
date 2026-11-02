@@ -82,6 +82,19 @@ export function installActions(app) {
         if (app.runtime.state === 'menu') nav().request('home');
         app.draw();
     });
+    // The optional boss fight log (Settings → Playtest): saved as a JSON file, never uploaded.
+    on('exportFightLog', () => {
+        const url = URL.createObjectURL(
+            new Blob([app.runtime.fightLog.json()], { type: 'application/json' }),
+        );
+        const link = Object.assign(document.createElement('a'), {
+            href: url,
+            download: `asteroids-fight-log-${new Date().toISOString().slice(0, 10)}.json`,
+        });
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    on('clearFightLog', () => app.runtime.fightLog.clear());
     on('retryRecords', () => {
         app.runtime.records.save();
         app.draw();

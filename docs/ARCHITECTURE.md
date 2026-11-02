@@ -1,7 +1,9 @@
 # Ownership and dependency map
 
-Baseline before task 5: 114 browser/WASM checks. The existing host harness
-covers gameplay, difficulty, scoring and transactional leaderboard writes.
+Refreshed 2026-11-02. The browser suite (`npm test`, about 230 checks over the OLED and HD
+WASM builds) covers combat, bosses, co-op, UI and the golden scene, render and sound
+files; the host harness covers gameplay, difficulty, scoring and transactional
+leaderboard writes.
 
 | Owner | Responsibility | Dependencies |
 | --- | --- | --- |
@@ -11,12 +13,12 @@ covers gameplay, difficulty, scoring and transactional leaderboard writes.
 | `web/src/input/` | Gameplay input, menu adjustment, co-op devices, calibration | Sanitized settings |
 | `web/src/runtime/` | The engine as the UI sees it: WASM host, runs and results, scene layout and decoding | WASM, personal best storage |
 | `web/src/state/settings.mjs`, `records.mjs` | Versioned persistence and rollback | Injected Storage |
-| `web/src/audio/` | Effects and original procedural music | Web Audio, applied preferences |
+| `web/src/audio/` | Synthesised effects, the streamed soundtracks and the launch sound | Web Audio, `web/assets/soundtracks/`, applied preferences |
 | `web/src/demo/` | Explicit, isolated demonstration run | Separate WASM instance; no persistence/audio |
-| `web/src/render/`, `web/src/boss/` | Pixel rendering, presentation clocks, boss painters, deaths and sound | Read-only scene; original assets |
+| `web/src/render/`, `web/src/boss/` | Pixel rendering, presentation clocks, boss painters, deaths, sound, defeat records, hull unlocks and the optional fight log | Read-only scene; original assets |
 | `src/core/*.c`, `include/core/*.h` | Portable scoring state, difficulty and score-table codec | C standard integer/boolean types only |
 | `src/scoring.cpp`, `difficulty.cpp`, `highscore.cpp` | Preserve legacy gameplay APIs and platform storage | Portable C core; Arduino/Preferences |
-| `web/native/` | Browser platform adapter, `web_*` exports, scene serialiser, HD combat, co-op and the boss engine | Shared C++ gameplay and linked C objects |
+| `web/native/`, `web/native/boss/` | Browser platform adapter, `web_*` exports, scene serialiser, HD combat, co-op and the boss engine (one header per boss behind a `BossOps` table) | Shared C++ gameplay and linked C objects |
 
 The web source tree, the scene ABI and the boss engine are described in
 [web/ARCHITECTURE.md](../web/ARCHITECTURE.md).
@@ -68,7 +70,7 @@ active clock once, then resolves owned damage, deferred fragments and completion
 Death/respawn is per player; no firmware gameplay source changes are required.
 
 `web_coop_start`, `web_coop_input`, `web_coop_pause` and `web_coop_player` form
-co-op ABI v1. The read-only snapshot wraps a legacy 576-float player scene;
+co-op ABI v1. The read-only snapshot wraps a legacy player scene (`SCENE_FLOATS`, 1408 floats);
 `web/src/runtime/coop-scene.mjs` centrally decodes its version, identity, timers, team total
 and statistics. Copy the WASM view before requesting another player's scene.
 Solo scene offsets and storage formats are preserved.
@@ -88,4 +90,5 @@ For synthetic browser flow checks, run the production build followed by
 `node web/tests/prepare-coop-browser.mjs`, then visit `/coop-browser.html`.
 This locally generated harness supplies two clearly labeled synthetic pads.
 Every production build removes that QA page. Test-only native fixture exports
-remain absent from release WASM; the server refuses test WASM URLs.
+remain absent from release WASM; the server refuses test WASM URLs unless it is started with
+`SERVE_TEST_WASM=1` (`npm run stress`, for `dev/stress.html`).

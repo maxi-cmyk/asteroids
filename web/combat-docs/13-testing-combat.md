@@ -69,8 +69,8 @@ A scripted pilot that reads **only the scene** (the same data a player's screen 
 - fires at a human rate (about 6 shots/s, perfect aim) with careful dodging.
 
 It proves a fight is **beatable**, measures its length, and drives the fairness test. It is not a
-speed-run; people take about 1.5× as long. After any attack change, re-run the bot and record the
-new clear times (`nextSteps.md` S0.1).
+speed-run; people take about 1.5× as long. After any attack change, re-run `node tests/boss-baseline.mjs` (all twelve fights, tiers I to III,
+five seeds, a Markdown table) and update the Difficulty table in `COMBAT.md`.
 
 **Exercise: PCA of the bot's movement.** The bot's `(x, y)` per tick is a cloud of points. Centre it
 (`Xc = X − mean`), form the 2×2 covariance `C = XcᵀXc/(n − 1)`, and take its eigenvectors: the first

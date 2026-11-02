@@ -499,8 +499,12 @@ remaining physical-device/performance checks.
 
 Sound effects and music have separate, per-profile toggles in the top bar and
 Settings → Audio. Both default off for existing profiles without a preference.
-Volume applies to both. Original procedural Home and flight chiptunes require
-no external files, streamed music, third-party license or network request.
+Volume applies to both. Sound effects and the boss sound books (an entrance sting, a
+charge-up and release for every attack, a defeat sound) are synthesised in the
+browser. The music is files: the streamed soundtracks in `assets/soundtracks/`
+(listed in `soundtracks.json`) and the warp sound `assets/sfx/launch.mp3`. The game
+is therefore not sample-free, and every supplied track needs its licence confirmed
+before a public release (`assets/README.md`, Soundtracks).
 Music pauses on utility screens, Pause, Results, demo, launch and hidden tabs.
 The warp sound follows the Sound toggle and stops on skip, cancel or blur.
 Audio unlocks after a user gesture; browser autoplay restrictions still apply.

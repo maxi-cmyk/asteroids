@@ -29,6 +29,7 @@ export class SettingsController {
             longWarnings: settings.bossLongWarnings,
             calm: settings.bossCalm,
         });
+        if (app.runtime) app.runtime.fightLog.enabled = settings.fightLog;
         const sound = element('sound'),
             music = element('music');
         sound.textContent = settings.soundEnabled ? 'Sound on' : 'Sound off';

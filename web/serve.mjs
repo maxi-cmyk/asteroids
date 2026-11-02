@@ -25,6 +25,9 @@ function locate(path) {
     return inside(built, directory + sep) ? { file: built } : null;
 }
 const port = Number(process.env.PORT || 4173);
+// The test builds carry state-editing hooks, so they are never served unless a dev page needs
+// them (`npm run stress`).
+const serveTestBuilds = process.env.SERVE_TEST_WASM === '1';
 const types = {
     '.html': 'text/html; charset=utf-8',
     '.mjs': 'text/javascript; charset=utf-8',
@@ -43,8 +46,8 @@ createServer(async (request, response) => {
         const found = locate(path);
         if (
             !found ||
-            found.file?.endsWith('/test.wasm') ||
-            found.file?.endsWith('/oled-test.wasm')
+            (!serveTestBuilds &&
+                (found.file?.endsWith('/test.wasm') || found.file?.endsWith('/oled-test.wasm')))
         ) {
             response.writeHead(404).end();
             return;

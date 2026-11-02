@@ -197,6 +197,43 @@ own, with every other attack drawn from the whole gallery) and two abilities of 
   outside it, can still be shot. Engine side: `BC_DEFLECT` circle, `bs_deflect` in
   `native/boss/hits.h`.
 
+### Difficulty
+
+Measured on 2026-11-02 with the scripted pilot (`node tests/boss-baseline.mjs`: perfect aim, 6 shots
+a second, five seeds, boss practice, after the Cinderforge, Tidecaller and Warden changes). Times are
+seconds from the start of the fight (the 1.4 s entrance included) to the defeat; **hits** is how often the pilot was
+touched in the fight (practice loses no lives). People are expected to take about 1.5× the bot
+time; that figure is an estimate until the S0.2 playtest records real ones.
+
+| Fight | Tier I | Tier II | Tier III | Hits (tier I / II / III) | Expected person, tier I |
+| --- | --- | --- | --- | --- | --- |
+| Sentinel | 28 | 45 | 49 | 0 / 0 / 0 | 42 s |
+| Ringwarden | 29 | 34 | 34 | 11 / 25 / 20 | 44 s |
+| Cinderforge | 35 | 44 | 43 | 5 / 6 / 8 | 53 s |
+| Bastion | 41 | 47 | 51 | 0 / 0 / 0 | 62 s |
+| Tidecaller | 45 | 51 | 51 | 11 / 5 / 2 | 68 s |
+| Horizon Warden | 64 | 70 | 71 | 10 / 8 / 14 | 96 s |
+| Picket | 16 | 19 | 19 | 0 | 24 s |
+| Shardling | 15 | 16 | 16 | 0 | 23 s |
+| Cinderling | 11 | 19 | 19 | 0 | 17 s |
+| Gunnery | 17 | 20 | 20 | 0 | 26 s |
+| Moonjelly | 19 | 22 | 22 | 0 | 29 s |
+| Lens Imp | 23 | 32 | 32 | 0 | 35 s |
+
+Fairness counters over the same 36 fights (tiers I to III): no lethal hazard without its warning,
+no entrance hit, shots never above the cap of 48 (the Tidecaller reaches it), hazards never above
+the cap of 6 (the Cinderforge reaches it), and the narrowest safe corridor was 232 px, far above
+42. The lethal shapes new since the last baseline (scorched ground, three at once; the tidal wall;
+whirlpools; the Warden's cloak and mirror) all stay inside those limits. The earlier tier I figures
+were 28 / 29 / 37 / 41 / 44 / 55 s for the bosses and 15 to 23 s for the minis; now the
+Cinderforge is 35, the Tidecaller 45 and the Warden 64, the rest unchanged. The Ringwarden hurts
+the bot most (11 to 25 touches), so expect people to find it the busiest of the first three.
+
+Playtest log: Settings → Display → Playtest records one entry per boss attempt (boss, tier, outcome,
+seconds, lives lost, damage per phase, the attack that took each life), kept on the device and
+off by default. Results → Export fight log saves it as JSON (`src/boss/fight-log.mjs`; protocol in
+`docs/PLAYTEST-PROTOCOL.md`). Solo and practice only.
+
 Defeat awards `1500 + 250 * min(10, wave / 5)` (minis `400 + 100 * region`) as one
 scoring event through the multiplier, +50% when no life was lost during the
 fight. Boss kills are separate from asteroid kills and appear in Results and

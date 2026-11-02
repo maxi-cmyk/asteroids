@@ -77,6 +77,7 @@ if (test)
         'web_test_boss_stats',
         'web_test_boss_body',
         'web_test_boss_set',
+        'web_test_boss_stress',
     );
 // Compile portable modules as C17, never through the C++ frontend.
 const coreObjects = ['scoring', 'difficulty', 'score_table'].map((name) => {

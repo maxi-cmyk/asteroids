@@ -668,6 +668,56 @@ test('the Warden mirror reflects the laser as a warned beam, never an instant hi
     assert(beam.warn >= 800, `with its warning (${beam.warn} ms)`);
 });
 
+// The mirror is the one place a player's own action creates a lethal hazard, so it gets its own
+// rule: every returned laser is a beam with its full warning, and the laser is returned at most
+// once per discharge.
+test('the Warden mirror never makes an unwarned lethal beam, one per laser discharge', async () => {
+    for (const long of [0, 1]) {
+        const game = await phaseGame(5, 3, 31);
+        game.api.web_boss_assist(long, 0);
+        ticks(game, ENTRANCE_TICKS);
+        const warning = long ? 1170 : 900;
+        let discharges = 0,
+            returned = 0,
+            cooldown = 0,
+            known = new Set();
+        for (let i = 0; i < 90 * 50 && bossState(game.scene()).active; i++) {
+            const scene = game.scene(),
+                boss = bossState(scene),
+                dx = boss.x - scene[S.SHIP_X],
+                dy = boss.y - scene[S.SHIP_Y],
+                length = Math.hypot(dx, dy) || 1;
+            // Stand level with the Warden and charge the laser whenever the mirror is holding.
+            set(game, 3, 100);
+            set(game, 4, 135);
+            const mirror = boss.aux[5] > 0.25;
+            game.step({
+                y: 0,
+                laser: mirror && cooldown <= 0,
+                aimX: dx / length,
+                aimY: dy / length,
+            });
+            const after = game.scene(),
+                fired = after[S.LASER_COOLDOWN_MS] > cooldown;
+            cooldown = after[S.LASER_COOLDOWN_MS];
+            if (fired) discharges++;
+            const beams = bossHazards(after).filter((h) => h.kind === HAZARD.beam);
+            const fresh = beams.filter((h) => !known.has(h.index));
+            known = new Set(beams.map((h) => h.index));
+            for (const beam of fresh) {
+                assert.equal(beam.warnTotal, warning, `a beam is born with its full warning`);
+                assert(beam.warn >= warning - 20, 'and has not yet started to count down');
+            }
+            if (fired) returned += fresh.length;
+            assert(fresh.length <= 1 || !fired, 'one laser discharge returns one beam');
+        }
+        assert.equal(stats(game).violations, 0, 'no lethal hazard without its warning');
+        assert(discharges >= 2, `the laser was fired through the mirror (${discharges} times)`);
+        assert(returned >= 1, 'and the mirror threw at least one beam back');
+        assert(returned <= discharges, 'never more beams than discharges');
+    }
+});
+
 test('the Warden cloaks: nothing to hit, nothing to touch, then it is back', async () => {
     const game = await phaseGame(5, 3);
     ticks(game, ENTRANCE_TICKS);

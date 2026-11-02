@@ -53,6 +53,7 @@ export function defaults() {
         backgroundBrightness: 1,
         bossLongWarnings: false,
         bossCalm: false,
+        fightLog: false,
         keys: Object.fromEntries(Object.entries(KEY_ACTIONS).map(([key, [, code]]) => [key, code])),
         buttons: Object.fromEntries(
             Object.entries(PAD_ACTIONS).map(([key, [, index]]) => [key, index]),
@@ -84,6 +85,7 @@ export function sanitizeSettings(raw = {}) {
     if (isMenuTheme(raw.menuTheme)) settings.menuTheme = raw.menuTheme;
     settings.bossLongWarnings = raw.bossLongWarnings === true;
     settings.bossCalm = raw.bossCalm === true;
+    settings.fightLog = raw.fightLog === true;
     const used = new Set();
     for (const key of Object.keys(KEY_ACTIONS)) {
         const code = raw.keys?.[key];

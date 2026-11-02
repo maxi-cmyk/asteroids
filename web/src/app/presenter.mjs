@@ -90,6 +90,7 @@ export class Presenter {
             result,
             scene,
             update,
+            fightLogCount: runtime.fightLog.enabled ? runtime.fightLog.count : 0,
         });
         renderPlayHud({ hud: this.hud, scene, update });
         const nextState = renderPlayChrome({
