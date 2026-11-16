@@ -198,15 +198,20 @@ def lunar():
 
 
 def rift():
+    """The rift: the Zodiarch (a star-fill dragon, its pearl and the twelve sign creatures it
+    throws) and its herald Ninefold. Drawn by zodiac_art.py (design: nextSteps.md P1)."""
+    import zodiac_art as zod
     sh = Sheet()
-    war = [warden(glow=g, orbits=False) for g in (0, 1)]
-    for i, im in enumerate(war):
-        sh.add(f'warden-{i}', im)
-    with_damage(sh, 'warden', war, (330, 330), 110)
-    imp = [lensimp(glow=g, orbits=False) for g in (0, 1)]
-    for i, im in enumerate(imp):
-        sh.add(f'lensimp-{i}', im)
-    with_damage(sh, 'lensimp', imp, (170, 170), 120)
+    dragon = zod.dragon_cells()
+    for name, im in dragon.items():
+        sh.add(name, im)
+    with_damage(sh, 'zod-head', [dragon['zod-head-0'], dragon['zod-head-1']], (120, 84), 110)
+    for k, (im, _key) in enumerate(zod.sign_cells()):
+        sh.add(f'sign-{k}', im)
+    fox = zod.fox_cells()
+    for name, im in fox.items():
+        sh.add(name, im)
+    with_damage(sh, 'ninefold', [fox['ninefold-0'], fox['ninefold-1']], zod.FOX_SIZE, 120)
     for i, rgb in enumerate([(154, 208, 255), (255, 233, 160), (255, 176, 112), (255, 255, 255)]):
         sh.add(f'star-{i}', star_sprite(rgb))
     return sh
@@ -261,9 +266,17 @@ def shots():
     return sh
 
 
+SHEETS = (('frontier', frontier), ('violet', violet), ('ember', ember), ('ruins', ruins),
+          ('lunar', lunar), ('rift', rift), ('shots', shots))
+
+
 def main():
-    for stem, build in (('frontier', frontier), ('violet', violet), ('ember', ember), ('ruins', ruins),
-                        ('lunar', lunar), ('rift', rift), ('shots', shots)):
+    # `make-bosses.py ruins rift` rebuilds only those sheets (the others are not byte-stable
+    # across library versions, so leave them alone unless they changed).
+    only = set(sys.argv[1:])
+    for stem, build in SHEETS:
+        if only and stem not in only:
+            continue
         print(stem, build().save(stem))
 
 

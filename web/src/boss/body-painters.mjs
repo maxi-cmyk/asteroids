@@ -1,6 +1,7 @@
 import { pixelGlow as glow } from '../render/fx.mjs';
-import { PART, bossPart } from './scene.mjs';
-import { TAU, COLOUR, dottedRing, dottedOrbit } from './draw-kit.mjs';
+import { NINEFOLD, PART, bossPart, zodiarchPath } from './scene.mjs';
+import { creatures, drawCreature, drawDragonBody, drawRing } from './zodiac.mjs';
+import { TAU, dottedRing } from './draw-kit.mjs';
 
 // One painter per boss kind (the index is the engine's BossKind). Each receives `b`:
 //   ctx, art, scene, time     what to draw onto, from, and when
@@ -9,12 +10,6 @@ import { TAU, COLOUR, dottedRing, dottedOrbit } from './draw-kit.mjs';
 //   x, y, alpha, flash        position, entrance fade and damage flash
 //   frame(key, extra)         draws the body sprite `key` from the boss's own sheet
 //   overlay(key)              draws the damage-state overlay for the current damage level
-const WARDEN_ORBIT = [
-    [138, 78, 0.5],
-    [152, 96, 2.2],
-    [124, 70, 4.1],
-    [106, 60, 3.2],
-];
 
 const sentinel = (b) => {
     const { ctx, x, y, time, aux, state, A } = b;
@@ -142,73 +137,33 @@ const tidecaller = (b) => {
     }
 };
 
-// The mirror: a bright rim and glints while it deflects; a thin dotted ring while it forms.
-function mirrorShell(b, strength) {
-    const { ctx, x, y, time } = b;
-    if (strength < 1) {
-        dottedRing(ctx, x, y, 104, COLOUR.white, 72, time / 500);
-        return;
-    }
-    glow(ctx, x, y, 118, '170,230,255', 0.16 + 0.04 * Math.sin(time / 120));
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(x, y, 104, 0, TAU);
-    ctx.globalAlpha = 0.1 + 0.03 * Math.sin(time / 150);
-    ctx.fillStyle = '#bfe8ff';
-    ctx.fill();
-    ctx.globalAlpha = 0.75;
-    ctx.strokeStyle = '#d8f4ff';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.restore();
-    dottedRing(ctx, x, y, 103, '#7fd0ff', 120, -time / 700);
-    // Two glints sliding round the rim.
-    for (let k = 0; k < 2; k++) {
-        const a = time / 420 + k * Math.PI;
-        glow(ctx, x + Math.cos(a) * 104, y + Math.sin(a) * 104, 14, '230,250,255', 0.5);
-    }
-}
-
+// The Zodiarch: its ring behind, the path its head will take next as faint dots, the body
+// from the tail up, the head (jaw open while it throws or breathes), the pearl (bright while
+// it can be shot) and every creature it has thrown.
 const warden = (b) => {
-    const { ctx, art, x, y, time, aux, parts, alpha, A } = b;
-    const open = aux[A.coreOpen] > 0.5,
-        cloak = aux[A.cloak],
-        mirror = aux[A.mirror];
-    // Cloaked it is gone but for a faint shimmer; it flickers on the way out and back in.
-    if (cloak > 0.9) {
-        dottedRing(ctx, x, y, 58 + 4 * Math.sin(time / 90), COLOUR.void, 24, time / 400);
-        return;
+    const { ctx, art, scene, x, y, time, aux, parts, alpha, flash, state, A } = b;
+    const clock = aux[A.clock];
+    drawRing(ctx, clock, aux[A.out], time, alpha);
+    if (state.stage > 0 && aux[A.breath] < 0.5) {
+        ctx.fillStyle = '#ffd890';
+        for (let k = 1; k <= 6; k++) {
+            const [px, py] = zodiarchPath(clock + k * 0.1);
+            ctx.globalAlpha = 0.5 - k * 0.06;
+            ctx.fillRect(Math.round(px - 24), Math.round(py), 2, 2);
+        }
+        ctx.globalAlpha = 1;
     }
-    const flicker = cloak > 0;
-    if (flicker && Math.floor(time / 70) % 2) {
-        dottedRing(ctx, x, y, 80, COLOUR.void, 36, time / 300);
-        return;
-    }
-    const fade = flicker ? alpha * 0.55 : alpha;
-    glow(
-        ctx,
-        x,
-        y,
-        170,
-        '255,160,60',
-        (0.14 + (open ? 0.26 + 0.1 * Math.sin(time / 90) : 0)) * (flicker ? 0.5 : 1),
-    );
-    b.frame(open ? 'warden-1' : 'warden-0', { alpha: fade });
-    b.overlay('warden');
-    for (let i = 0; i < 4; i++)
-        dottedOrbit(
-            ctx,
-            x,
-            y,
-            WARDEN_ORBIT[i][0],
-            WARDEN_ORBIT[i][1],
-            WARDEN_ORBIT[i][2],
-            COLOUR.void,
-        );
-    for (const part of parts)
-        if (part.kind === PART.star)
-            art.draw(ctx, 'rift', `star-${part.slot}`, part.x, part.y, { alpha: fade });
-    if (mirror > 0.25) mirrorShell(b, mirror > 0.75 ? 1 : 0);
+    drawDragonBody(ctx, art, scene, { alpha, flash });
+    const open = aux[A.coreOpen] > 0.5;
+    const head = aux[A.mouth] > 0.5 ? 'zod-head-1' : 'zod-head-0';
+    art.draw(ctx, 'rift', head, x - 24, y, { alpha, flash });
+    if (state.damage > 0) art.draw(ctx, 'rift', `zod-head-d${state.damage}`, x - 24, y, { alpha });
+    if (aux[A.breath] > 0.5) glow(ctx, x - 70, y + 4, 26, '255,210,140', 0.5 + 0.2 * Math.sin(time / 60));
+    const px = aux[A.pearlX],
+        py = aux[A.pearlY];
+    if (open) glow(ctx, px, py, 24, '255,150,210', 0.45 + 0.15 * Math.sin(time / 90));
+    art.draw(ctx, 'rift', open ? 'zod-pearl-1' : 'zod-pearl-0', px, py, { alpha });
+    for (const part of creatures(parts)) drawCreature(ctx, art, part, clock, time, alpha);
 };
 
 const picket = (b) => {
@@ -256,18 +211,23 @@ const moonjelly = (b) => {
     b.overlay('moonjelly');
 };
 
+// Ninefold: its tails (each one falls as its health does), the body, and while it casts an
+// illusion two decoys that look the same but for their dark eyes.
 const lensimp = (b) => {
-    const { ctx, art, x, y, time, aux, alpha, A } = b;
+    const { ctx, art, x, y, time, aux, parts, alpha, flash, A } = b;
     const blink = aux[A.blink] > 0.5;
-    if (blink && Math.floor(time / 70) % 2) return; // flickers while blinking
-    glow(ctx, x, y, 70, '255,170,70', 0.12);
-    b.frame(aux[A.blink] ? 'lensimp-1' : 'lensimp-0', { alpha: blink ? 0.5 : alpha });
-    b.overlay('lensimp');
-    const a = aux[A.clock] * 1.4,
-        sx = x + Math.cos(a) * 74,
-        sy = y + Math.sin(a) * 40;
-    dottedOrbit(ctx, x, y, 74, 40, 0, COLOUR.void);
-    art.draw(ctx, 'rift', 'star-0', sx, sy);
+    if (blink && Math.floor(time / 70) % 2) return; // flickers while it blinks away
+    const tails = parts.filter((p) => p.kind === PART.tail);
+    for (const decoy of parts.filter((p) => p.kind === PART.decoy)) {
+        for (const tail of tails) art.draw(ctx, 'rift', `ninefold-tail-${tail.slot}`, decoy.x, decoy.y, { alpha: 0.85 });
+        art.draw(ctx, 'rift', 'ninefold-decoy', decoy.x, decoy.y, { alpha: 0.85 });
+    }
+    const fade = blink ? 0.5 : alpha;
+    for (const tail of tails) art.draw(ctx, 'rift', `ninefold-tail-${tail.slot}`, x, y, { alpha: fade, flash });
+    const open = aux[A.open] > 0.5;
+    b.frame(open ? 'ninefold-1' : 'ninefold-0', { alpha: fade });
+    b.overlay('ninefold');
+    if (open) glow(ctx, x + NINEFOLD.mark[0], y + NINEFOLD.mark[1], 16, '255,120,170', 0.5 + 0.2 * Math.sin(time / 80));
 };
 
 // Indexed by BossKind: six bosses, then their six minis.

@@ -1,7 +1,7 @@
 // The scene ABI: one table of float offsets shared by the engine and the UI.
 // `build.mjs` turns it into native/scene_layout.h, so a field can only be moved here.
 // Nothing outside this file (and the generated header) may use a bare scene offset.
-export const SCENE_FLOATS = 1408;
+export const SCENE_FLOATS = 1480;
 
 // Single floats, in memory order. Names become SCENE_<NAME> in C++.
 export const S = Object.freeze({
@@ -70,6 +70,7 @@ export const S = Object.freeze({
     PICKUP_X: 479,
     PICKUP_Y: 480,
     PICKUP_KIND: 481,
+    COLLECT_KIND: 482, // which pickup the collect cue is for: 0 multishot, 1 shield, 2 2x fire, 3 health
     // legacy boss header
     BOSS_ACTIVE: 512,
     BOSS_X: 513,
@@ -127,6 +128,7 @@ export const BOSS = Object.freeze({
     PARTS: { at: 32, stride: 8, count: 32 },
     SHOTS: { at: 288, stride: 8, count: 48 },
     HAZARDS: { at: 672, stride: 12, count: 10 },
+    BODY: { at: 792, stride: 3, count: 28 }, // the Zodiarch's segments: x, y, r, neck first
 });
 
 export const BOSS_AT = BOSS.at;
@@ -173,7 +175,7 @@ export function sceneHeader() {
         lines.push(`    SCENE_BOSS_${name} = ${v},`);
     }
     lines.push('};');
-    for (const name of ['PARTS', 'SHOTS', 'HAZARDS']) {
+    for (const name of ['PARTS', 'SHOTS', 'HAZARDS', 'BODY']) {
         const b = BOSS[name];
         lines.push(
             `enum { SCENE_BOSS_${name}_AT = ${BOSS.at + b.at}, SCENE_BOSS_${name}_STRIDE = ${b.stride}, SCENE_BOSS_${name}_COUNT = ${b.count} };`,

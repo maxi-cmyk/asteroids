@@ -533,7 +533,7 @@ export const TRACKS = {
 
     boss_warden: {
         id: 'boss_warden',
-        title: 'Horizon Warden',
+        title: 'Zodiarch',
         tonic: 69,
         scale: 'harmonic',
         bpm: 160,

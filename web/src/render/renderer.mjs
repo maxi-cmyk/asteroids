@@ -51,6 +51,7 @@ export class PixelRenderer {
         this.observer = new SceneObserver();
         this.gate = new FrameGate();
         this.shake = 0.5; // screen-shake strength, 0-1, from settings
+        this.aimMarker = true; // the chevron ahead of the nose, from settings
         this.title = new TitleScreen();
         this.summary = new SummaryScreen();
         this.countdown = new Countdown();
@@ -90,6 +91,7 @@ export class PixelRenderer {
             time: scene[S.VISUAL_MS],
             players,
             hulls: this.hulls,
+            aimMarker: this.aimMarker,
             observer: this.observer,
             reduced: this.reduced,
             bossArt: this.bossArt,
@@ -116,7 +118,7 @@ export class PixelRenderer {
     // Everything besides the scene that changes what render() paints.
     #settingsKey() {
         const { backgrounds } = this;
-        return `${this.shake}|${backgrounds.motion}|${backgrounds.brightness}|${this.reduced}|${this.hulls.join()}|${this.bossArt.version}`;
+        return `${this.shake}|${this.aimMarker}|${backgrounds.motion}|${backgrounds.brightness}|${this.reduced}|${this.hulls.join()}|${this.bossArt.version}`;
     }
     // render() for the live loop: the same pixels, but only when the scene or a setting moved
     // since the last call. Repeat calls between engine ticks cost a comparison, not a repaint.

@@ -183,6 +183,8 @@ test('pause reassignment remains available after starting with both players read
     const h = lobby();
     h.input.join(0, h.pads);
     h.input.join(1, h.pads);
+    h.input.confirmHull(0);
+    h.input.confirmHull(1);
     h.input.begin(h.pads);
     assert.equal(h.input.assign(1, '1', h.pads), true);
     assert(h.input.valid(h.pads));
@@ -291,4 +293,21 @@ test('disconnect and menu reset discard holds and require a fresh press after ne
         assert(h.input.ready[1]);
         assert.equal(h.backs, 0);
     }
+});
+
+test('after both pilots ready up, each confirms a hull before Launch; cancelling Ready reopens it', () => {
+    const h = lobby();
+    assert.equal(h.input.confirmHull(0), false, 'no hull step before both are ready');
+    h.input.join(0, h.pads);
+    h.input.join(1, h.pads);
+    assert(h.input.picking());
+    assert.equal(h.input.canStart(h.pads), false, 'Launch waits for the hulls');
+    h.input.confirmHull(0);
+    assert.equal(h.input.canStart(h.pads), false, 'and for both of them');
+    h.input.confirmHull(1);
+    h.input.canStart(h.pads); // a neutral frame arms launch
+    assert.equal(h.input.canStart(h.pads), true);
+    h.input.join(1, h.pads); // P2 cancels Ready
+    assert.deepEqual(h.input.hullDone, [true, false]);
+    assert.equal(h.input.canStart(h.pads), false);
 });

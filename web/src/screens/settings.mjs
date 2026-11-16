@@ -45,6 +45,7 @@ class SettingsScreen {
         element('bossLongWarnings').checked = settings.bossLongWarnings;
         element('bossCalm').checked = settings.bossCalm;
         element('fightLog').checked = settings.fightLog;
+        element('aimMarker').checked = settings.aimMarker;
         if (!this.storage)
             this.settingsStatus.textContent = 'Storage unavailable; settings apply for this visit';
         for (const name of SLIDERS) {
@@ -162,7 +163,7 @@ class SettingsScreen {
             this.unlockAudio();
             this.changed();
         });
-        for (const name of ['bossLongWarnings', 'bossCalm', 'fightLog'])
+        for (const name of ['bossLongWarnings', 'bossCalm', 'fightLog', 'aimMarker'])
             element(name).addEventListener('change', (event) => {
                 settings[name] = event.target.checked;
                 this.changed();

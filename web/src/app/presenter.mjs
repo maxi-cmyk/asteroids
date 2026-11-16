@@ -8,6 +8,7 @@ import { renderHomeScreen } from '../screens/home.mjs';
 import { accuracyText } from '../state/records.mjs';
 import { needsRelease } from '../state/navigation.mjs';
 import { MusicDirector } from '../audio/soundtrack.mjs';
+import { S } from '../runtime/scene-layout.mjs';
 import { element, setAttr, setText } from './dom.mjs';
 
 const HUD_IDS = [
@@ -60,6 +61,12 @@ export class Presenter {
             update,
         });
         this.#audio(scene);
+        // A health pickup's collect cue also pulses the lives counter.
+        setAttr(
+            this.hud.lives,
+            'data-pulse',
+            String(scene[S.COLLECT_CUE_MS] > 0 && scene[S.COLLECT_KIND] === 3),
+        );
         renderPractice({
             scene,
             navigation,
@@ -120,6 +127,9 @@ export class Presenter {
     #audio(scene) {
         const { app } = this,
             { audio, navigation, runtime } = app;
+        // A controller press may unlock audio where the browser counts it as a gesture.
+        if (!audio.running && app.input.anyPadButton()) app.unlockAudio();
+        app.settingsController.syncMusicLabel();
         audio.suspend(app.loop.suspended || navigation.screen !== 'play');
         audio.observe(scene);
         audio.setMusic(

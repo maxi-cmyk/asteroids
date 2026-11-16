@@ -1,3 +1,4 @@
+import { SCENE_FLOATS } from '../src/runtime/scene-layout.mjs';
 // Characterisation test for the boss sound design: every sound in the book is played into
 // a recording voice and into a recording Web Audio context, and the boss observer's choices
 // across scripted fights are logged. `UPDATE_GOLDEN=1` rewrites tests/golden/sound.json.
@@ -146,7 +147,7 @@ const scenarios = {
                 heard.push(`${section}:${key ?? ''}:${o?.limit ?? ''}`);
             sound.sting = () => heard.push('sting');
             sound.defeat = () => heard.push('defeat');
-            let old = new Float32Array(1408);
+            let old = new Float32Array(SCENE_FLOATS);
             for (let i = 1; i <= 900; i++) {
                 game.step({
                     x: 2048 + Math.round(Math.sin(i / 17) * 1800),

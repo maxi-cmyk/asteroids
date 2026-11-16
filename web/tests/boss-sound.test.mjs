@@ -1,4 +1,4 @@
-import { S, BOSS } from '../src/runtime/scene-layout.mjs';
+import { S, BOSS, SCENE_FLOATS } from '../src/runtime/scene-layout.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -95,7 +95,7 @@ test('the game plays the right sounds as each fight unfolds', async () => {
         sound.sting = (k) => log('sting');
         sound.defeat = (k) => log('defeat');
         const bot = new BossBot(game);
-        let old = new Float32Array(1408); // nothing on screen yet: the first frame is the entrance
+        let old = new Float32Array(SCENE_FLOATS); // nothing on screen yet: the first frame is the entrance
         for (let i = 0; i < 150 * 50; i++) {
             bot.step();
             const scene = game.scene();

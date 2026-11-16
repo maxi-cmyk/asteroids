@@ -10,6 +10,8 @@ export class CoopInput {
         this.devices = ['keyboard', ''];
         this.profileIds = [0, 1];
         this.ready = [false, false];
+        // After both pilots are ready, each confirms a hull before Launch (screens/coop.mjs).
+        this.hullDone = [false, false];
         this.armed = [false, false];
         this.controls = [
             new Controls(sanitizeSettings(profiles[0])),
@@ -61,12 +63,14 @@ export class CoopInput {
     resetSlot(slot) {
         this.launchArmed = false;
         this.ready[slot] = false;
+        this.hullDone[slot] = false;
         this.armed[slot] = false;
         this.controls[slot].clear();
     }
     reset() {
         this.launchArmed = false;
         this.ready = [false, false];
+        this.hullDone = [false, false];
         this.armed = [false, false];
         this.clear();
     }
@@ -109,6 +113,18 @@ export class CoopInput {
     join(slot, pads) {
         if (!this.ready[slot] && !this.valid(pads)) return false;
         this.ready[slot] = !this.ready[slot];
+        // Cancelling Ready reopens the hull choice too.
+        if (!this.ready[slot]) this.hullDone[slot] = false;
+        return true;
+    }
+    // The hull step runs once both pilots are ready.
+    picking() {
+        return this.ready.every(Boolean);
+    }
+    confirmHull(slot) {
+        if (!this.picking()) return false;
+        this.hullDone[slot] = !this.hullDone[slot];
+        this.launchArmed = false;
         return true;
     }
     lobbyTick(pads) {
@@ -117,6 +133,7 @@ export class CoopInput {
             const pad = this.pad(i, pads);
             if (!pad) {
                 this.ready[i] = false;
+                this.hullDone[i] = false;
                 this.armed[i] = false;
                 continue;
             }
@@ -129,7 +146,7 @@ export class CoopInput {
         }
     }
     canStart(pads) {
-        if (!this.valid(pads) || !this.ready.every(Boolean)) {
+        if (!this.valid(pads) || !this.ready.every(Boolean) || !this.hullDone.every(Boolean)) {
             this.launchArmed = false;
             return false;
         }

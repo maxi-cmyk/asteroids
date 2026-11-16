@@ -13,6 +13,44 @@ void ship_respawn(Ship& ship,
             = constrain(position_y, float(SHIP_MIN_Y), float(SHIP_MAX_Y));
     ship.alive = true;
     ship.invincible_left = SHIP_INVINCIBLE_MS;
+    ship.facing_x = 1;
+    ship.facing_y = 0;
+}
+
+static const float SHIP_HULL[SHIP_HULL_COUNT][2] = SHIP_HULL_CIRCLES;
+
+void ship_hull_circle(const Ship& ship, int index, float& x, float& y, float& radius) {
+    float facing_x = ship.facing_x, facing_y = ship.facing_y;
+    if (facing_x == 0 && facing_y == 0) {
+        facing_x = 1;
+    }
+    x = ship.position_x + facing_x * SHIP_HULL[index][0];
+    y = ship.position_y + facing_y * SHIP_HULL[index][0];
+    radius = SHIP_HULL[index][1];
+}
+
+bool ship_touches(const Ship& ship, float x, float y, float radius) {
+    for (int i = 0; i < SHIP_HULL_COUNT; i++) {
+        float hull_x, hull_y, hull_radius;
+        ship_hull_circle(ship, i, hull_x, hull_y, hull_radius);
+        float reach = radius + hull_radius;
+        float distance_x = x - hull_x, distance_y = y - hull_y;
+        if (distance_x * distance_x + distance_y * distance_y < reach * reach) {
+            return true;
+        }
+    }
+    return false;
+}
+
+float ship_hull_reach() {
+    float reach = 0;
+    for (int i = 0; i < SHIP_HULL_COUNT; i++) {
+        float far = SHIP_HULL[i][0] + SHIP_HULL[i][1];
+        if (far > reach) {
+            reach = far;
+        }
+    }
+    return reach;
 }
 
 void ship_init(Ship& ship) {

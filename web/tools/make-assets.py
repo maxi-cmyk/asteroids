@@ -104,7 +104,7 @@ for size,diameter in enumerate([32,20,12]):
                     s.put(x,y,f'rock{tone}')
             add(f'rock-{size}-{variant}-{frame}',s)
 
-for kind in ['multishot','shield','health']:
+for kind in ['multishot','shield','health','doublefire']:
     if kind=='shield':
         # A round shield, drawn without the pickup frame so it reads as a disc rather than a heart:
         # dark outline, riveted metal rim, wooden planks and a bright iron boss.
@@ -125,9 +125,14 @@ for kind in ['multishot','shield','health']:
     s=Sprite(12,12)
     s.rect(2,0,8,1,'outline');s.rect(2,11,8,1,'outline')
     s.rect(0,2,1,8,'outline');s.rect(11,2,1,8,'outline')
-    s.rect(1,1,10,10,'red0' if kind=='health' else 'amber0')
+    s.rect(1,1,10,10,'red0' if kind=='health' else 'cyan0' if kind=='doublefire' else 'amber0')
     s.rect(2,2,8,8,'outline')
-    if kind=='multishot':
+    if kind=='doublefire':
+        # 2x fire: two parallel bolts streaking forward, each with a hot white tip.
+        for y in [4,7]:
+            s.put(3,y,'cyan0');s.rect(4,y,4,1,'cyan');s.put(8,y,'white')
+            s.put(7,y-1,'cyan0');s.put(7,y+1,'cyan0')
+    elif kind=='multishot':
         for y in [3,5,7]: s.rect(4,y,4,1,'amber')
         s.put(8,2,'amber');s.put(8,8,'amber');s.put(8,5,'white')
     else:

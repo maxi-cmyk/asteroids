@@ -5,7 +5,7 @@
 //   Cinderforge / Cinderling  fire: low filtered noise, roars and crackle
 //   Bastion / Gunnery     ordnance: square thumps, launch whooshes, klaxons
 //   Tidecaller / Moonjelly  water: gliding sines with vibrato, bloops and pops
-//   Horizon Warden / Lens Imp  cosmic: detuned drones, bent pitches, sub swells
+//   Zodiarch / Ninefold        cosmic: star chimes, detuned drones, sub swells
 // Each attack has a CHARGE (played as its telegraph starts, as long as the
 // warning) and a RELEASE (the lethal moment: hazard live, shot spawned). Every
 // boss also has a distinct DEFEAT sound. The game plays them from the scene
@@ -33,7 +33,7 @@ export function describeSounds() {
         cinderforge: 'Cinderforge',
         bastion: 'Bastion',
         tidecaller: 'Tidecaller',
-        warden: 'Horizon Warden',
+        warden: 'Zodiarch',
     };
     for (const group of GROUPS) {
         const book = BOOK[group];

@@ -114,9 +114,13 @@ static void bs_hazards_update() {
             continue;
         }
         if (!bs_lethal_kind(h.kind)) continue;
-        for (unsigned p = 0; p < boss_hull_n; p++)
-            if (bs_alive(p) && bs_hazard_hits(h, boss_hulls[p]->position_x,
-                                              boss_hulls[p]->position_y, SHIP_RADIUS))
-                bs_hit_pilot(p);
+        for (unsigned p = 0; p < boss_hull_n; p++) {
+            if (!bs_alive(p)) continue;
+            for (int c = 0; c < SHIP_HULL_COUNT; c++) {
+                float hx, hy, hr;
+                ship_hull_circle(*boss_hulls[p], c, hx, hy, hr);
+                if (bs_hazard_hits(h, hx, hy, hr)) { bs_hit_pilot(p); break; }
+            }
+        }
     }
 }

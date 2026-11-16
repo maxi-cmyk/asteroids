@@ -24,7 +24,10 @@ enum HazardKind : uint8_t {
     HK_TELL, HK_ARC, HK_AIM, HK_PULL,                   // warnings and forces
     HK_BURN                                             // scorched ground: burns whoever stands in it
 };
-enum PartKind : uint8_t { PK_BLADE, PK_PANEL, PK_HARD, PK_BUBBLE, PK_STAR, PK_ORB };
+enum PartKind : uint8_t { PK_BLADE, PK_PANEL, PK_HARD, PK_BUBBLE, PK_STAR, PK_ORB,
+                          PK_SIGN,    // a zodiac creature the Zodiarch threw (slot = sign 0..11)
+                          PK_TAIL,    // one of Ninefold's nine tails (slot = tail 0..8)
+                          PK_DECOY }; // one of Ninefold's illusions
 // BC_DEFLECT throws player shots and the laser back at whoever fired them.
 enum CircleType : uint8_t { BC_CORE, BC_BLOCK, BC_PART, BC_SHOT, BC_DEFLECT };
 enum {
@@ -34,7 +37,10 @@ enum {
     BA_CANNON = 30, BA_MISSILE, BA_MINES, BA_BROAD,
     TA_SINE = 40, TA_TENDRIL, TA_SPORE, TA_PULSE, TA_WALL, TA_RAIN, TA_WHIRL,
     WA_SPIRAL = 50, WA_CURVE, WA_ACCRETE, WA_PULL, WX_BURST, WX_JETS, WX_NOVA, WX_CLOAK,
-    MA_BOLTS = 60, MA_SHARDS, MA_CURVE1, MA_BLINK, MA_SINE6
+    MA_BOLTS = 60, MA_SHARDS, MA_CURVE1, MA_BLINK, MA_SINE6,
+    ZA_SIGN = 70,               // + sign 0..11: the Zodiarch throws that sign (70 Aries .. 81 Pisces)
+    ZA_CONJ = 82, ZA_BREATH,    // Great Conjunction (three signs at once), starfire breath
+    NA_COMETS = 90, NA_FOXFIRE, NA_ILLUSION, NA_BLINK  // Ninefold
 };
 
 struct BossShot {
@@ -65,6 +71,10 @@ struct BossPart {
     float x = 0, y = 0, r = 0, ang = 0;
     unsigned long until = 0;   // revive time, or open-until for panels
     unsigned long fire_at = 0;
+    // Zodiac creatures and decoys: where they came from and are going, a partner, their hazards.
+    float sx = 0, sy = 0, u = 0, v = 0;
+    int8_t link = -1, hz0 = -1, hz1 = -1;
+    bool lead = false;
 };
 struct BossCircle {
     float x, y, r;
@@ -104,11 +114,16 @@ struct BossState {
     uint8_t drops = 0;
     unsigned long shield_at = 0;  // Ringwarden: when the next timed shield drops
     unsigned long deflect_at[2] = {};  // per pilot: when a mirror may throw the next shot back
+    unsigned long camp_ms[2] = {};     // per pilot: time spent level with or behind the body
+    unsigned long repel_at = 0;        // earliest time for the next repel ring (boss/motion.h)
+    unsigned repels = 0;               // repel rings sent this fight (test telemetry)
     bool hold = false;            // keeps a wave open while a mini lives
     float armor = 0;
     unsigned hits_taken = 0;
     unsigned violations = 0, max_shots = 0, max_hazards = 0, entrance_hits = 0;
     unsigned min_corridor = 999, spawn_in_body = 0;
+    float seg[28][3] = {};        // the Zodiarch's body: x, y, r per segment, neck first
+    unsigned seg_n = 0;
     BossShot shots[BOSS_SHOTS] = {};
     BossHazard hz[BOSS_HAZARDS] = {};
     BossPart parts[BOSS_PARTS] = {};

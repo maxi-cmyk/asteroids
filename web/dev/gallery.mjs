@@ -102,3 +102,30 @@ for (const name of ['frontier', 'violet', 'ember', 'ruins', 'lunar', 'rift', 'sh
     image.alt = `${name} boss sheet`;
     document.querySelector('#bossSheets')?.append(image);
 }
+
+// Pickup icons and each kind's collect animation, sampled across its cue.
+import { drawCollect, KIND, CUE_MS } from '../src/render/layers/collect.mjs';
+{
+    const canvas = document.querySelector('#collectReview');
+    const renderer = new PixelRenderer(canvas, reviewArt);
+    const { context: ctx, px } = renderer;
+    ctx.fillStyle = COLOUR.background;
+    ctx.fillRect(0, 0, 480, 300);
+    ['multishot', 'shield', 'doublefire', 'health'].forEach((name, i) => {
+        px.sprite(name, 30 + i * 60, 14);
+        px.text(name.toUpperCase(), 36 + i * 60, 32, COLOUR.muted, 1, 'center');
+    });
+    const rows = [
+        ['SHIELD', KIND.shield],
+        ['HEALTH', KIND.health],
+        ['MULTISHOT', KIND.multishot],
+        ['2X FIRE', KIND.double],
+    ];
+    rows.forEach(([label, kind], row) => {
+        const y = 78 + row * 62;
+        px.text(label, 8, y - 4, COLOUR.muted);
+        [0.9, 0.7, 0.45, 0.2].forEach((share, col) =>
+            drawCollect(ctx, { kind, left: CUE_MS * share, x: 120 + col * 95, y, dx: 1, dy: 0 }),
+        );
+    });
+}

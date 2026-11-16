@@ -1,3 +1,4 @@
+import { SCENE_FLOATS } from '../src/runtime/scene-layout.mjs';
 // Characterisation test: a refactor must not change a single float the engine exports.
 // Seeded scripted runs are hashed at fixed ticks; `UPDATE_GOLDEN=1 node --test` rewrites the file.
 import test from 'node:test';
@@ -24,7 +25,7 @@ function hash(floats) {
     }
     return h.toString(16);
 }
-const view = (g, pointer) => new Float32Array(g.api.memory.buffer, pointer, 1408);
+const view = (g, pointer) => new Float32Array(g.api.memory.buffer, pointer, SCENE_FLOATS);
 const sweep = (i) => ({
     x: 2048 + Math.round(Math.sin(i / 17) * 1800),
     y: 2048 + Math.round(Math.cos(i / 23) * 1800),

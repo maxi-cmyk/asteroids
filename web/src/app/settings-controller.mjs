@@ -1,5 +1,5 @@
 import { defaults, saveProfiles, sanitizeSettings } from '../state/settings.mjs';
-import { element } from './dom.mjs';
+import { element, setHidden } from './dom.mjs';
 import { prefersReducedMotion } from './motion.mjs';
 
 // Keeps the saved settings, the live engine/audio/renderer and the header toggles in step.
@@ -22,6 +22,7 @@ export class SettingsController {
         app.audio.apply();
         if (app.renderer) {
             app.renderer.shake = settings.shake;
+            app.renderer.aimMarker = settings.aimMarker;
             app.renderer.backgrounds.motion = settings.backgroundMotion;
             app.renderer.backgrounds.brightness = settings.backgroundBrightness;
         }
@@ -34,8 +35,23 @@ export class SettingsController {
             music = element('music');
         sound.textContent = settings.soundEnabled ? 'Sound on' : 'Sound off';
         sound.setAttribute('aria-pressed', String(settings.soundEnabled));
-        music.textContent = settings.musicEnabled ? 'Music on' : 'Music off';
         music.setAttribute('aria-pressed', String(settings.musicEnabled));
+        this.syncMusicLabel();
+    };
+    // Browsers keep sound off until the first click or key. Until then "Music on" would be a
+    // promise the page cannot keep, so the button and a Home hint say how to start it.
+    syncMusicLabel = () => {
+        const { settings, audio } = this.app;
+        const waiting = settings.musicEnabled && !audio.running;
+        const text = !settings.musicEnabled
+            ? 'Music off'
+            : waiting
+              ? 'Music on · click to start'
+              : 'Music on';
+        if (text === this.musicText) return;
+        this.musicText = text;
+        element('music').textContent = text;
+        setHidden(element('soundHint'), !waiting);
     };
     // Apply button: commits the draft, then reports whether storage took it.
     apply = () => {

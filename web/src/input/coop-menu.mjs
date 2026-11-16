@@ -88,12 +88,14 @@ export class CoopMenu {
         const nodes = [
             `coopDevice${slot}`,
             `coopProfile${slot}`,
+            `coopHull${slot}`,
+            `coopHullConfirm${slot}`,
             `coopReady${slot}`,
             'coopFriendly',
             'coopStart',
         ]
             .map(this.getElement)
-            .filter((el) => !el.disabled);
+            .filter((el) => el && !el.disabled && !el.closest?.('[hidden]'));
         if (!nodes.includes(state.focus)) {
             state.focus = null;
             state.editing = false;

@@ -23,6 +23,7 @@ static Pickup pickup = {};
 static unsigned long collection_cue_left = 0;
 static float collection_x = 0;
 static float collection_y = 0;
+static uint8_t collection_kind = 0;  // which pickup the cue is for (the browser animates each)
 
 void powerups_init() {
     pickup = {};
@@ -59,6 +60,7 @@ static void collect_pickup(Ship& ship) {
     }
     collection_x = pickup.position_x;
     collection_y = pickup.position_y;
+    collection_kind = pickup.kind;
     collection_cue_left = PICKUP_CUE_MS;
     pickup.active = false;
 }

@@ -125,7 +125,7 @@ body:is([data-screen='play'], [data-screen='pause']):not([data-coop='true'])
 }
 .combat-hud .ability[data-ability='double'] {
     --tone: #ff82c8;
-    --glyph: url('../../assets/ui/x2.png');
+    --glyph: url('../../assets/ui/doublefire.png');
 }
 body:is([data-screen='play'], [data-screen='pause']) .combat-hud .ability[data-state='ready'],
 body:is([data-screen='play'], [data-screen='pause']) .combat-hud .ability[data-state='charging'],
@@ -200,4 +200,22 @@ body:is([data-screen='play'], [data-screen='pause']):not([data-coop='true'])
 body:is([data-screen='play'], [data-screen='pause']):not([data-coop='true']) #pause:focus {
     color: #fff4d6;
     background: #1a0c3acc;
+}
+
+/* A health pickup: the lives row swells once and glows red (presenter sets data-pulse). */
+#lives[data-pulse='true'] {
+    animation: life-pulse 0.6s ease-out;
+    transform-origin: left center;
+}
+@keyframes life-pulse {
+    30% {
+        transform: scale(1.25);
+        filter: drop-shadow(0 0 4px #ff606c);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    #lives[data-pulse='true'] {
+        animation: none;
+        filter: drop-shadow(0 0 4px #ff606c);
+    }
 }

@@ -71,6 +71,9 @@ static void combat_update_aim() {
         combat.aim_x = combat_input.aim_x / length;
         combat.aim_y = combat_input.aim_y / length;
     }
+    // The hull sprite turns with the aim, so its contact shape does too.
+    ship.facing_x = combat.aim_x;
+    ship.facing_y = combat.aim_y;
 }
 
 static void combat_move_ship(const InputState& input) {
@@ -173,8 +176,10 @@ static bool combat_beam_hits(const Asteroid& rock) {
     float radius = rock.radius + 2.0f;
     bool intersects = along >= 0 ? across * across <= radius * radius
                                  : x * x + y * y <= radius * radius;
-    return intersects && rock.position_x >= 0 && rock.position_x < SCREEN_W
-           && rock.position_y >= 0 && rock.position_y < SCREEN_H;
+    // Any visible part counts: a rock still entering from the right edge can be lasered.
+    float r = rock.radius;
+    return intersects && rock.position_x + r >= 0 && rock.position_x - r < SCREEN_W
+           && rock.position_y + r >= 0 && rock.position_y - r < SCREEN_H;
 }
 
 static void combat_destroy_laser_targets() {
@@ -267,7 +272,7 @@ static void combat_ship_hit() {
 }
 
 static void combat_collisions() {
-    if (asteroid_hits_ship(ship.position_x, ship.position_y)) combat_ship_hit();
+    if (asteroid_hits_ship(ship)) combat_ship_hit();
 }
 static void combat_update_playing(bool laser_pressed) {
     const InputState& input = input_get();

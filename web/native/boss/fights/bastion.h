@@ -171,10 +171,12 @@ static unsigned bs_bastion_body(float *out) {
 static unsigned bs_gunnery_body(float *out) {
     unsigned n = 0;
     float x = boss.x, y = boss.y;
+    // Fitted to the light-cruiser hull (half-height ~14 at -70, ~24 at -30, ~37 at +20; the
+    // rear circle stays inside the hull between the two nacelles).
     bs_guard_body(out, n, x - 70, y, 12);
-    bs_guard_body(out, n, x - 30, y, 30);
-    bs_guard_body(out, n, x + 20, y, 40);
-    bs_guard_body(out, n, x + 70, y, 44);
+    bs_guard_body(out, n, x - 30, y, 24);
+    bs_guard_body(out, n, x + 20, y, 36);
+    bs_guard_body(out, n, x + 70, y, 36);
     return n;
 }
 // While a gun still stands the hull's armour soaks every second primary hit.

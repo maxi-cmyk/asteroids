@@ -13,6 +13,11 @@ export class InputHub {
         this.device = 'keyboard'; // 'keyboard' | 'mouse' | 'controller'
         this.gameplayReady = false; // controls were released since the last interruption
     }
+    anyPadButton() {
+        return this.connectedPads().some((pad) =>
+            (pad?.buttons || []).some((button) => button?.pressed),
+        );
+    }
     connectedPads() {
         try {
             return Array.from(navigator.getGamepads?.() || []);
@@ -87,6 +92,8 @@ export class InputHub {
         });
         window.addEventListener('pointerup', (event) => this.pointerButtons.delete(event.button));
         window.addEventListener('pointerdown', () => app.unlockAudio());
+        // Any key counts too, in the menus as well as in flight.
+        window.addEventListener('keydown', () => app.unlockAudio(), { capture: true });
         // Preserve brief controller releases between the fixed simulation ticks.
         // No gameplay or DOM work occurs in this input-only polling callback.
         setInterval(() => {

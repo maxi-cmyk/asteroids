@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ship.h"
+
 #include "config.h"
 #include <Arduino.h>
 #include <Adafruit_SSD1306.h>
@@ -26,7 +28,7 @@ struct Asteroid {
 void asteroids_init();
 void asteroids_update(unsigned long game_ms);
 void asteroids_draw(Adafruit_SSD1306& display);
-bool asteroid_hits_ship(float position_x, float position_y);
+bool asteroid_hits_ship(const Ship& ship);
 uint32_t asteroids_hit_bullet(float from_x, float to_x, float position_y);
 using AsteroidDestroyedHandler = void (*)(float position_x, float position_y);
 uint32_t asteroids_hit_segment(float from_x,

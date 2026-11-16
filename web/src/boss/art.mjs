@@ -18,13 +18,13 @@ const MAIN_FRAME = [
     'forge-1',
     'bastion-hull',
     'tide-0-0',
-    'warden-0',
+    'zod-head-0',
     'picket-0',
     'shardling-0',
     'cinderling-0',
     'gunnery-0',
     'moonjelly-0',
-    'lensimp-0',
+    'ninefold-0',
 ];
 
 export class BossArt {

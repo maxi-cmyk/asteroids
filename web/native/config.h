@@ -27,6 +27,10 @@
 #undef SHIP_MAX_X
 #undef SHIP_MIN_Y
 #undef SHIP_MAX_Y
+#undef SHIP_HULL_CIRCLES
+#undef SHIP_HULL_COUNT
+#undef ROCK_CONTACT_SCALE
+#undef PICKUP_CUE_MS
 #define SCREEN_W 480
 #define SCREEN_H 270
 #define HUD_HEIGHT 0
@@ -55,4 +59,13 @@
 #define SHIP_MAX_X (SCREEN_W - 16)
 #define SHIP_MIN_Y 16
 #define SHIP_MAX_Y (SCREEN_H - 22)
+// Measured from the seven hull sprites (facing right): a body about 14 px tall from -9 to +3
+// and a 4 px nose out to +12. Tail, core, nose; each a pixel inside the art so near misses
+// that look like misses are misses.
+#define SHIP_HULL_CIRCLES {{-8.0f, 4.0f}, {-1.0f, 6.0f}, {8.0f, 3.0f}}
+#define SHIP_HULL_COUNT 3
+// Mean rock silhouette is ~0.88 of the radius (measured from sprites.png).
+#define ROCK_CONTACT_SCALE 0.85f
+// Long enough for each pickup's own collect animation (render/layers/collect.mjs).
+#define PICKUP_CUE_MS 600UL
 #endif

@@ -3,14 +3,19 @@ import { element, setData, setHidden, setProp, setText } from '../app/dom.mjs';
 import { accuracyText } from '../state/records.mjs';
 import { supportedPad } from '../input/coop-input.mjs';
 import { CoopMenu } from '../input/coop-menu.mjs';
+import { HULLS, hullIcon, saveHangar } from '../state/hangar.mjs';
 
 const PILOT_COLOURS = ['#70d9ed', '#efb963'];
 
 // Local co-op: the lobby where two pilots pick an input and a profile and ready up, the
 // in-flight team HUD, the reassignment panel after a lost controller, and the team results.
 class CoopScreen {
-    constructor({ input, getPads, getRuntime, getNavigation, launch, profiles }) {
+    constructor({ input, getPads, getRuntime, getNavigation, launch, profiles, hangar = null }) {
         this.input = input;
+        // { store, storage, unlocks, getArt }: the hull step after both pilots ready up.
+        this.hangar = hangar;
+        this.hullChoice = [null, null];
+        this.hullSignature = ['', ''];
         this.getPads = getPads;
         this.getRuntime = getRuntime;
         this.getNavigation = getNavigation;
@@ -42,6 +47,15 @@ class CoopScreen {
                 input.join(slot, this.getPads());
                 this.render();
             });
+            element('coopHull' + slot)?.addEventListener('change', (event) => {
+                this.hullChoice[slot] = event.target.value;
+                this.render();
+            });
+            element('coopHullConfirm' + slot)?.addEventListener('click', () => {
+                if (!input.confirmHull(slot)) return;
+                if (input.hullDone[slot]) this.#equip(slot);
+                this.render();
+            });
         }
         // Friendly fire is locked once anyone is ready.
         let friendlyFire = element('coopFriendly').checked;
@@ -61,6 +75,69 @@ class CoopScreen {
             };
             this.launch(() => this.getNavigation().startCoop(options));
         });
+    }
+    // The confirmed hull is equipped on that pilot's profile, as if chosen in the Hangar.
+    #equip(slot) {
+        const { hangar, input } = this;
+        const choice = this.hullChoice[slot];
+        if (!hangar || !choice) return;
+        hangar.store.profiles[input.profileIds[slot]] = choice;
+        saveHangar(hangar.storage, hangar.store);
+    }
+    #unlocked(profile, id) {
+        return this.hangar?.unlocks ? this.hangar.unlocks.isUnlocked(profile, id) : true;
+    }
+    // One pilot's hull field: unlocked hulls for their profile, locked ones listed but disabled.
+    #renderHull(slot, picking) {
+        const { input, hangar } = this;
+        setHidden(element('coopHullPick' + slot), !picking || !hangar);
+        if (!picking || !hangar) {
+            this.hullChoice[slot] = null;
+            return;
+        }
+        const profile = input.profileIds[slot];
+        const select = element('coopHull' + slot);
+        const signature =
+            profile + ':' + HULLS.map((h) => (this.#unlocked(profile, h.id) ? 1 : 0)).join('');
+        if (signature !== this.hullSignature[slot]) {
+            this.hullSignature[slot] = signature;
+            select.replaceChildren(
+                ...HULLS.map((hull) => {
+                    const option = document.createElement('option');
+                    const open = this.#unlocked(profile, hull.id);
+                    option.value = hull.id;
+                    option.disabled = !open;
+                    option.textContent = open ? hull.name : `${hull.name} · locked`;
+                    return option;
+                }),
+            );
+            this.hullChoice[slot] = null;
+        }
+        if (!this.hullChoice[slot] || !this.#unlocked(profile, this.hullChoice[slot])) {
+            const equipped = hangar.store.profiles[profile];
+            this.hullChoice[slot] = this.#unlocked(profile, equipped) ? equipped : HULLS[0].id;
+        }
+        if (select.value !== this.hullChoice[slot]) select.value = this.hullChoice[slot];
+        const done = input.hullDone[slot];
+        setProp(select, 'disabled', done);
+        const confirm = element('coopHullConfirm' + slot);
+        confirm.setAttribute('aria-pressed', String(done));
+        setText(confirm, done ? `Hull confirmed · Change` : 'Confirm hull');
+        this.#drawHull(slot);
+    }
+    #drawHull(slot) {
+        const art = this.hangar.getArt?.(),
+            id = this.hullChoice[slot];
+        const key = `${id}`;
+        const canvas = element('coopHullIcon' + slot);
+        if (!art || canvas.dataset.hull === key) return;
+        const cell = art.sprites[hullIcon(id)];
+        if (!cell) return;
+        canvas.dataset.hull = key;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(art.atlas, cell.x, cell.y, cell.w, cell.h, 0, 0, 48, 32);
     }
     // Rebuilds the input choosers when controllers come or go.
     #syncDevices(pads) {
@@ -144,16 +221,22 @@ class CoopScreen {
             );
         }
         element('coopFriendly').disabled = input.ready.some(Boolean);
+        const picking = input.valid(pads) && input.picking();
+        for (let i = 0; i < 2; i++) this.#renderHull(i, picking);
+        const hullsDone = !this.hangar || input.hullDone.every(Boolean);
         setText(
             element('coopLobbyStatus'),
             !input.valid(pads)
                 ? 'Choose two different inputs and two different profiles. At least one controller is required.'
-                : input.ready.every(Boolean)
-                  ? 'Both pilots ready. Release controls, then Launch together.'
-                  : 'Hold Circle / B for 1.5s to ready your pilot. Up/down: navigate · Cross / A: select or edit · Tap Circle / B: finish editing or go back. Cancel Ready to change selections.',
+                : picking && !hullsDone
+                  ? 'Both pilots ready. Each pilot picks a hull and confirms it (Cross / A to edit, left/right to browse).'
+                  : picking
+                    ? 'Hulls confirmed. Release controls, then Launch together.'
+                    : 'Hold Circle / B for 1.5s to ready your pilot. Up/down: navigate · Cross / A: select or edit · Tap Circle / B: finish editing or go back. Cancel Ready to change selections.',
         );
         input.canStart(pads); // Arm launch after a neutral frame; navigation stays focusable.
-        element('coopStart').disabled = !input.valid(pads) || !input.ready.every(Boolean);
+        element('coopStart').disabled =
+            !input.valid(pads) || !input.ready.every(Boolean) || !hullsDone;
     }
     // The team HUD, and the pause menu's controller-lost notice.
     #renderHud(runtime, navigation, pads) {

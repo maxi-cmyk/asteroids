@@ -1,6 +1,7 @@
 import { S, BLOCKS } from '../../runtime/scene-layout.mjs';
 import { WIDTH, COLOUR } from '../constants.mjs';
 import { glow } from '../fx.mjs';
+import { drawCollect } from './collect.mjs';
 
 // The things that drift through the playfield. Each layer draws from `frame`:
 // { ctx, px, scene, time, players, hulls, observer, reduced, bossArt, shake, cue }.
@@ -47,10 +48,10 @@ export class SpawnWarningLayer {
 
 // Glow colour by pickup kind: multishot amber, shield cyan, 2× fire cyan, health red.
 const PICKUP_GLOW = ['239,185,99', '110,240,255', '110,240,255', '255,96,108'];
-const PICKUP_SPRITE = ['multishot', 'shield', null, 'health'];
+const PICKUP_SPRITE = ['multishot', 'shield', 'doublefire', 'health'];
 
 export class PickupLayer {
-    draw({ ctx, px, scene, time }) {
+    draw({ ctx, px, scene, time, reduced }) {
         if (scene[S.PICKUP_ACTIVE]) {
             glow(
                 ctx,
@@ -60,33 +61,22 @@ export class PickupLayer {
                 PICKUP_GLOW[scene[S.PICKUP_KIND]] ?? PICKUP_GLOW[1],
                 0.45 + 0.15 * Math.sin(time / 180),
             );
-            if (scene[S.PICKUP_KIND] === 2) {
-                px.box(
-                    Math.round(scene[S.PICKUP_X]) - 8,
-                    Math.round(scene[S.PICKUP_Y]) - 7,
-                    17,
-                    15,
-                    COLOUR.cyan,
-                );
-                px.text('2X', scene[S.PICKUP_X], scene[S.PICKUP_Y] - 3, COLOUR.cyan, 1, 'center');
-            } else
-                px.sprite(
-                    PICKUP_SPRITE[scene[S.PICKUP_KIND]] ?? 'shield',
-                    scene[S.PICKUP_X] - 6,
-                    scene[S.PICKUP_Y] - 6,
-                );
-        }
-        // The ring that marks a pickup being collected.
-        if (scene[S.COLLECT_CUE_MS]) {
-            const radius = 8 + Math.floor((400 - scene[S.COLLECT_CUE_MS]) / 80);
-            px.box(
-                Math.round(scene[S.COLLECT_X]) - radius,
-                Math.round(scene[S.COLLECT_Y]) - radius,
-                radius * 2 + 1,
-                radius * 2 + 1,
-                COLOUR.cyan,
+            px.sprite(
+                PICKUP_SPRITE[scene[S.PICKUP_KIND]] ?? 'shield',
+                scene[S.PICKUP_X] - 6,
+                scene[S.PICKUP_Y] - 6,
             );
         }
+        // Each pickup kind has its own collect animation (collect.mjs).
+        drawCollect(ctx, {
+            kind: scene[S.COLLECT_KIND],
+            left: scene[S.COLLECT_CUE_MS],
+            x: scene[S.COLLECT_X],
+            y: scene[S.COLLECT_Y],
+            dx: scene[S.AIM_X],
+            dy: scene[S.AIM_Y],
+            reduced,
+        });
     }
 }
 

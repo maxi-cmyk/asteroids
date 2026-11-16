@@ -60,7 +60,7 @@ grace 10 s, interpolation delay about 2 snapshots. Raw scene is 1408 floats (5.6
 - **Interpolation (N7).** Snapshots arrive every second tick. Drawing at `render time − 2 snapshots`
   (80 ms) always has two snapshots to blend: `(1 − α)·a + α·b`, `α` the fraction between them. Blend
   only slots that are active in both snapshots and moved less than a threshold; spawns, despawns and
-  teleports (Lens Imp blink, Warden cloak) must snap. The same rule applies to local interpolation
+  teleports (Ninefold's blink) must snap. The same rule applies to local interpolation
   (`web/combat-docs/01`).
 - **Prediction (N9).** The ship has no velocity state: the stick sets the velocity each tick
   (`web/combat-docs/02`). So predicting your own ship is replaying the unacknowledged inputs on the

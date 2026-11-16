@@ -237,8 +237,9 @@
     --ax: 96;
     --ay: 352;
 }
-.utility-view[data-view='help'] .pickup-icon[data-pickup='double'] {
-    background: url('../../assets/ui/x2.png') center / 28px 28px no-repeat;
+.pickup-icon[data-pickup='double'] {
+    --ax: 128;
+    --ay: 352;
 }
 .utility-view[data-view='help'] .help-actions {
     display: flex;

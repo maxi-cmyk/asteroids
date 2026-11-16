@@ -143,3 +143,11 @@ test('ship and rock collisions use the new physical radii, not old OLED sizes', 
     assert.equal(miss.state, 'playing');
     assert.equal(miss.snapshot()[3], 3);
 });
+
+test('a rock just off the hull flank is a miss (the hurtbox follows the sprite)', async () => {
+    const g = await game();
+    g.api.web_scenario(20);
+    g.step();
+    assert.equal(g.state, 'playing');
+    assert.equal(g.snapshot()[3], 3);
+});

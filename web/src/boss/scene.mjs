@@ -39,7 +39,55 @@ export const HAZARD = Object.freeze({
     pull: 8,
     burn: 9,
 });
-export const PART = Object.freeze({ blade: 0, panel: 1, hard: 2, bubble: 3, star: 4 });
+export const PART = Object.freeze({
+    blade: 0,
+    panel: 1,
+    hard: 2,
+    bubble: 3,
+    star: 4,
+    sign: 6, // a zodiac creature the Zodiarch threw (slot = sign); r is how far it has formed
+    tail: 7, // one of Ninefold's tails (slot = tail)
+    decoy: 8, // one of Ninefold's illusions
+});
+// The zodiac, in ring order (the Zodiarch's sign index = slot of a sign part).
+export const SIGNS = Object.freeze([
+    'Aries',
+    'Taurus',
+    'Gemini',
+    'Cancer',
+    'Leo',
+    'Virgo',
+    'Libra',
+    'Scorpio',
+    'Sagittarius',
+    'Capricorn',
+    'Aquarius',
+    'Pisces',
+]);
+// Each creature's key star (its weak point), from its centre; mirrors SIGN_KEY in warden.h.
+export const SIGN_KEY = Object.freeze([
+    [-24, -7],
+    [-7, -9],
+    [-12, -29],
+    [0, 2],
+    [-24, -6],
+    [-30, -36],
+    [0, -27],
+    [11, -20],
+    [-46, -2],
+    [-29, -17],
+    [-18, -25],
+    [-13, -2],
+]);
+// The Zodiarch's swim (mirrors bs_zod_path): the head's point at a given clock, for the
+// telegraphed path ahead and the ring.
+export const ZODIARCH = Object.freeze({ cx: 372, cy: 135, ax: 92, ay: 80, period: 16, rx: 118, ry: 100 });
+export const zodiarchPath = (clock) => {
+    const w = (2 * Math.PI) / ZODIARCH.period;
+    return [ZODIARCH.cx + ZODIARCH.ax * Math.sin(w * clock), ZODIARCH.cy + ZODIARCH.ay * Math.sin(2 * w * clock)];
+};
+// Ninefold's geometry from its frame centre (mirrors FOX_* in warden.h).
+export const NINEFOLD = Object.freeze({ mark: [-33, -54], head: [-35, -40], body: [-19, 22] });
 export const ATTACK = Object.freeze({
     lance: 1,
     fan: 2,
@@ -81,6 +129,26 @@ export const ATTACK = Object.freeze({
     curve1: 62,
     blink: 63,
     sine6: 64,
+    // The Zodiarch throws a sign: 70 Aries .. 81 Pisces.
+    aries: 70,
+    taurus: 71,
+    gemini: 72,
+    cancer: 73,
+    leo: 74,
+    virgo: 75,
+    libra: 76,
+    scorpio: 77,
+    sagittarius: 78,
+    capricorn: 79,
+    aquarius: 80,
+    pisces: 81,
+    conjunction: 82,
+    breath: 83,
+    // Ninefold
+    comets: 90,
+    foxfire: 91,
+    illusion: 92,
+    foxBlink: 93,
 });
 
 // kind order matches BossKind in native/boss/core.h: six region bosses, then their six minis.
@@ -139,14 +207,14 @@ export const KINDS = Object.freeze([
         aux: { clock: 0, exposed: 2 },
     },
     {
-        id: 'warden',
-        name: 'Horizon Warden',
+        id: 'warden', // internal id kept from the Horizon Warden, so saves carry over
+        name: 'Zodiarch',
         region: 'rift',
         mini: false,
-        size: [330, 330],
+        size: [120, 84],
         phases: [0.7, 0.35],
         hull: null,
-        aux: { clock: 0, coreOpen: 1, busy: 2, cloak: 4, mirror: 5 },
+        aux: { clock: 0, coreOpen: 1, busy: 2, out: 3, pearlX: 4, pearlY: 5, mouth: 6, breath: 7 },
     },
     {
         id: 'picket',
@@ -199,14 +267,14 @@ export const KINDS = Object.freeze([
         aux: { clock: 0 },
     },
     {
-        id: 'lensimp',
-        name: 'Lens Imp',
+        id: 'lensimp', // internal id kept from the Lens Imp, so saves carry over
+        name: 'Ninefold',
         region: 'rift',
         mini: true,
-        size: [170, 170],
+        size: [250, 196],
         phases: [],
         hull: 'comet',
-        aux: { clock: 0, blink: 1 },
+        aux: { clock: 0, blink: 1, open: 2, tails: 3, illusion: 4 },
     },
 ]);
 export const REGION_SHEETS = Object.freeze([
@@ -290,6 +358,17 @@ export function bossPart(scene, index) {
         state: scene[at + 6],
         slot: scene[at + 7],
     };
+}
+// The Zodiarch's body segments (x, y, r), neck first; empty for every other boss.
+export function bossBody(scene) {
+    const at = BOSS_AT + BOSS.BODY.at,
+        out = [];
+    for (let i = 0; i < BOSS.BODY.count; i++) {
+        const r = scene[at + i * 3 + 2];
+        if (!r) break;
+        out.push({ x: scene[at + i * 3], y: scene[at + i * 3 + 1], r });
+    }
+    return out;
 }
 export function bossShots(scene) {
     const out = [];

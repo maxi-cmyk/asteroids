@@ -18,7 +18,7 @@ laptop with a keyboard, mouse and (if they prefer) a controller. Run two to four
 | --- | --- | --- |
 | 1 | Solo run to wave 5, no briefing, 3 lives | Attempts to first clear the **Sentinel**; the attack that took each life; whether they understood each warning before they were hit |
 | 2 | Boss practice: one boss **of their choice** (Ringwarden to Tidecaller) | Which they chose and why; attempts; whether the fight felt too long |
-| 3 | Boss practice: the **Horizon Warden**, tier I, from phase 1 | Attempts; first time they noticed the mirror and the cloak; the attack they name as the unfair one, if any |
+| 3 | Boss practice: the **Zodiarch**, tier I, from phase 1 | Attempts; first time they noticed a creature's key star and the pearl window; the attack they name as the unfair one, if any |
 
 After each fight ask three questions and write the answers word for word: *What killed you?
 Was there anything you could not see coming? Was it too long?* Stop a step after 10 minutes.

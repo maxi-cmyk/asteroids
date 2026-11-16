@@ -58,7 +58,7 @@ export class PlayersLayer {
             px.ray(...at, 560, COLOUR.ink, 2, style.owner === 1 ? 7 : 1);
         }
     }
-    ship({ px, ctx, hulls, observer, players }, scene, style) {
+    ship({ px, ctx, hulls, observer, players, aimMarker = true }, scene, style) {
         const x = Math.round(scene[S.SHIP_X]),
             y = Math.round(scene[S.SHIP_Y]);
         const colour = style.colour || COLOUR.cyan;
@@ -97,22 +97,29 @@ export class PlayersLayer {
         // Ability state lives in the HUD strip; only a brief flash marks the laser coming back.
         if (!players && observer.readyUntil > scene[S.VISUAL_MS])
             px.text('LASER READY', WIDTH / 2, 28, colour, 1, 'center');
-        // The reticle sits well clear of the hull, joined to it by a dotted line, so the aim
-        // direction reads at a glance. It keeps the pilot's colour and brightens in precision.
-        const REACH = 66,
-            targetX = Math.max(8, Math.min(WIDTH - 8, Math.round(x + dx * REACH))),
-            targetY = Math.max(8, Math.min(HEIGHT - 8, Math.round(y + dy * REACH)));
-        const tone = scene[S.PRECISION] ? COLOUR.ink : colour;
+        if (aimMarker && visible)
+            this.chevron(ctx, x, y, dx, dy, scene[S.PRECISION] ? COLOUR.ink : colour);
+    }
+    // A small chevron just ahead of the nose, pointing along the aim. It rides with the ship
+    // (never pinned to the screen edge), keeps the pilot's colour and brightens in precision.
+    chevron(ctx, x, y, dx, dy, tone) {
+        if (!dx && !dy) dx = 1;
+        const TIP = 24,
+            ARM = 5,
+            SPREAD = 0.7; // radians either side of straight back
+        const tipX = x + dx * TIP,
+            tipY = y + dy * TIP;
         ctx.fillStyle = tone;
-        ctx.globalAlpha = 0.8;
-        for (let along = 24; along < REACH - 8; along += 6)
-            ctx.fillRect(Math.round(x + dx * along), Math.round(y + dy * along), 1, 1);
+        ctx.globalAlpha = 0.9;
+        for (const side of [-1, 1]) {
+            const c = Math.cos(Math.PI + side * SPREAD),
+                s = Math.sin(Math.PI + side * SPREAD);
+            const ax = dx * c - dy * s,
+                ay = dx * s + dy * c;
+            for (let t = 0; t <= ARM; t++)
+                ctx.fillRect(Math.round(tipX + ax * t), Math.round(tipY + ay * t), 1, 1);
+        }
         ctx.globalAlpha = 1;
-        ctx.fillRect(targetX - 7, targetY, 4, 1);
-        ctx.fillRect(targetX + 4, targetY, 4, 1);
-        ctx.fillRect(targetX, targetY - 7, 1, 4);
-        ctx.fillRect(targetX, targetY + 4, 1, 4);
-        ctx.fillRect(targetX, targetY, 1, 1);
     }
     markers({ px, ctx }, players) {
         const [a, b] = players;

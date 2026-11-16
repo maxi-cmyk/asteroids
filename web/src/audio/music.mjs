@@ -68,6 +68,27 @@ export class MusicPlayer {
         this.standby = this.#voice(id);
     }
 
+    // A browser may refuse play() outside a user gesture (Safari does, per element). The voice
+    // is then marked blocked and retried on the next gesture (`retry()`), not silently lost.
+    #play(voice) {
+        voice.blocked = false;
+        const started = voice.element.play();
+        started?.catch?.(() => {
+            if (this.voices.includes(voice) && !this.paused) voice.blocked = true;
+        });
+    }
+
+    // True while a voice that should be sounding was refused by the browser.
+    get blocked() {
+        return this.voices.some((voice) => voice.blocked);
+    }
+
+    // Called from a user gesture: plays every voice the browser refused earlier.
+    retry() {
+        if (this.paused) return;
+        for (const voice of this.voices) if (voice.blocked) this.#play(voice);
+    }
+
     #discard(voice) {
         if (!voice) return;
         voice.element.pause();
@@ -89,7 +110,7 @@ export class MusicPlayer {
         }
         voice.target = 1;
         voice.rate = 1 / seconds;
-        voice.element.play()?.catch?.(() => {});
+        this.#play(voice);
         this.voices.push(voice);
         return true;
     }
@@ -150,7 +171,7 @@ export class MusicPlayer {
         this.last = null;
         clearTimeout(this.timer);
         this.timer = null;
-        for (const voice of this.voices) voice.element.play()?.catch?.(() => {});
+        for (const voice of this.voices) this.#play(voice);
     }
 
     #clear() {

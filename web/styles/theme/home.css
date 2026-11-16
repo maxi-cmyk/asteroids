@@ -114,3 +114,26 @@ body[data-screen='home'] .shell-header button {
 .home-menu:has(button:focus) button.primary:not(:focus) {
     color: #aa8cd2;
 }
+/* Shown while music is on but the browser has not let audio start (no click or key yet). */
+#soundHint {
+    position: absolute;
+    z-index: 1;
+    bottom: 16px;
+    right: 20px;
+    font-size: 12px;
+    color: #ffbe6e;
+    animation: sound-hint-pulse 1.6s ease-in-out infinite;
+}
+#soundHint[hidden] {
+    display: none;
+}
+@keyframes sound-hint-pulse {
+    50% {
+        opacity: 0.55;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    #soundHint {
+        animation: none;
+    }
+}

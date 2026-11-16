@@ -41,6 +41,7 @@ static void scene_core(float *scene) {
     scene[SCENE_COLLECT_CUE_MS] = collection_cue_left;
     scene[SCENE_COLLECT_X] = collection_x;
     scene[SCENE_COLLECT_Y] = collection_y;
+    scene[SCENE_COLLECT_KIND] = collection_kind;
     scene[SCENE_FINAL_SCORE] = final_score;
     scene[SCENE_SELECTED_INITIAL] = selected_initial;
     scene[SCENE_SAVED_RANK] = saved_rank;
@@ -185,6 +186,12 @@ static void scene_boss(float *scene) {
         at[5] = sh.hp;
         at[6] = game_ms - sh.born;
         at[7] = sh.family == SF_LOB ? sh.life : sh.amp;
+    }
+    for (unsigned i = 0; i < boss.seg_n && i < SCENE_BOSS_BODY_COUNT; i++) {
+        float *at = scene + SCENE_BOSS_BODY_AT + i * SCENE_BOSS_BODY_STRIDE;
+        at[0] = boss.seg[i][0];
+        at[1] = boss.seg[i][1];
+        at[2] = boss.seg[i][2];
     }
     for (unsigned i = 0; i < BOSS_HAZARDS; i++) {
         const BossHazard& h = boss.hz[i];

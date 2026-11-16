@@ -705,3 +705,19 @@ body[data-screen='pause'] .shell-footer {
 .coop-lobby .crew-slot label {
     margin-bottom: 12px;
 }
+/* Co-op hull step: shown in each crew slot once both pilots are ready. */
+.crew-slot .hull-pick {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 6px 10px;
+    align-items: center;
+}
+.crew-slot .hull-pick[hidden] {
+    display: none;
+}
+.crew-slot .hull-pick canvas {
+    grid-row: span 2;
+    width: 48px;
+    height: 32px;
+    image-rendering: pixelated;
+}

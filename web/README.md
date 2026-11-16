@@ -459,7 +459,7 @@ changing the profile. Shared self-hosted pixel fonts, focus/disabled/destructive
 states, and static reading-screen backdrops are packaged in the production build.
 
 Every fifth wave closes its region with one of six bosses (Sentinel, Ringwarden,
-Cinderforge, Bastion, Tidecaller, Horizon Warden) and every region has a mini-boss
+Cinderforge, Bastion, Tidecaller, Zodiarch) and every region has a mini-boss
 on its third wave, each with an entrance card, health bar, telegraphed attacks and
 a defeat sequence. Boss practice is in the Pause menu of a practice run. See `COMBAT.md` for damage, scaling,
 points, shields, and local co-op policy. LAN/server multiplayer remains planned.

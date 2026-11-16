@@ -5,6 +5,7 @@
 #include "sound.h"
 #include "difficulty.h"
 #include "rock_random.h"
+#include "ship.h"
 
 static const uint16_t WAVE_NUMBER_MAX = 65535;
 static const unsigned long SPAWN_RETRY_MS = 100;
@@ -335,16 +336,14 @@ void asteroids_draw(Adafruit_SSD1306& display) {
     }
 }
 
-bool asteroid_hits_ship(float position_x, float position_y) {
+bool asteroid_hits_ship(const Ship& ship) {
     for (int i = 0; i < ASTEROID_MAX; i++) {
         const Asteroid& asteroid = rocks[i];
-        float distance_x = asteroid.position_x - position_x;
-        float distance_y = asteroid.position_y - position_y;
-        float collision_radius = asteroid.radius + SHIP_RADIUS;
-
         if (asteroid.active
-            && distance_x * distance_x + distance_y * distance_y
-                       < collision_radius * collision_radius) {
+            && ship_touches(ship,
+                            asteroid.position_x,
+                            asteroid.position_y,
+                            asteroid.radius * ROCK_CONTACT_SCALE)) {
             return true;
         }
     }

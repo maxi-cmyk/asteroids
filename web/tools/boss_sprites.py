@@ -239,36 +239,69 @@ def _hull_layers(c, hull_pts, top_edge, base_y):
     return hullmask
 
 
+# Capital-ship grey for the Bastion fleet (nextSteps.md P1.4/P1.5): an original wedge design.
+SHIP = pal('#12131c', '#2a2e3c', '#4c5262', '#868c9c', '#cdd2dc')
+WINDOW = (250, 226, 160)
+
+
+def _greebles(c, rng, x0, x1, top, bottom, n, palette=None):
+    """Small raised plates and pits scattered over a hull band."""
+    palette = palette or SHIP
+    for _ in range(n):
+        x = rng.uniform(x0, x1)
+        y = rng.uniform(top(x), bottom(x))
+        shade = min(len(palette) - 1, rng.choice((1, 2, 4)))
+        c.px_block(x, y, palette[shade], rng.choice((1, 1, 2)), 1)
+
+
 def bastion_layers(size=(340, 196)):
+    """The Bastion as a wedge capital ship pointing at the pilot: a long dagger hull, a lit
+    trench along both edges, a stepped superstructure toward the stern topped by a command
+    bridge (the weak point glows at its base, x+114), and three engines. Turrets, batteries and
+    the hangar are separate layers at the same places as before."""
     w, h = size
     layers = {}
+    rng = random.Random(91)
     c = Canvas(w, h, seed=91)
-    hull_pts = [(4, 98), (258, 14), (298, 22), (326, 46), (326, 150), (298, 174), (258, 182)]
-    c.facet(hull_pts, GUN, 2, 0)
+    hull_pts = [(2, 98), (250, 14), (310, 20), (330, 34), (330, 162), (310, 176), (250, 182)]
+    top = lambda x: 98 - 84 * min(1, x / 250)
+    bottom = lambda x: 98 + 84 * min(1, x / 250)
+    c.facet(hull_pts, SHIP, 2, 0)
     c.clip = c.mask(hull_pts)
-    c.facet([(0, 0), (w, 0), (w, 98), (0, 98)], GUN, 3, .08)                       # upper plane catches the light
-    c.facet([(0, 98), (w, 98), (w, h), (0, h)], GUN, 1, .08)                       # lower plane in shade
-    for k, x0 in enumerate(range(40, 300, 38)):                                    # stepped armour bands
-        c.facet([(x0, 0), (x0 + 34, 0), (x0 + 34, 98), (x0, 98)], GUN, 3 + (k % 2), .12)
-        c.facet([(x0, 98), (x0 + 34, 98), (x0 + 34, h), (x0, h)], GUN, 1 + (k % 2) * 1, .12)
-        c.line([(x0 + 34, 0), (x0 + 34, h)], (10, 12, 28))
-    c.facet([(20, 98), (260, 86), (260, 110)], GUN, 0, .05)                        # the lit trench
-    blocks(c, [(x, 96) for x in range(40, 260, 16)], (255, 110, 40), 1, 1)
-    for pts in ([(230, 22), (252, 52), (240, 74)], [(150, 44), (170, 66)], [(90, 142), (112, 128), (124, 146)]):
-        c.line(pts, (255, 150, 40))
-    blocks(c, [(x, (98 - 84 * (x - 4) / 254) + 5) for x in range(60, 250, 20)] + [(x, (98 + 84 * (x - 4) / 254) - 8) for x in range(60, 250, 20)], CREAM)
+    c.facet([(0, 0), (w, 0), (w, 98), (0, 98)], SHIP, 3, .06)         # upper plane in the light
+    c.facet([(0, 98), (w, 98), (w, h), (0, h)], SHIP, 1, .06)         # lower plane in shade
+    for k in range(1, 6):                                            # plating seams, parallel to the edges
+        f = k / 6
+        c.line([(20 + 30 * f, 98), (250, 98 - 84 * f)], SHIP[2 if k % 2 else 1])
+        c.line([(20 + 30 * f, 98), (250, 98 + 84 * f)], SHIP[0])
+    _greebles(c, rng, 40, 320, lambda x: top(x) + 6, lambda x: 94, 120)
+    _greebles(c, rng, 40, 320, lambda x: 102, lambda x: bottom(x) - 6, 90, SHIP[:4])
+    for edge, sign in ((top, 1), (bottom, -1)):                      # the lit trench along each edge
+        c.line([(24, 98 - sign * 4), (250, edge(250) + sign * 8)], (16, 16, 26), 2)
+        for x in range(46, 250, 12):
+            c.px_block(x, edge(x) + sign * 8, WINDOW if (x // 12) % 3 else (255, 150, 60))
+    c.facet([(18, 98), (250, 94), (250, 102)], SHIP, 4, .1)          # the keel ridge catching light
     c.clip = None
-    # bridge tower
-    c.facet([(246, 52), (316, 52), (316, 146), (246, 146)], GUN, 2, .08)
-    c.facet([(246, 52), (316, 52), (306, 44), (256, 44)], GUN, 4, .08)
-    c.facet([(262, 66), (306, 66), (306, 132), (262, 132)], GUN, 0, .05)
-    for dx in (270, 298):
-        fan_facets(c, dx, 62, 11, 11, 8, GUN, bias=.6, speckle=.06)
-        c.facet([(dx - 1, 52), (dx + 1, 52), (dx + 1, 72), (dx - 1, 72)], [(210, 70, 40)], 0, 0)
-    fan_facets(c, 284, 100, 17, 17, 10, FIRE, bias=.2, speckle=.05)
-    c.facet([(282, 88), (286, 88), (286, 112), (282, 112)], [INK], 0, 0)
-    for ey in (52, 98, 144):
-        c.facet([(318, ey - 14), (334, ey - 14), (334, ey + 14), (318, ey + 14)], GUN, 0, .06)
+    # The stepped superstructure: three tiers rising toward the stern, then the command bridge.
+    for k, (x0, inset) in enumerate(((140, 0), (180, 6), (218, 12))):
+        tier = [(x0, 76 + inset), (300, 60 + inset), (300, 136 - inset), (x0, 120 - inset)]
+        c.facet(tier, SHIP, 2 + (k % 2), .06)
+        c.facet([(x0, 76 + inset), (300, 60 + inset), (300, 66 + inset), (x0, 80 + inset)], SHIP, 4, 0)  # lit lip
+        c.line(tier + [tier[0]], (14, 14, 24))
+        for x in range(x0 + 8, 296, 10):
+            c.px_block(x, 98 + (6 - inset) * .5, WINDOW if (x + k) % 3 else (90, 96, 120))
+    c.facet([(272, 66), (292, 66), (292, 100), (272, 100)], SHIP, 2, .05)   # tower neck
+    c.facet([(252, 50), (318, 50), (312, 68), (258, 68)], SHIP, 3, .05)     # bridge, wide and low
+    c.facet([(252, 50), (318, 50), (314, 46), (256, 46)], SHIP, 4, 0)
+    for x in range(260, 312, 6):
+        c.px_block(x, 58, WINDOW)
+    c.facet([(276, 30), (280, 30), (280, 46), (276, 46)], SHIP, 3, 0)      # sensor masts
+    c.facet([(288, 34), (292, 34), (292, 46), (288, 46)], SHIP, 2, 0)
+    # The weak point: the reactor port at the tower's base (x+114, y+2 from the centre).
+    c.facet([(268, 92), (300, 92), (300, 108), (268, 108)], SHIP, 0, 0)
+    fan_facets(c, 284, 100, 12, 6, 8, FIRE, bias=.4, speckle=.05)
+    for ey in (52, 98, 144):                                          # engines
+        c.facet([(318, ey - 14), (334, ey - 14), (334, ey + 14), (318, ey + 14)], SHIP, 1, .06)
         c.facet([(330, ey - 11), (340, ey - 11), (340, ey + 11), (330, ey + 11)], FIRE, 3, .1)
     layers['hull'] = c.finish()
     c = Canvas(w, h, seed=92)
@@ -278,21 +311,21 @@ def bastion_layers(size=(340, 196)):
     layers['flare'] = c.finish(rim=False)
     c = Canvas(w, h, seed=93)
     for tx, ty in ((130, 54), (178, 40), (226, 27)):
-        c.facet([(tx - 30, ty - 4), (tx, ty - 4), (tx, ty + 4), (tx - 30, ty + 4)], GUN, 3, .05)
-        fan_facets(c, tx, ty, 11, 11, 8, GUN, bias=.8, speckle=.06)
+        c.facet([(tx - 30, ty - 4), (tx, ty - 4), (tx, ty + 4), (tx - 30, ty + 4)], SHIP, 3, .05)
+        fan_facets(c, tx, ty, 11, 11, 8, SHIP, bias=.8, speckle=.06)
         c.px_block(tx - 2, ty - 2, (255, 160, 40), 1, 1)
     layers['cannon'] = c.finish()
     for name, opened in (('pods', 0), ('pods_open', 1)):
         c = Canvas(w, h, seed=94)
         for px_, py_ in ((116, 150), (168, 160)):
-            c.facet([(px_ - 18, py_ - 12), (px_ + 18, py_ - 12), (px_ + 18, py_ + 12), (px_ - 18, py_ + 12)], GUN, 2, .08)
-            c.facet([(px_ - 18, py_ - 12), (px_ + 18, py_ - 12), (px_ + 14, py_ - 8), (px_ - 14, py_ - 8)], GUN, 4, 0)
+            c.facet([(px_ - 18, py_ - 12), (px_ + 18, py_ - 12), (px_ + 18, py_ + 12), (px_ - 18, py_ + 12)], SHIP, 2, .08)
+            c.facet([(px_ - 18, py_ - 12), (px_ + 18, py_ - 12), (px_ + 14, py_ - 8), (px_ - 14, py_ - 8)], SHIP, 4, 0)
             for i in range(3):
                 c.px_block(px_ - 12 + i * 10, py_ - 1, (230, 40, 30) if opened else (10, 8, 20), 2, 2)
         layers[name] = c.finish()
     for name, opened in (('mine', 0), ('mine_open', 1)):
         c = Canvas(w, h, seed=95)
-        c.facet([(196, 140), (244, 140), (244, 168), (196, 168)], GUN, 0, .06)
+        c.facet([(196, 140), (244, 140), (244, 168), (196, 168)], SHIP, 0, .06)
         c.facet([(204, 148), (236, 148), (236, 160), (204, 160)], FIRE, 4 if opened else 1, .08)
         layers[name] = c.finish()
 
@@ -311,26 +344,37 @@ def bastion_layers(size=(340, 196)):
 
 
 def gunnery_hull(charge=0.0, size=(200, 108)):
+    """The Gunnery as a light cruiser of the Bastion's fleet: a slim wedge with a raised dorsal
+    spine, a boxy bridge block at the stern (its viewport is the weak point, x+68, and glows as it
+    charges), two round engine nacelles out on the flanks and two side turrets."""
     w, h = size
+    rng = random.Random(101)
     c = Canvas(w, h, seed=101)
-    hull = [(4, 54), (150, 12), (182, 20), (196, 36), (196, 72), (182, 88), (150, 96)]
-    c.facet(hull, GUN, 2, 0)
+    hull = [(4, 54), (138, 18), (172, 22), (184, 32), (184, 76), (172, 86), (138, 90)]
+    c.facet(hull, SHIP, 2, 0)
     c.clip = c.mask(hull)
-    c.facet([(0, 0), (w, 0), (w, 54), (0, 54)], GUN, 3, .1)
-    c.facet([(0, 54), (w, 54), (w, h), (0, h)], GUN, 1, .1)
-    c.facet([(16, 54), (150, 48), (150, 60)], GUN, 0, .04)
-    blocks(c, [(x, 52) for x in range(30, 150, 16)], (255, 110, 40))
+    c.facet([(0, 0), (w, 0), (w, 54), (0, 54)], SHIP, 3, .06)
+    c.facet([(0, 54), (w, 54), (w, h), (0, h)], SHIP, 1, .06)
+    _greebles(c, rng, 30, 180, lambda x: 54 - 36 * min(1, x / 138) + 5, lambda x: 50, 40)
+    _greebles(c, rng, 30, 180, lambda x: 58, lambda x: 54 + 36 * min(1, x / 138) - 5, 30, SHIP[:4])
+    for sign in (1, -1):                                               # edge trench with windows
+        for x in range(30, 136, 10):
+            c.px_block(x, 54 - sign * (36 * x / 138 - 6), WINDOW if (x // 10) % 3 else (255, 150, 60))
     c.clip = None
-    c.facet([(142, 30), (190, 30), (190, 78), (142, 78)], GUN, 2, .08)
-    c.facet([(142, 30), (190, 30), (184, 24), (148, 24)], GUN, 4, 0)
-    fan_facets(c, 168, 54, 15, 15, 10, FIRE, bias=.2 + .8 * charge, speckle=.05)
-    c.facet([(166, 44), (170, 44), (170, 64), (166, 64)], [INK], 0, 0)
-    for off in (-12, 12):
-        y = 54 + off * .8
-        c.facet([(34, y - 4), (74, y - 4), (74, y + 4), (34, y + 4)], GUN, 3, .05)
-        fan_facets(c, 74, y, 9, 9, 8, GUN, bias=.8, speckle=.05)
-    c.facet([(192, 40), (202, 40), (202, 68), (192, 68)], GUN, 0, .05)
-    c.facet([(198, 44), (206, 44), (206, 64), (198, 64)], FIRE, 3, .1)
+    c.facet([(20, 54), (170, 48), (170, 60)], SHIP, 4, .05)            # dorsal spine
+    c.line([(20, 54), (170, 60)], (14, 14, 24))
+    for y in (24, 84):                                                # engine nacelles on the flanks
+        c.facet(c.disc(178, y, 15, 13), SHIP, 2, .05)
+        c.facet(c.disc(176, y - 3, 11, 8), SHIP, 3, .04)
+        c.facet(c.disc(188, y, 6, 9), FIRE, 3, .1)
+        c.facet([(150, y - 4), (168, y - 4), (168, y + 4), (150, y + 4)], SHIP, 1, 0)   # pylon
+    c.facet([(144, 36), (178, 36), (178, 72), (144, 72)], SHIP, 2, .06)  # bridge block
+    c.facet([(144, 36), (178, 36), (174, 30), (148, 30)], SHIP, 4, 0)
+    c.facet([(156, 46), (180, 46), (180, 62), (156, 62)], SHIP, 0, 0)    # viewport: the weak point
+    fan_facets(c, 168, 54, 10, 6, 8, FIRE, bias=.2 + .8 * charge, speckle=.05)
+    for y in (40, 68):                                                # side turrets, barrels forward
+        c.facet([(70, y - 2), (96, y - 2), (96, y + 2), (70, y + 2)], SHIP, 3, .05)
+        fan_facets(c, 98, y, 8, 8, 8, SHIP, bias=.8, speckle=.05)
     return c.finish()
 
 

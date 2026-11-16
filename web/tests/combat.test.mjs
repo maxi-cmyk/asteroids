@@ -318,3 +318,20 @@ test('shoulder chords work in either order; keyboard equivalents and clear do no
     assert.equal(input.aimY, -1);
     assert.equal(readController(p).laser, false);
 });
+
+test('the laser hits a rock that is only half on screen at the right edge', async () => {
+    const { BLOCKS } = await import('../src/runtime/scene-layout.mjs');
+    const rocks = (g) => {
+        const s = g.scene();
+        let n = 0;
+        for (let i = 0; i < BLOCKS.ROCKS.count; i++)
+            n += s[BLOCKS.ROCKS.at + i * BLOCKS.ROCKS.stride] ? 1 : 0;
+        return n;
+    };
+    const g = await game(21);
+    assert.equal(rocks(g), 1);
+    charge(g, { aimX: 1 });
+    g.step({ aimX: 1 });
+    ticks(g, 5, { aimX: 1 });
+    assert.equal(rocks(g), 0);
+});

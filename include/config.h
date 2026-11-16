@@ -16,6 +16,13 @@
 
 // Ship movement and protection
 #define SHIP_RADIUS 3
+// The ship's contact shape: circles along its facing, as {offset, radius} pairs. The OLED ship
+// is a single circle; the browser build uses three that follow the hull sprite.
+#define SHIP_HULL_CIRCLES {{0.0f, float(SHIP_RADIUS)}}
+#define SHIP_HULL_COUNT 1
+// Rocks hurt the ship within this share of their radius (their outline is lumpy and sits
+// inside the circle); player shots still use the full radius.
+#define ROCK_CONTACT_SCALE 1.0f
 #define SHIP_X 12
 #define SHIP_MAX_SPEED 1.3f
 #define SHIP_INVINCIBLE_MS 2000

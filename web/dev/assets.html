@@ -62,6 +62,11 @@
       pickups, and brief impact effects.</p>
     <canvas id="comparison" width="480" height="270"
       aria-label="Pixel-art comparison: ship 24 by 16 pixels; asteroids 32, 20, and 12 pixels; multishot and shield 12 pixels; eight explosion frames."></canvas>
+    <h2>Pickups and their collect animations</h2>
+    <p class="sheet-note">The four pickup icons, then each collect animation at four moments of its 600 ms cue
+      (<code>src/render/layers/collect.mjs</code>): shield and heart radiate outward, multishot fans three rays, 2× fire
+      shoots twin streaks with a double flash.</p>
+    <canvas id="collectReview" width="480" height="300" aria-label="Pickup icons and collect animation frames"></canvas>
     <h2>Presentation review</h2>
     <p>Static synthetic scenes for checking transition midpoints. These are visual fixtures, not recorded gameplay. Boss
       attacks, with sound, live in <a href="./boss-attacks.html">Boss attacks</a>.</p>
@@ -85,7 +90,7 @@
     <p class="sheet-note"><img class="sprite-sheet" src="./assets/home-scene.png" alt="Home backdrop"
         style="max-width:100%">
       <img src="./assets/ui/bolt.png" alt="bolt"> <img src="./assets/ui/shield.png" alt="shield"> <img
-        src="./assets/ui/x2.png" alt="double fire"> <img src="./assets/ui/chevron.png" alt="chevron"> <img
+        src="./assets/ui/doublefire.png" alt="double fire"> <img src="./assets/ui/chevron.png" alt="chevron"> <img
         src="./assets/ui/ship-life.png" alt="ship life">
     </p>
     <h2>Sprite atlas</h2>

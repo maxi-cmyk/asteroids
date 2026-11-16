@@ -8,10 +8,10 @@
 //   Cinderforge   hatches pop with fire jets, the shell splits on a column of fire, embers rain
 //   Bastion       chain explosions walk nose to stern, the hull breaks in two
 //   Tidecaller    the bell deflates and dissolves into bubbles
-//   Warden        everything is pulled into a point, a silence, then rings of light
+//   Zodiarch      bursts into stars segment by segment from the tail, then the pearl goes nova
 //   Picket        splits top and bottom      Shardling   blades spin off, core pops
 //   Cinderling    cracks and vents fire      Gunnery     bursts along the hull, snaps in two
-//   Moonjelly     dissolves in bubbles       Lens Imp    flickers out, collapses to a point
+//   Moonjelly     dissolves in bubbles       Ninefold    sheds its tails, then dissolves
 import { KINDS, bossState } from './scene.mjs';
 import { SCRIPTS as frontier } from './death/frontier.mjs';
 import { SCRIPTS as violet } from './death/violet.mjs';
@@ -20,7 +20,7 @@ import { SCRIPTS as ruins } from './death/ruins.mjs';
 import { SCRIPTS as lunar } from './death/lunar.mjs';
 import { SCRIPTS as rift } from './death/rift.mjs';
 
-export const DEATH_MS = [2400, 2400, 2800, 3000, 2600, 3000, 1500, 1500, 1700, 1700, 1500, 1600];
+export const DEATH_MS = [2400, 2400, 2800, 3000, 2600, 3000, 1500, 1500, 1700, 1700, 1500, 2200];
 export const deathMs = (kind) => DEATH_MS[kind] ?? 2000;
 
 // One script per kind, indexed by BossKind (bosses 0-5, their minis 6-11).

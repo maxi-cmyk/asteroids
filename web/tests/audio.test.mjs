@@ -42,7 +42,7 @@ test('game-over tone completes on Results within 700ms without advancing the run
 });
 
 // A stand-in for Web Audio and <audio>: tracks are plain objects whose clock the test moves.
-function playerFixture(tracks) {
+function playerFixture(tracks, { allowed = () => true } = {}) {
     const gains = [];
     const context = {
         currentTime: 0,
@@ -70,6 +70,7 @@ function playerFixture(tracks) {
             ended: false,
             playing: false,
             play() {
+                if (!allowed()) return Promise.reject(new Error('NotAllowedError'));
                 this.playing = true;
                 return Promise.resolve();
             },
@@ -292,4 +293,22 @@ test('the menus play the chosen theme on Home, Mode, Hangar, Lobby and screens o
     // Pause keeps what was playing, and a run's end screens stay silent.
     assert.equal(on('pause').key, 'ruins');
     assert.equal(on('play', { runtimeState: 'results', scene: demo }), null);
+});
+
+test('a play() the browser refuses is marked blocked and retried on the next gesture', async () => {
+    let gesture = false;
+    const { tick, elements, player } = playerFixture(TRACKS_FIXTURE, { allowed: () => gesture });
+    tick(0.016, single('a'));
+    await Promise.resolve();
+    assert.equal(elements[0].playing, false);
+    assert.equal(player.blocked, true);
+    // Later frames do not fix it on their own...
+    tick(0.016, single('a'));
+    assert.equal(player.blocked, true);
+    // ...a gesture does.
+    gesture = true;
+    player.retry();
+    await Promise.resolve();
+    assert.equal(elements[0].playing, true);
+    assert.equal(player.blocked, false);
 });

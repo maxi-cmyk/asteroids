@@ -91,15 +91,15 @@ static bool bs_entrance() {
     return true;
 }
 static void bs_contact() {
-    float body[24];
+    float body[3 * 32];
     unsigned n = bs_kind_body(body);
     for (unsigned p = 0; p < boss_hull_n; p++) {
         if (!bs_alive(p)) continue;
         for (unsigned i = 0; i < n; i++) {
-            float reach = body[i * 3 + 2] + SHIP_RADIUS;
-            float dx = boss_hulls[p]->position_x - body[i * 3];
-            float dy = boss_hulls[p]->position_y - body[i * 3 + 1];
-            if (dx * dx + dy * dy < reach * reach) { bs_hit_pilot(p); break; }
+            if (ship_touches(*boss_hulls[p], body[i * 3], body[i * 3 + 1], body[i * 3 + 2])) {
+                bs_hit_pilot(p);
+                break;
+            }
         }
     }
 }
@@ -111,6 +111,7 @@ static void boss_tick() {
         bs_kind_update();
         if (entering) return;
     } else {
+        bs_motion();
         bs_kind_update();
         bs_scheduler();
         bs_pickups();

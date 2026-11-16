@@ -41,8 +41,20 @@ export class GameAudio {
             this.charge.connect(this.chargeGain).connect(this.master);
             this.charge.start();
         }
-        this.context.resume().catch(() => {});
+        this.context
+            .resume()
+            .then(() => this.onStateChange?.())
+            .catch(() => {});
         this.apply();
+        // Start (or retry) the soundtrack inside this gesture, not a frame later: a browser
+        // that only lets media start from a gesture would otherwise refuse it.
+        this.#tickMusic();
+        this.music.retry();
+        this.onStateChange?.();
+    }
+    // Audio exists and the browser lets it play. False until the first click, key or button.
+    get running() {
+        return this.context?.state === 'running' && !this.music?.blocked;
     }
     // The soundtrack manifest and the warp-jump sound, fetched once the first gesture unlocks audio.
     async #loadAssets() {

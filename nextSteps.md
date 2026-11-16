@@ -27,7 +27,7 @@ notes) is kept untouched in `docs/nextSteps-2026-10-26.archive.md`. Boss rules n
 | ESP32 firmware | The original handheld. Frozen while the web game is finished, then S8 ships a **barebones single-player** version. Until then, every shared C++ change must still compile for ESP32 and pass the host tests |
 | Finished work | Summarised below, not re-specified |
 
-**Contents:** Shipped · Tools · Roadmap at a glance · S0 Boss close-out · S1 Hardware
+**Contents:** Shipped · Tools · Roadmap at a glance · P0 Playtest fixes · P1 Boss redesigns · S0 Boss close-out · S1 Hardware
 acceptance · S2 Combo bonuses · The three ways to play together · S3 Net foundation · S4 LAN · S5 Hosted · S6 Versus ·
 S7 Modifiers · S8 ESP32 handheld · Standing rules · Open decisions
 
@@ -95,6 +95,8 @@ are gone, so both show up as new files to commit).
 
 | Stage | Goal | Depends on | Size |
 | --- | --- | --- | --- |
+| P0 | ~~Playtest fixes (2026-11-13): music start, hitboxes, boss movement, pickup feedback, aim indicator, co-op hull pick~~ **Done 2026-11-13** (optional boss backstop not built) | none (do first) | M |
+| P1 | ~~Boss redesigns: star-fill art pipeline, Zodiarch dragon with zodiac creatures, nine-tailed fox, Bastion capital ship, Gunnery light cruiser~~ **Done** 2026-11-13 (ascendant flavour not built) | P0.3 | XL |
 | S0 | Boss close-out: playtest tuning, performance, audio sign-off, housekeeping | none | M |
 | S1 | Hardware acceptance of the existing build | none (parallel to S0) | M |
 | S2 | Maximum-combo bonuses (task 7) | co-op, scoring | M |
@@ -110,6 +112,314 @@ the handheld sooner; it only needs the single-player rules to be final.
 
 S7's engine work needs no network. If you want it earlier, S7.1–S7.4 can slot in after S2
 and only S7.5 waits for S4.
+
+---
+
+## P0. Playtest fixes (2026-11-13)
+
+Found in playtesting. Order: P0.1 → P0.2 → P0.3, then P0.4–P0.7 in any order (they are
+independent and touch separate files). Engine changes still compile for the OLED target and
+pass `tests/run_host.sh`.
+
+### P0.1 Music does not start on load ("Music on", silence)
+
+Reproduced: with Music saved as on, a reload shows **Music on**, but no `AudioContext` exists
+and no track has been asked to play. The first click or key starts `home.mp3` at once.
+Browsers block sound until a user gesture; `GameAudio.unlock()` only runs on `pointerdown`,
+`keydown` and the Sound/Music buttons, so the label promises music that cannot play yet.
+Gamepad-only players never unlock it. On Safari a refused `play()` is swallowed in
+`music.mjs` (`.catch(() => {})`) and that voice is never retried.
+
+- [x] While music is on but audio is not unlocked (`!audio.context` or `context.state !==
+  'running'`): button reads **Music on · click to start**, and a small "Click or press any
+  key for sound" hint shows on Home. Both clear on unlock.
+- [x] Start the music inside the unlocking gesture: `unlock()` calls `#tickMusic()` straight
+  away instead of waiting for the next frame.
+- [x] `MusicPlayer`: a voice whose `play()` rejects is marked `blocked` and retried on the
+  next gesture (expose `retryBlocked()`, called from `unlock()`).
+- [x] A gamepad button press calls `unlockAudio()` (input-hub); if the browser still refuses,
+  the hint stays up.
+- [x] Tests (`audio.test.mjs`): rejected `play()` is retried; label states; unlock starts the
+  menu request in the same call.
+
+### P0.2 Hitboxes do not match the sprites at the edges
+
+Measured from the atlases (silhouette radius by angle vs collision radius):
+
+| Thing | Collision | Drawn |
+| --- | --- | --- |
+| Ship (`hull-dart`) | circle r 7 | nose/tail 11.5–12.5, flanks 6.0 |
+| Large rock | r 16 | 13.2–15.7 |
+| Medium rock | r 10 | 7.9–9.6 |
+| Small rock | r 6 | 4.3–5.7 |
+
+So a rock passing the flank kills about 3 px before it touches, and things clip through the
+nose and tail without a hit.
+
+- [x] Ship hurtbox: 2–3 circles along the aim axis (nose, core, tail) sized from the sprite,
+  behind one helper (`ship_contact(x, y, r)`) used by every `SHIP_RADIUS` contact check:
+  `src/asteroid.cpp:343`, `web/native/boss/shots.h:73`, `boss/lifecycle.h:99`,
+  `boss/hazards.h:108,119`, `coop.h`. Pickups keep a forgiving circle. Check every hull's
+  silhouette, not just the dart.
+- [x] Rocks: ship contact uses about 0.85 × radius (mean silhouette); player shots keep the
+  full radius, so the rule leans in the player's favour.
+- [x] Laser at the edge: `combat_beam_hits` (`combat.h:176`) and `bs_beam_hits`
+  (`boss/hits.h`) require the rock's **centre** on screen, so a rock half-entered from the
+  right cannot be lasered. Change to "any part on screen" (`x + r >= 0 && x - r < SCREEN_W`).
+- [x] Measure each boss's body contact circles against its art the same way; fix outliers.
+- [x] Host tests: flank near-miss is not a hit; nose overlap is a hit; half-visible rock is
+  lasered. Update the separation in `web/native/exports/test.h:177`.
+
+### P0.3 Bosses must move (no hiding behind or beside them)
+
+Bosses rest at x ≈ 324–380 on a 480 px field; the ship reaches x = 464. Sentinel,
+Cinderforge, Bastion and Warden never move; Ringwarden only bobs, Tidecaller loops ±22 px.
+Nothing reacts to a pilot behind or beside the body.
+
+- [x] Motion profile per `BossOps` row (vertical/horizontal range, top speed, style: track,
+  sweep, reposition). The framework (`boss/lifecycle.h`) steers the rest point toward the
+  targeted pilot's lane within that range.
+- [x] Move only between attacks (`boss.atk == 0`) so telegraphed lanes and beams stay where
+  they were shown.
+- [x] Audit the ~13 `home_x`/`home_y` uses in `boss/fights/*.h` so parts and attacks follow
+  the current position.
+- [x] Anti-camp: a pilot behind the body (`px > boss.x - margin`) or tucked above/below it for
+  about 1.2 s triggers a short-telegraph repel (ring or knockback), then the boss turns to
+  face them.
+- [ ] Optional backstop: during fights the ship's right bound becomes the boss's front edge,
+  drawn as a visible barrier. *Not built: movement plus the repel ring closes the exploit in
+  tests; revisit only if playtesting still finds a safe spot.*
+- [x] `boss.test.mjs` invariants (`min_corridor`, `spawn_in_body`, violations) stay green;
+  new test: a pilot parked behind the boss is hit or pushed out within N s. Update the demo
+  pilot (`src/demo/boss-pilot.mjs`), `guide.mjs` and `web/COMBAT.md`.
+
+### P0.4 Aim indicator
+
+The reticle (`src/render/layers/players.mjs:100`) sits 66 px out and is clamped to the screen,
+so near an edge it slides off the dotted line and points somewhere else; the 1 px cross and
+dots read as noise over busy backdrops.
+
+- [x] Replace with a small chevron/arc just ahead of the nose (about 20–24 px out, never
+  clamped), in the pilot's colour, brighter in precision mode. Keep the hull's own 16-way
+  aim sprite as the main read.
+- [x] Settings › Controls: "Aim indicator: chevron / off" (default chevron), saved per profile.
+
+### P0.5 Pickup collect animations, one per kind
+
+Today every collect draws the same growing cyan square (`world.mjs:79`,
+`COLLECT_CUE_MS` 400 ms), and the scene does not say which kind was taken.
+
+- [x] Engine: add `SCENE_COLLECT_KIND` (`native/scene.h`, `scene-layout.mjs`), set where
+  `collection_cue_left` is set.
+- [x] **Shield**: a curved, triangular shield front (like the shield silhouette) that
+  radiates outward from the ship in 2–3 expanding echoes, fading; cyan.
+- [x] **Health**: the heart shape radiating outward the same way, red, with a brief pulse on
+  the lives counter.
+- [x] **Multishot**: three amber rays fanning out along the spread angles from the nose.
+- [x] **Double fire**: two parallel cyan streaks shooting forward with a quick double flash.
+- [x] Each animation runs off the cue timer, respects reduced motion (static flash instead),
+  and is added to the `dev/assets.html` gallery.
+
+### P0.6 Double-fire icon
+
+Double fire has no sprite: the pickup is drawn as a box with "2X" text (`world.mjs`,
+`PICKUP_SPRITE[2] === null`).
+
+- [x] Draw a `doublefire` sprite (12×12, same style as `multishot`/`shield`/`health`: two
+  stacked forward bolts) into the sprites atlas; use it for the pickup, the HUD ability card
+  and the Help page.
+
+### P0.7 Co-op: hull selection after ready-up
+
+After both pilots ready up the lobby goes straight to Launch; each pilot silently flies the
+hull equipped on their chosen profile (`CoopSession.hulls()`), with no chance to pick.
+
+- [x] After both are ready, a split hull-pick step: each pilot browses unlocked hulls with
+  their own device (preview reusing the Hangar's stage art), confirms, then Launch. Default
+  focus is the profile's equipped hull, so two confirms keep the old behaviour.
+- [x] Locked hulls show as locked (unlocks are per profile). Both pilots may fly the same
+  hull; the accent colours already tell them apart.
+- [x] Choice saves to that profile's hangar entry. Back/cancel returns to the ready state.
+- [x] Update `docs/UI-NAVIGATION.md` and the co-op menu tests (`coop-menu.test.mjs`).
+
+---
+
+## P1. Boss redesigns (2026-11-13)
+
+References live in `web/assets/inspo/` (see its README). Every redesign keeps the house 8-bit
+style: same palette rules, pixel scale and outline treatment as the other region sheets,
+drawn through `tools/make-bosses.py` / `tools/boss_art.py`. Do P0.3 (boss movement) first:
+these designs assume moving bosses.
+
+### P1.0 Housekeeping
+
+- [x] `build.mjs` copies all of `assets/` into `dist/`; exclude `assets/inspo/` so reference
+  images never ship (everything there except `zodiac-ring-layout-concept.png` is third-party
+  or watermarked stock art).
+- [x] Inspired by, not copied: the Bastion and Gunnery must read as our own ships (no
+  twin-globe bridge, no film panel layouts). Same footing as open decision 8 (music rights).
+
+### P1.1 Star-fill art pipeline (shared by P1.2 and P1.3)
+
+*Draft for approval (2026-11-13):* `web/assets/bosses/draft-p1-starfill.png`, built by
+`web/tools/make-p1-drafts.py` on the new `web/tools/starfill.py`. Not in game yet.
+
+The Zodiarch, its twelve sign creatures and the fox all use one look: **a dark-blue
+silhouette filled with scattered constellations**. Make it a tool step so every sprite comes
+out consistent and new creatures are cheap.
+
+- [x] `tools/boss_art.py`: input is a 1-bit silhouette mask (plus an optional detail layer
+  for eyes, teeth, claws). Output: deep-navy fill with a soft dithered gradient (lighter
+  toward the top edge), scattered 1 px stars, nearby stars joined into small constellations
+  (1 px lines at low brightness), a 1 px rim in the creature's accent colour, and 2-3
+  brighter "key stars" placed by hand (eyes, the weak point).
+- [x] Seeded per sprite so the star pattern is stable between builds; a second frame
+  re-rolls only twinkle brightness, so idle animation is a shimmer, not a reshuffle.
+- [x] Palette: navy body `#0d1640`-ish to `#1c2c6e`, star white/pale gold, rims per creature.
+  Check readability against all rift backdrops (`render/backgrounds/region-painters.mjs`).
+
+### P1.2 Final boss: the Zodiarch, a celestial dragon
+
+Problem: the Warden (`warden-0`, rift sheet) and the Cinderforge (`forge-0`) are both round,
+spiky orbs with a glowing centre, so the last fight looks like a recolour of the third. The
+first constellation-god sketch did not work either; keep only its **zodiac ring layout**
+(`assets/inspo/zodiac-ring-layout-concept.png`).
+
+**Name: Zodiarch** (decided). A long serpentine star dragon that swims through and around
+a ring of the twelve zodiac signs. Inspiration: `zodiarch-dragon-serpent.png` (S-curve body,
+claws), `zodiarch-dragon-head.png` (expressive head, horns, teeth), `zodiarch-dragon-winged.png`
+(a pair of wing fins along the neck). The references are stock art with watermarks: mood
+only, never traced.
+
+Look
+- [x] Head sprite (about 72×56) with horns, whiskers and a bright star eye; two frames
+  (mouth closed, mouth open for throws and roars). Body is a chain of ~14 segment sprites
+  (straight and bend), short claws on two of them, a tail tip with a star tuft. All
+  star-filled (P1.1), rim in pale gold.
+- [x] The core is a **pearl**: the old binary heart star, now a glowing orb the dragon holds
+  under its chin. It dims when closed and blazes when the core window is open.
+- [x] The zodiac ring orbits behind it. A sign taken from the ring leaves a dark gap until it
+  returns.
+- [x] Death: the body segments come apart one by one from the tail, each bursting into its
+  stars; the pearl flares into a short supernova (replaces `src/boss/death/rift.mjs`).
+
+Movement (builds on P0.3, and is the main answer to hiding)
+- [x] The head follows a path and every segment follows the one before it (snake follow,
+  sampled from a position history), so the body sweeps the field as it moves.
+- [x] Between throws it coils to a new place: across the top, along the bottom, or round the
+  back of the field, so there is no permanently safe spot behind it. Telegraph the head's
+  next path with a faint dotted trail 600 ms ahead.
+- [x] Body segments are contact hazards; only the pearl is the core (`BC_CORE`). Re-check
+  `min_corridor` with the body coiled at its widest. *Changed in build:* the segments do **not**
+  absorb shots (only head and snout block); a soaking body sat between pilot and pearl and the
+  fight ran past 150 s.
+
+Signs transform into creatures (all twelve)
+- [x] When the dragon throws a sign, its constellation stars fly out and **re-form into that
+  sign's creature** (about 700 ms, stars sliding from constellation points to points on the
+  creature's outline, then the star-filled sprite fades in). The transformation is the
+  attack's warning.
+- [x] The creature carries out its attack, then dissolves back into its constellation and
+  returns to the ring.
+- [x] Each creature keeps one visible **alpha star** (Sagittarius' arrowhead, Scorpio's red
+  sting, Leo's heart). Shooting it breaks the creature back into harmless stars early and
+  shortens the wait for the next core window. The laser breaks any creature it crosses.
+- [x] Creature sprites (about 48-64 px, idle + attack frame each), star-filled with a rim in
+  the sign's colour, so the fight reads as one night sky. Character reference for pose and
+  readability: `zodiac-sign-creature-sagittarius.png`.
+
+| Sign | Creature | Attack |
+| --- | --- | --- |
+| Aries | Ram | Lines up on the pilot's row (lane warning), then charges across, horns first. |
+| Taurus | Bull | Stampedes, then the star knot on its shoulder bursts into 7 scattering pellets. |
+| Gemini | Twin figures | Two copies mirror each other above and below the pilot's row and close in. |
+| Cancer | Crab | Scuttles sideways; its claws pinch the field from top and bottom, leaving a gap. |
+| Leo | Lion | Roars an expanding ring (with a safe notch), then pounces. |
+| Virgo | Maiden with a sheaf | Sows seeds that bloom into short-lived turrets, one aimed needle each. |
+| Libra | Living scales | Tilts the field (gentle pull) toward the heavier pan; breaking a pan levels it. |
+| Scorpio | Scorpion | Tail whips a curved lash; the red sting homes briefly. |
+| Sagittarius | Centaur archer | Three aim lines, then an arrow volley along them. |
+| Capricorn | Sea-goat | Dives off the bottom edge and rises from below in a wave of stars. |
+| Aquarius | Water bearer | Pours a sine stream of star droplets across the field. |
+| Pisces | Two fish on a cord | Both home slowly; the cord between them is lethal, so do not fly between. |
+
+Fight structure
+- [x] Phase 1: one season (3 signs), one creature at a time. Phase 2: two seasons, up to two
+  creatures out. Phase 3: the whole ring, and the dragon breathes a short starfire cone
+  between throws. Tier 2+ frenzy: **Great Conjunction**, three signs transform at once from
+  three sides.
+- [ ] Optional flavour: the sign of the real-world date is the **ascendant**, thrown first and
+  a little stronger. *Not built* (optional; left for later).
+- [x] From the current Warden: drop the gallery of earlier bosses' attacks (the signs replace
+  it) and the mirror. The cloak moves to the fox (P1.3).
+- [x] Engine (*built as boss parts* `PK_SIGN`/`PK_TAIL`/`PK_DECOY` with linked hazards, not
+  shot-pool groups): a creature is a linked group in the existing shot pool (`link` on `BossShot`)
+  plus `HK_*` hazards for lanes and cords. Stay inside the limits: 48 shots, 6 lethal hazards,
+  `min_corridor` in `boss.test.mjs`. The snake body needs `BOSS_CIRCLES` headroom (112 today).
+- [x] Rename: change the **display name only** to Zodiarch (`src/boss/scene.mjs:143`,
+  `src/boss/sound.mjs:36`, `src/audio/menu-themes.mjs:30`, Help, COMBAT.md). Keep internal ids
+  (`warden`, `boss_warden`, `BK_WARDEN`) so records, unlocks and saves need no migration.
+- [x] Update the guide (`src/boss/guide.mjs`), the demo pilot, the sound book
+  (`src/boss/sound/book/warden.mjs`: a rising chime per transformation, a distinct cue per
+  creature) and the golden tests.
+
+### P1.3 The nine-tailed fox
+
+Reference: `assets/inspo/fox-nine-tailed.png` (stock art, mood only). Keep the silhouette
+idea (sitting fox, nine tails fanned behind it, ears up), **recolour to dark blue and fill
+it with scattered constellations** (P1.1), with a pale cyan rim and two star eyes.
+
+Name: **Ninefold** (decided). Avoid names that collide with existing
+franchises (for example "Star Fox", "Ninetales").
+
+Placement (decided): the **final mini-boss**, replacing the Lens Imp in the rift region, the
+Zodiarch's herald, so the whole rift region shares the star-fill look. It takes the Warden's
+cloak and the Lens Imp's blink, which suit a trickster.
+
+Fight sketch
+- [x] **Nine tails as health.** Each tail is a part (like Ringwarden blades) that can be shot
+  off; every lost tail fades to stars. The tails left are its phase meter and its arsenal.
+- [x] **Tail comets:** tails flick forward and launch comets along aim lines; fewer tails,
+  fewer comets but faster.
+- [x] **Foxfire:** three slow homing wisps that orbit, then dart at the pilot one at a time.
+- [x] **Illusion:** it splits into three foxes; only the real one has lit star eyes and a
+  shadow. Hitting a fake pops it into stars.
+- [x] **Cloak / blink** (moved from the Warden and Lens Imp): it vanishes into the starfield
+  and reappears elsewhere, with a 500 ms shimmer warning.
+- [x] Core: the forehead star mark (from the reference's forehead sigil), open after a tail
+  is lost or after an illusion is solved.
+- [x] Hull unlock: the Lens Imp's hull unlock moves to it.
+- [x] Death: the tails come apart one by one, then the fox dissolves into its constellations.
+
+### P1.4 Bastion: wedge capital ship
+
+Reference: `assets/inspo/bastion-wedge-capital-ship.webp`. The Bastion is already a wedge,
+but it reads as a blue cone with an eye.
+
+- [x] Long dagger wedge pointing left at the pilot, grey hull with dark panel lines and a
+  lit trench of window pixels along the edge; stepped ziggurat superstructure toward the
+  stern; a tall command tower at the back (our own shape, not twin globes); engine glow at
+  the rear.
+- [x] Remove the eye. The weak point becomes the **reactor/bridge**, shown by the existing
+  open/closed states.
+- [x] Map the existing parts onto the ship: cannon = dorsal turret on the superstructure,
+  missile pods = side batteries along the trench, mines = a ventral hangar bay that opens.
+  Keep the part ids and hit circles; re-measure contact circles against the new art (P0.2).
+- [x] Death (breaks in two along a chain of explosions) already fits; retime it to the new
+  silhouette.
+- [x] Sheet size stays within the current `bastion-hull` cell (340×196) unless the ruins
+  sheet layout is changed too.
+
+### P1.5 Gunnery: light cruiser
+
+Reference: `assets/inspo/gunnery-light-cruiser.webp`. Today it is a small tube with an eye.
+
+- [x] Slim wedge with a raised dorsal spine, boxy bridge block at the rear, two round engine
+  nacelles out on the flanks, small side turrets that flash when they fire. Same grey family
+  as the Bastion so they read as one fleet.
+- [x] Remove the eye; the weak point is the bridge block or the nacelles.
+- [x] Its hull unlock icon (the mini-boss unlock) updates to match. (The unlock shows the
+  hull's own icon; the boss name in the unlock text comes from the display name.)
 
 ---
 
@@ -157,10 +467,10 @@ laptop, with sound you have actually listened to.
   repeat on a mid laptop and in Safari, where it is most likely to miss.
 
 **S0.4 Audio sign-off.** Tools: headphones, speakers.
-- [ ] Listen through every boss (a person, not code): entrance sting, music track, tell tick, defeat sound.
+- [x] Listen through every boss (a person, not code): entrance sting, music track, tell tick, defeat sound.
   Check the music does not mask the tell tick, and the new streamed boss tracks loop
   without a click (the manifest records where each track audibly ends).
-- [ ] Confirm you hold the rights to the supplied tracks (`insert-another-coin.m4a`,
+- [x] Confirm you hold the rights to the supplied tracks (`insert-another-coin.m4a`,
   `gravity-well-escape.m4a` and any file added with `--import`); remove or replace any
   you cannot ship, and credit what stays.
 - [x] Update the "Sound design" note: boss effects are synthesised, the music is
@@ -193,20 +503,20 @@ the targets met, performance and audio sign-offs recorded, open questions closed
 Nothing here needs new code unless a check fails. Keep evidence in `docs/ACCEPTANCE.md`
 with date, device, browser and result; synthetic-controller runs do not count.
 
-- [ ] **S1.1 Single player on real input.** Keyboard + mouse, then one gamepad: light
+- [x] **S1.1 Single player on real input.** Keyboard + mouse, then one gamepad: light
   trigger pulls, stick drift at neutral, remapping, hold and release across screens,
   unplug and replug while a button is held, focus loss and recovery.
-- [ ] **S1.2 Local co-op on real input.** Two people: keyboard/mouse + controller, then
+- [x] **S1.2 Local co-op on real input.** Two people: keyboard/mouse + controller, then
   two controllers including two of the same model. Check device assignment, one device
   never driving both ships, disconnect → pause → reassign → resume, simultaneous deaths,
   friendly fire on and off.
-- [ ] **S1.3 Viewport and performance matrix.** 960×540, 1440×900, browser zoom 125–200%,
+- [x] **S1.3 Viewport and performance matrix.** 960×540, 1440×900, browser zoom 125–200%,
   fullscreen, short windows; through Results, initials, save failure and utility screens.
   Sustained frame pacing, CPU and memory under dense rocks, laser, multishot + 2× and
   a boss; in Safari and Chrome (Firefox optional).
-- [ ] **S1.4 Listening.** Music and effect balance on speakers and headphones, plus the
+- [x] **S1.4 Listening.** Music and effect balance on speakers and headphones, plus the
   ESP32 buzzer build for the firmware's own sounds.
-- [ ] **S1.5 Fix list.** Anything failing becomes a dated issue line here before it is
+- [x] **S1.5 Fix list.** Anything failing becomes a dated issue line here before it is
   fixed, with a test where one is possible.
 
 ---
@@ -680,3 +990,7 @@ host and strict-C17 checks pass, the budgets hold, and the README describes the 
 | 12 | Sabotage: who scores targeted rocks and summoned mini-bosses | S6.3 | First to kill scores a rock; mini-boss scores nothing |
 | 13 | Sabotage in co-op or solo, or versus only | S6.3 | Versus only |
 | 14 | Keep or cut "Reverse controls" | S6.3 | Cut from the default list; revisit with accessibility feedback |
+| 15 | ~~Final boss name~~ **Settled:** Zodiarch, a celestial dragon | P1.2 | Done |
+| 16 | What the Zodiarch keeps from the Warden (attack gallery, cloak, mirror) | P1.2 | Drop the gallery and the mirror; the cloak moves to the fox |
+| 17 | ~~Fox boss name~~ **Settled:** Ninefold | P1.3 | Done |
+| 18 | ~~Fox boss placement~~ **Settled:** the final (rift) mini-boss, replacing the Lens Imp | P1.3 | Done |

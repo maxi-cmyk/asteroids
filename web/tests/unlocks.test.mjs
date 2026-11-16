@@ -17,7 +17,7 @@ test('every non-stock hull is earned by exactly one mini-boss', () => {
             .sort(),
     );
     assert.equal(requirementText('dart'), 'Defeat Picket on wave 3');
-    assert.equal(requirementText('comet'), 'Defeat Lens Imp on wave 28');
+    assert.equal(requirementText('comet'), 'Defeat Ninefold on wave 28');
     assert.equal(requirementText('vanguard'), '');
 });
 

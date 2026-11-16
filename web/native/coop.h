@@ -258,6 +258,7 @@ static void coop_pickup_update() {
         if (!player.hull.effects.shield) player.weapons.shield_stored = true;
         collection_x = pickup.position_x;
         collection_y = pickup.position_y;
+        collection_kind = pickup.kind;
         collection_cue_left = PICKUP_CUE_MS;
         pickup.active = false;
     } else collect_pickup(player.hull);
@@ -385,8 +386,7 @@ static void coop_update() {
     coop_lasers();
     coop_projectiles();
     for (unsigned p = 0; p < 2; p++) {
-        if (asteroid_hits_ship(coop_players[p].hull.position_x,
-                               coop_players[p].hull.position_y)) coop_hit(p);
+        if (asteroid_hits_ship(coop_players[p].hull)) coop_hit(p);
     }
     particles_update();
     display_shake_update();

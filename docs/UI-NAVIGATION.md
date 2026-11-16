@@ -236,6 +236,13 @@ between two new runs. The runtime retains that run context explicitly.
   key (`asteroids.web.hangar-v1`), so it never counts as an unapplied Settings
   change. Hulls are cosmetic; every hull flies, shoots and scores the same.
 - It is not offered from Pause: changing hulls mid-run is not supported.
+- **Co-op hull step** (lobby, 2026-11-13): once both pilots are ready, each crew slot shows a
+  Hull field (icon preview, the profile's unlocked hulls, locked ones listed but disabled)
+  and a Confirm hull button. Each pilot browses with their own device (controllers: Cross /
+  A to edit, left/right to browse). Launch together stays disabled until both hulls are
+  confirmed. A confirmed hull is equipped on that profile, as if chosen in the Hangar.
+  Cancelling Ready reopens that pilot's hull choice. The field starts on the equipped hull,
+  so two confirms keep the old behaviour.
 
 ### Controller menus (2026-10-26)
 

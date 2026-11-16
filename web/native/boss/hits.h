@@ -151,7 +151,8 @@ static bool bs_beam_hits(float x, float y, float r) {
     float across = dx * combat.beam_direction_y - dy * combat.beam_direction_x;
     r += 2.0f;
     bool hit = along >= 0 ? across * across <= r * r : dx * dx + dy * dy <= r * r;
-    return hit && x >= 0 && x < SCREEN_W && y >= 0 && y < SCREEN_H;
+    // Any visible part counts, not just the centre.
+    return hit && x + r >= 0 && x - r < SCREEN_W && y + r >= 0 && y - r < SCREEN_H;
 }
 static void bs_laser(unsigned owner) {
     if (!boss.active || boss.phase == 0) return;

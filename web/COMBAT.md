@@ -134,9 +134,9 @@ local co-op rules below.
 Design: `nextSteps.md` Part A. Engine: `native/boss/` (shared framework) and
 `native/boss/fights/` (one header per boss family, a `BossOps` row per kind). Waves 5, 10, 15, 20, 25 and 30 close
 their region with a boss (Sentinel, Ringwarden, Cinderforge, Bastion,
-Tidecaller, Horizon Warden); the cycle then repeats as tiers (wave 35 is the
+Tidecaller, Zodiarch); the cycle then repeats as tiers (wave 35 is the
 Sentinel again, tier II). Waves 3, 8, 13, 18, 23 and 28 carry a mini-boss
-(Picket, Shardling, Cinderling, Gunnery, Moonjelly, Lens Imp) that shares the
+(Picket, Shardling, Cinderling, Gunnery, Moonjelly, Ninefold) that shares the
 wave with half the usual rocks and keeps the wave open until it is down.
 
 Rules every fight obeys, measured by the test build (`web_test_boss_stats`):
@@ -150,7 +150,18 @@ Rules every fight obeys, measured by the test build (`web_test_boss_stats`):
   42 px wide always exists;
 - the body stays in the right 55% of the field and touching it counts as a hit;
 - dying never resets a boss: its attacks are cleared and you return protected;
-- boss practice (Pause, practice only) loses no lives and reports hits taken.
+- boss practice (Pause, practice only) loses no lives and reports hits taken;
+- no boss is a turret: between attacks its rest point follows your row and sweeps left
+  and back, within a range per boss (`native/boss/motion.h`). It never moves while an
+  attack runs, so a warned lane or beam stays where it was shown;
+- hiding level with or behind the body for 1.2 s sets off a **repel**: a ring that
+  expands from the boss with its one gap facing the open field (the usual 900 ms ring
+  warning, at most one every 3 s). The way out is forward.
+
+Contact shapes follow the art: the ship is three circles along its aim (tail, core, nose,
+measured from the hull sprites), rocks hurt within 85% of their radius (their lumpy outline
+sits inside it) while your shots use the full radius, and the laser hits anything with any
+part on screen, including a rock still entering from the right edge.
 
 Health is stated in design hits, `(18 + 6 * (min(10, wave / 5) - 1)) * players`
 (minis `6 + 2 * region`), times 1.2 from tier II. The engine splits each design
@@ -163,8 +174,8 @@ Each fight has a signature rule: Sentinel plates open only between attacks;
 Ringwarden blades absorb shots and break (the laser pierces both rings);
 Cinderforge's shell opens at vents or at panels broken with three hits; Bastion's
 bridge takes half damage while a hardpoint lives; Tidecaller's bell is shielded
-by bubbles (the laser pops all three); the Warden's core opens in a two-second
-window every eight seconds or when all four S-stars are down.
+by bubbles (the laser pops all three); the Zodiarch's pearl opens for 2.5 s every 7 s, sooner
+for every creature you break.
 
 The Cinderforge's fire stays. A lob's lava pool (4 s) burns down into **scorched ground** for
 another 6 s (`HK_BURN`, `bs_scorch` in `native/boss/hazards.h`): standing in it burns you, the
@@ -181,53 +192,79 @@ rests, 13 to 16 bulbs a stream) and less predictably: each sine stream leaves fr
 height with a random aim error, and every bulb gets its own speed, wave size and gap. It
 adds three attacks: a *tidal wall* (pellets across the field with one marked gap), *spore
 rain* (spores fall from random columns) and *whirlpools* (two closing rings that open
-anywhere but on the pilot). The Horizon Warden fights with every attack of the five bosses
-before it (phase 1: Sentinel and Ringwarden, phase 2: Cinderforge and Bastion, phase 3: its
-own, with every other attack drawn from the whole gallery) and two abilities of its own:
+anywhere but on the pilot).
 
-- **Cloak** (the Lens Imp's blink, whole). It shimmers for 600 ms, vanishes for 2.4 s and
-  returns at another height. While gone it cannot be hit or touched, and it fires fans of
-  needles from the dark behind 500 ms aim lines. It never cloaks while a core window is open
-  or about to open, and a window that would fall inside a cloak waits for it to end.
-- **Mirror** (from phase 2). Between core windows a mirror forms for 600 ms and then holds
-  (2.6 s in phase 2, 3.5 s in phase 3). Every player shot and the laser that hit it come
-  back: a shot returns as a fast shot aimed at the pilot who fired it (at most one per
-  pilot every 260 ms, the rest are absorbed), the laser as a beam with the usual 900 ms
-  warning (one per 1.5 s). The core and the plates take nothing; the S-stars, which orbit
-  outside it, can still be shot. Engine side: `BC_DEFLECT` circle, `bs_deflect` in
-  `native/boss/hits.h`.
+**The Zodiarch** (the final boss, `native/boss/fights/warden.h`; internal id `warden`) is a star
+dragon drawn in constellations (art: `tools/zodiac_art.py`, `tools/starfill.py`). It swims a
+figure of eight across the right of the field and its 26 body segments trail the head's path,
+so there is no safe spot behind it; its path for the next 0.6 s shows as faint dots. The body
+hurts to touch but does not soak shots; the head does. The weak point is the **pearl** under
+its chin: it opens for 2.5 s every 7 s (the dragon slows to half speed while it is open) and
+the laser reaches it any time. A ring of the twelve zodiac signs turns behind it. Each attack
+throws a sign: its stars fly out and re-form into the sign's creature over 700 ms (that is the
+warning), the creature attacks, then dissolves back into the ring. Every creature shows a
+twinkling **key star**; three hits (or the laser) break it early, which takes its walls, pull or
+cord with it, costs the dragon 4 sub-hits and brings the next pearl window 2 s sooner.
+
+| Sign | Creature | Attack |
+| --- | --- | --- |
+| Aries | ram | a lane on your row, then the ram charges along it |
+| Taurus | bull | a half-field lane, then its star knot bursts into seven pellets |
+| Gemini | twins | two walls above and below your row, then two nearer (a 48 px gap) |
+| Cancer | crab | two columns pinched from top and bottom, each with a 72 px gap |
+| Leo | lion | a roar ring with one notch, then a pounce lane aimed at you |
+| Virgo | maiden | four seeds, each an aimed needle behind a 500 ms aim line |
+| Libra | scales | a gentle pull toward the top or bottom (not under calm forces), and five weights |
+| Scorpio | scorpion | a sweeping tail lash, then a homing sting (two shots pop it) |
+| Sagittarius | centaur archer | three aim lines, then two arrow volleys down them |
+| Capricorn | sea-goat | dives off the bottom, rises in a wave of stars with one gap |
+| Aquarius | water bearer | a twelve-drop sine stream |
+| Pisces | two fish | both home in slowly; the cord between them is a lethal lane |
+
+Phase 1 throws spring and summer (Aries to Virgo), phase 2 autumn and winter (Libra to Pisces),
+phase 3 the whole ring with a **starfire breath** every third attack (it stops, opens its jaw
+and breathes three fanned 230 px lanes, never into the corners). From tier II the frenzy adds
+the **Great Conjunction**: three creatures from three sides of the ring at once.
+
+**Ninefold** (the rift mini-boss, internal id `lensimp`) is a nine-tailed star fox. Its tails
+are its health: a hit on any tail reaches the fox, and a tail falls with each ninth of its
+health. Losing a tail, or popping both decoys of an illusion, opens the forehead mark for 2.5 s
+(the laser reaches it any time). It flicks comets from its tails down aim lines (fewer tails,
+fewer comets but faster), sends three homing foxfire wisps, splits into three foxes of which
+only the real one has lit eyes (each decoy fires one aimed needle; two hits pop one), and
+blinks to another height behind a 500 ms shimmer.
 
 ### Difficulty
 
-Measured on 2026-11-02 with the scripted pilot (`node tests/boss-baseline.mjs`: perfect aim, 6 shots
-a second, five seeds, boss practice, after the Cinderforge, Tidecaller and Warden changes). Times are
-seconds from the start of the fight (the 1.4 s entrance included) to the defeat; **hits** is how often the pilot was
-touched in the fight (practice loses no lives). People are expected to take about 1.5× the bot
-time; that figure is an estimate until the S0.2 playtest records real ones.
+Measured on 2026-11-13 with the scripted pilot (`node tests/boss-baseline.mjs`: perfect aim, 6 shots
+a second, five seeds, boss practice), after bosses started moving (P0.3) and the rift fights were
+replaced (P1). The pilot keeps out of the space level with or behind a boss, as a sensible player
+would. Times are seconds from the start of the fight (the 1.4 s entrance included) to the defeat,
+averaged over the seeds; **hits** is how often the pilot was touched (practice loses no lives).
+People are expected to take about 1.5× the bot time; that figure is an estimate until the S0.2
+playtest records real ones.
 
 | Fight | Tier I | Tier II | Tier III | Hits (tier I / II / III) | Expected person, tier I |
 | --- | --- | --- | --- | --- | --- |
-| Sentinel | 28 | 45 | 49 | 0 / 0 / 0 | 42 s |
-| Ringwarden | 29 | 34 | 34 | 11 / 25 / 20 | 44 s |
-| Cinderforge | 35 | 44 | 43 | 5 / 6 / 8 | 53 s |
-| Bastion | 41 | 47 | 51 | 0 / 0 / 0 | 62 s |
-| Tidecaller | 45 | 51 | 51 | 11 / 5 / 2 | 68 s |
-| Horizon Warden | 64 | 70 | 71 | 10 / 8 / 14 | 96 s |
-| Picket | 16 | 19 | 19 | 0 | 24 s |
-| Shardling | 15 | 16 | 16 | 0 | 23 s |
-| Cinderling | 11 | 19 | 19 | 0 | 17 s |
-| Gunnery | 17 | 20 | 20 | 0 | 26 s |
+| Sentinel | 28 | 46 | 48 | 0 / 0 / 0 | 42 s |
+| Ringwarden | 29 | 33 | 33 | 14 / 26 / 21 | 44 s |
+| Cinderforge | 36 | 44 | 43 | 12 / 10 / 23 | 54 s |
+| Bastion | 44 | 50 | 53 | 0 / 0 / 0 | 66 s |
+| Tidecaller | 43 | 50 | 51 | 3 / 1 / 5 | 65 s |
+| Zodiarch | 62 | 73 | 68 | 0 / 0 / 0 | 93 s |
+| Picket | 18 | 24 | 24 | 0 | 27 s |
+| Shardling | 14 | 16 | 16 | 0 | 21 s |
+| Cinderling | 10 | 23 | 23 | 0 | 15 s |
+| Gunnery | 19 | 23 | 23 | 0 | 29 s |
 | Moonjelly | 19 | 22 | 22 | 0 | 29 s |
-| Lens Imp | 23 | 32 | 32 | 0 | 35 s |
+| Ninefold | 21 | 29 | 29 | 0 | 32 s |
 
 Fairness counters over the same 36 fights (tiers I to III): no lethal hazard without its warning,
 no entrance hit, shots never above the cap of 48 (the Tidecaller reaches it), hazards never above
-the cap of 6 (the Cinderforge reaches it), and the narrowest safe corridor was 232 px, far above
-42. The lethal shapes new since the last baseline (scorched ground, three at once; the tidal wall;
-whirlpools; the Warden's cloak and mirror) all stay inside those limits. The earlier tier I figures
-were 28 / 29 / 37 / 41 / 44 / 55 s for the bosses and 15 to 23 s for the minis; now the
-Cinderforge is 35, the Tidecaller 45 and the Warden 64, the rest unchanged. The Ringwarden hurts
-the bot most (11 to 25 touches), so expect people to find it the busiest of the first three.
+the cap of 6 (the Cinderforge reaches it), and the narrowest safe corridor was 230 px, far above
+42. The Zodiarch's twelve creatures, breath and conjunction stay inside those limits (at most four
+lethal hazards, 27 shots). The Ringwarden hurts the bot most (14 to 26 touches), so expect people
+to find it the busiest of the first three.
 
 Playtest log: Settings → Display → Playtest records one entry per boss attempt (boss, tier, outcome,
 seconds, lives lost, damage per phase, the attack that took each life), kept on the device and
@@ -245,8 +282,8 @@ two, and alternates its aim between the nearer and the farther pilot.
 Every boss and mini-boss has its own defeat sequence (`src/boss/death.mjs`), played from a
 frozen copy of its last frame: the Sentinel's plates blast off, the Ringwarden shears and
 implodes, the Cinderforge splits on a column of fire, the Bastion breaks in two along a
-chain of explosions, the Tidecaller dissolves into bubbles, the Warden collapses to a point
-and rings out. Each has a matching defeat sound. Replay them on `/boss-attacks.html`.
+chain of explosions, the Tidecaller dissolves into bubbles, the Zodiarch comes apart segment
+by segment from the tail before its pearl goes nova, and Ninefold sheds its tails one by one. Each has a matching defeat sound. Replay them on `/boss-attacks.html`.
 
 Tier 3+ fights (wave 93 and later, or tier IV in boss practice) play in front of a
 quasi-star, pulsar or magnetar; it is scenery only and never hurts the player.
@@ -257,7 +294,7 @@ attack gallery (`boss-attacks.html`, linked from Pixel assets) lists every attac
 with its warning and answer and plays its sounds.
 
 Assists (Settings → Display): longer warnings add 30% to every telegraph; calm
-forces remove the Warden's pull and straighten the lens shots.
+forces remove Libra's pull (and the Tidecaller's).
 
 ## Local co-op
 

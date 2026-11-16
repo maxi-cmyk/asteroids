@@ -174,9 +174,11 @@ if (!test && !oled) {
     }
     cpSync(resolve(root, 'assets'), resolve(root, 'dist/assets'), {
         recursive: true,
-        // Notes and reference sheets stay in the repo; only the art and audio ship.
+        // Notes, reference sheets, art inspiration (third-party, reference only) and approval
+        // drafts stay in the repo; only the art and audio ship.
         filter: (source) =>
-            !source.endsWith('.md') && !/\/assets\/(screenshots$|bosses\/attacks-)/.test(source),
+            !source.endsWith('.md') &&
+            !/\/assets\/(screenshots$|inspo$|bosses\/attacks-|bosses\/draft-)/.test(source),
     });
     copyFileSync(
         resolve(root, 'vendor/LICENSE.txt'),

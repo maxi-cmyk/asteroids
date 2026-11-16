@@ -191,7 +191,7 @@ static void test_respawn_location() {
     assert(respawn_clearance(respawn_x, respawn_y) >= RESPAWN_SAFE_CLEARANCE);
     ship_respawn(ship, respawn_x, respawn_y);
     assert(ship.alive && ship.invincible_left == SHIP_INVINCIBLE_MS);
-    assert(!asteroid_hits_ship(ship.position_x, ship.position_y));
+    assert(!asteroid_hits_ship(ship));
     assert(respawn_x >= SHIP_MIN_X && respawn_x <= SHIP_MAX_X);
     assert(respawn_y >= SHIP_MIN_Y && respawn_y <= SHIP_MAX_Y);
 }

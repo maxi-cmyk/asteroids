@@ -70,11 +70,9 @@ static void bs_shots_update() {
             continue;
         }
         if (s.family == SF_LOB) continue; // airborne plasma is harmless
-        float reach = bs_shot_radius(s.family) + SHIP_RADIUS;
         for (unsigned p = 0; p < boss_hull_n; p++) {
             if (!bs_alive(p)) continue;
-            float dx = s.x - boss_hulls[p]->position_x, dy = s.y - boss_hulls[p]->position_y;
-            if (dx * dx + dy * dy < reach * reach) {
+            if (ship_touches(*boss_hulls[p], s.x, s.y, bs_shot_radius(s.family))) {
                 if (s.family == SF_SPORE || s.family == SF_MINE) bs_shot_end(s, false);
                 else s.active = false;
                 bs_hit_pilot(p);

@@ -21,5 +21,6 @@
 #include "boss/shots.h"
 #include "boss/hits.h"
 #include "boss/scheduler.h"
+#include "boss/motion.h"
 #include "boss/lifecycle.h"
 #include "boss_fights.h"

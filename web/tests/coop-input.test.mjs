@@ -28,6 +28,8 @@ test('distinct devices/profiles, held ready guards, disconnect and explicit recl
     assert(input.ready[1]);
     input.join(0, pads);
     pads[0].buttons[0].pressed = false;
+    input.confirmHull(0); // the hull step after both are ready
+    input.confirmHull(1);
     input.begin(pads);
     assert(input.live);
     assert(!input.lost(1));
@@ -46,6 +48,8 @@ test('identical controller names still route independent axes and fresh taps', (
     input.assign(1, '1', pads);
     input.join(0, pads);
     input.join(1, pads);
+    input.confirmHull(0);
+    input.confirmHull(1);
     input.begin(pads);
     pads[0].axes[0] = 1;
     pads[1].axes[0] = -1;

@@ -27,6 +27,6 @@ export const MENU_THEMES = Object.freeze([
     boss('boss_cinderforge', 'Cinderforge'),
     boss('boss_bastion', 'Bastion'),
     boss('boss_tidecaller', 'Tidecaller'),
-    boss('boss_warden', 'Horizon Warden'),
+    boss('boss_warden', 'Zodiarch'),
 ]);
 export const isMenuTheme = (id) => MENU_THEMES.some((theme) => theme.id === id);

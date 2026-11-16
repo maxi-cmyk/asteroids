@@ -64,6 +64,7 @@ const float *web_test_boss_stats() {
     values[9] = boss.kind;
     values[10] = boss.life_lost;
     values[11] = boss.maximum;
+    values[12] = boss.repels;
 #endif
     return values;
 }
@@ -82,6 +83,14 @@ void web_test_boss_set(int field, float value) {
     if (field == 6) { boss.stamp[0] = 0; for (BossPart& p : boss.parts) if (p.exists) { p.hp = 1; } }
     if (field == 7) { boss_assist_long = value != 0; }
     if (field == 8) { for (BossPart& p : boss.parts) p.exists = false; }
+    if (field == 9) {   // one primary hit on part `value`, wherever its circle is
+        bs_build_circles();
+        for (unsigned i = 0; i < boss_circle_count; i++)
+            if (boss_circles[i].type == BC_PART && boss_circles[i].index == unsigned(value)) {
+                bs_circle_hit(i, 0, 1, false);
+                break;
+            }
+    }
 #endif
 }
 void web_test_pickup(int kind) {
@@ -174,12 +183,24 @@ void web_scenario(int scenario) {
     }
 #endif
     if (scenario == 7 || scenario == 8) {
-        float separation = SHIP_RADIUS + ASTEROID_SMALL_R;
+        // Straight ahead of a ship facing right: the nose circle meets the rock's contact circle.
+        float separation = ship_hull_reach() + ASTEROID_SMALL_R * ROCK_CONTACT_SCALE;
         spawn_asteroid(ship.position_x + separation + (scenario == 7 ? -1 : 1),
                        ship.position_y,
                        AST_SMALL,
                        0,
                        0);
+    }
+    if (scenario == 20) {
+        // Just off the flank: above the hull's core with a 1 px gap between the contact
+        // circles. The old single 7 px circle counted this as a hit.
+        spawn_asteroid(ship.position_x - 1,
+                       ship.position_y - (6 + ASTEROID_SMALL_R * ROCK_CONTACT_SCALE + 1),
+                       AST_SMALL, 0, 0);
+    }
+    if (scenario == 21) {
+        // Half past the right edge, level with the ship: its centre is off screen.
+        spawn_asteroid(SCREEN_W + ASTEROID_SMALL_R / 2, ship.position_y, AST_SMALL, 0, 0);
     }
     if (scenario == 6) {
         pending_asteroids = 1;

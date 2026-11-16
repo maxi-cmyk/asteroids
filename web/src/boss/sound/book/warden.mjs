@@ -1,12 +1,7 @@
 import { ATTACK, HAZARD, SHOT } from '../../scene.mjs';
 import { boom } from '../shapes.mjs';
-import { sentinel } from './sentinel.mjs';
-import { ringwarden } from './ringwarden.mjs';
-import { cinderforge } from './cinderforge.mjs';
-import { bastion } from './bastion.mjs';
-import { tidecaller } from './tidecaller.mjs';
 
-// The Warden's own voice: cosmic drones and bent pitches...
+// The rift's voice: cosmic drones, star chimes and bent pitches.
 const own = {
     sting: (v) => {
         v.tone({ f: 40, to: 90, type: 'sine', dur: 1.8, vol: 0.24, env: 'swell' });
@@ -23,51 +18,53 @@ const own = {
         v.tone({ f: 1320, type: 'sine', at: 1.6, dur: 1.2, vol: 0.07 });
     },
     charge: {
-        [ATTACK.spiral]: (v, d) => {
-            for (const det of [-14, 0, 14])
-                v.tone({
-                    f: 160,
-                    to: 480,
-                    type: 'sawtooth',
-                    dur: d,
-                    vol: 0.045,
-                    detune: det,
-                    env: 'swell',
-                    vib: { rate: 5, depth: 12 },
-                });
+        // Each sign re-forming out of the ring: a rising chime, one pitch per sign.
+        ...Object.fromEntries(
+            Array.from({ length: 12 }, (_, sign) => [
+                ATTACK.aries + sign,
+                (v, d) => {
+                    const f = 440 * 2 ** (sign / 12);
+                    for (const [i, m] of [1, 1.5, 2].entries())
+                        v.tone({ f: f * m, to: f * m * 1.06, type: 'sine', at: i * 0.06, dur: d, vol: 0.05, env: 'swell' });
+                    v.noise({ dur: d, vol: 0.03, f: 7000, type: 'highpass', env: 'swell' });
+                },
+            ]),
+        ),
+        // The Great Conjunction: three chimes at once over a sub swell.
+        [ATTACK.conjunction]: (v, d) => {
+            v.tone({ f: 45, to: 90, type: 'sine', dur: d, vol: 0.25, env: 'swell' });
+            for (const f of [523, 659, 784])
+                v.tone({ f, to: f * 1.5, type: 'sine', dur: d, vol: 0.05, env: 'swell', vib: { rate: 6, depth: 8 } });
         },
-        [ATTACK.curve]: (v, d) => {
-            v.tone({
-                f: 300,
-                to: 900,
-                type: 'sine',
-                dur: d,
-                vol: 0.08,
-                env: 'swell',
-                vib: { rate: 12, depth: 40 },
-            });
+        // The starfire breath drawing in.
+        [ATTACK.breath]: (v, d) => {
+            v.noise({ dur: d, vol: 0.12, f: 300, to: 5000, type: 'bandpass', env: 'swell' });
+            v.tone({ f: 70, to: 220, type: 'sawtooth', dur: d, vol: 0.08, env: 'swell' });
         },
-        [ATTACK.accrete]: (v, d) => {
-            v.tone({ f: 1500, to: 200, type: 'sine', dur: d, vol: 0.09 });
-            v.tone({ f: 2250, to: 300, type: 'sine', dur: d, vol: 0.05 });
+        // Ninefold: a flick for the comets, a soft wisp for foxfire, a shimmer for the
+        // illusion and a scatter of ticks for the blink.
+        [ATTACK.comets]: (v, d) => {
+            v.tone({ f: 900, to: 1800, type: 'triangle', dur: Math.min(d, 0.4), vol: 0.07 });
         },
-        [ATTACK.blink]: (v, d) => {
-            for (let i = 0; i < 9; i++)
-                v.tone({
-                    f: 900 + ((i * 331) % 1400),
-                    type: 'square',
-                    at: (i * d) / 9,
-                    dur: 0.05,
-                    vol: 0.04,
-                });
-            v.noise({ dur: d, vol: 0.05, f: 6000, type: 'highpass', env: 'swell' });
+        [ATTACK.foxfire]: (v, d) => {
+            v.tone({ f: 330, to: 660, type: 'sine', dur: d, vol: 0.07, env: 'swell', vib: { rate: 7, depth: 30 } });
         },
-        [ATTACK.pull]: (v, d) => {
-            v.tone({ f: 30, to: 90, type: 'sine', dur: d, vol: 0.3, env: 'swell' });
-            v.noise({ dur: d, vol: 0.1, f: 4000, to: 150, type: 'bandpass', q: 1 });
+        [ATTACK.illusion]: (v, d) => {
+            for (const det of [-20, 0, 20])
+                v.tone({ f: 660, to: 990, type: 'sine', dur: d, vol: 0.04, detune: det, env: 'swell' });
+        },
+        [ATTACK.foxBlink]: (v, d) => {
+            for (let i = 0; i < 7; i++)
+                v.tone({ f: 900 + ((i * 331) % 1400), type: 'square', at: (i * d) / 7, dur: 0.05, vol: 0.04 });
         },
     },
     live: {
+        // A creature's walls, charges and the breath.
+        [HAZARD.lane]: (v) => {
+            v.noise({ dur: 0.4, vol: 0.1, f: 1200, to: 300, type: 'bandpass' });
+            v.tone({ f: 220, to: 110, type: 'sawtooth', dur: 0.35, vol: 0.06 });
+        },
+        [HAZARD.arm]: (v) => v.noise({ dur: 0.6, vol: 0.09, f: 2400, to: 600, type: 'bandpass' }),
         [HAZARD.ring]: (v) => {
             v.tone({ f: 600, to: 120, type: 'sine', dur: 0.8, vol: 0.1 });
             v.tone({ f: 70, to: 30, type: 'sine', dur: 0.8, vol: 0.2 });
@@ -78,6 +75,9 @@ const own = {
         },
     },
     shot: {
+        [SHOT.fast]: (v) => v.tone({ f: 2200, to: 900, type: 'triangle', dur: 0.08, vol: 0.05 }),
+        [SHOT.sine]: (v) => v.tone({ f: 1100, to: 1300, type: 'sine', dur: 0.06, vol: 0.035 }),
+        [SHOT.missile]: (v) => v.tone({ f: 260, to: 520, type: 'sine', dur: 0.3, vol: 0.06, vib: { rate: 8, depth: 20 } }),
         [SHOT.needle]: (v) => v.tone({ f: 1800, to: 700, type: 'sine', dur: 0.1, vol: 0.06 }),
         [SHOT.pellet]: (v) =>
             v.tone({
@@ -122,51 +122,5 @@ const own = {
     },
 };
 
-// ...and, because it fights with every earlier boss's attacks, each of those keeps the sound it
-// has in its own fight (the Warden's own entries win where both have one).
-export const warden = {
-    ...own,
-    charge: {
-        ...sentinel.charge,
-        ...ringwarden.charge,
-        ...cinderforge.charge,
-        ...bastion.charge,
-        ...tidecaller.charge,
-        [ATTACK.ringBurst]: ringwarden.charge[ATTACK.burst],
-        [ATTACK.fanJets]: cinderforge.charge[ATTACK.jets],
-        [ATTACK.fireNova]: cinderforge.charge[ATTACK.nova],
-        ...own.charge,
-        [ATTACK.cloak]: own.charge[ATTACK.blink],
-    },
-    live: {
-        ...sentinel.live,
-        ...ringwarden.live,
-        ...cinderforge.live,
-        ...bastion.live,
-        ...tidecaller.live,
-        ...own.live,
-    },
-    shot: {
-        ...sentinel.shot,
-        ...ringwarden.shot,
-        ...cinderforge.shot,
-        ...bastion.shot,
-        ...tidecaller.shot,
-        ...own.shot,
-    },
-    // The mirror locking in: glass ringing high; it falling away again; the cloak.
-    mirror: (v) => {
-        for (const [i, f] of [2093, 3136, 4186].entries())
-            v.tone({ f, to: f * 1.12, type: 'sine', at: i * 0.04, dur: 0.6, vol: 0.06 });
-        v.noise({ dur: 0.25, vol: 0.05, f: 8000, type: 'highpass' });
-    },
-    unmirror: (v) => v.tone({ f: 3000, to: 900, type: 'sine', dur: 0.4, vol: 0.05 }),
-    cloak: (v) => {
-        v.noise({ dur: 0.7, vol: 0.09, f: 7000, to: 300, type: 'bandpass' });
-        v.tone({ f: 900, to: 90, type: 'sine', dur: 0.7, vol: 0.1 });
-    },
-    uncloak: (v) => {
-        v.noise({ dur: 0.5, vol: 0.07, f: 300, to: 7000, type: 'bandpass', env: 'swell' });
-        v.tone({ f: 90, to: 900, type: 'sine', dur: 0.5, vol: 0.09, env: 'swell' });
-    },
-};
+// The Zodiarch and its herald Ninefold share this voice: chimes and cosmic drones.
+export const warden = own;

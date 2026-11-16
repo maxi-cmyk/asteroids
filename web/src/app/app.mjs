@@ -108,6 +108,12 @@ export class App {
             getNavigation: () => this.navigation,
             launch: (go) => this.launch.begin(go),
             profiles: () => this.profileStore.profiles,
+            hangar: {
+                store: this.hangarStore,
+                storage: this.storage,
+                unlocks: this.unlocks,
+                getArt: () => this.gameArt,
+            },
         });
         this.recordsActions = createRecordsActions({
             getRuntime: () => this.runtime,
@@ -143,6 +149,7 @@ export class App {
         return true;
     }
     unlockAudio() {
+        this.audio.onStateChange ??= () => this.settingsController.syncMusicLabel();
         this.audio.unlock();
     }
     draw() {
@@ -151,6 +158,7 @@ export class App {
 
     async start() {
         this.settingsController.install();
+        this.settingsController.syncMusicLabel();
         this.input.install();
         this.keyboard.install();
         this.launch.install();

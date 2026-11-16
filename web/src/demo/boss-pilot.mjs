@@ -7,6 +7,8 @@ import {
     HAZARD,
     PART,
     SHOT,
+    SIGN_KEY,
+    NINEFOLD,
     bossHazards,
     bossParts,
     bossPart,
@@ -115,14 +117,23 @@ export class BossPilot {
             case 10:
                 return { x, y: y - 25 };
             case 5: {
-                // A mirror throws shots back and a cloak makes the Warden untargetable: hold fire.
-                if (aux[5] > 0.25 || aux[4] > 0.1) return null;
-                const stars = parts.filter((p) => p.kind === PART.star);
-                if (aux[1] > 0.5 || !stars.length) return { x, y };
-                return nearest(stars);
+                // The Zodiarch: break a creature by its key star; otherwise the pearl when open.
+                const keys = parts
+                    .filter((p) => p.kind === PART.sign && p.state === 1 && p.x < 470 && p.y < 262)
+                    .map((p) => ({ x: p.x + SIGN_KEY[p.slot][0], y: p.y + SIGN_KEY[p.slot][1] }));
+                if (keys.length) return nearest(keys);
+                return aux[1] > 0.5 ? { x: aux[4], y: aux[5] } : null;
             }
-            case 11:
-                return aux[1] > 0.5 ? null : { x, y };
+            case 11: {
+                // Ninefold: pop the illusions, hit the forehead when it opens, else the tails.
+                if (aux[1] > 0.5) return null;
+                const decoys = parts.filter((p) => p.kind === PART.decoy);
+                if (decoys.length)
+                    return nearest(decoys.map((p) => ({ x: p.x + NINEFOLD.body[0], y: p.y + NINEFOLD.body[1] })));
+                if (aux[2] > 0.5) return { x: x + NINEFOLD.mark[0], y: y + NINEFOLD.mark[1] };
+                const tails = parts.filter((p) => p.kind === PART.tail);
+                return tails.length ? nearest(tails) : { x: x + NINEFOLD.mark[0], y: y + NINEFOLD.mark[1] };
+            }
             default:
                 return { x, y };
         }
@@ -131,6 +142,9 @@ export class BossPilot {
     danger(px, py, scene, boss, shots, hazards, body, ahead) {
         let cost = 0;
         if (px < 16 || px > 464 || py < 16 || py > 248) cost += 1e4;
+        // Level with or behind a boss is where the repel ring goes (native/boss/motion.h):
+        // a sensible pilot stays in front.
+        if (boss && px > boss.x - 40) cost += 300;
         for (const s of shots) {
             const reach = SHOT_R[s.family] + SHIP + this.margin;
             const sx = s.x + Math.cos(s.angle) * speedOf(s) * ahead,
@@ -159,7 +173,7 @@ export class BossPilot {
     // The one-tick move (dx, dy each -1..0..1) with the least danger over the next 22 ticks.
     // `home` is where to drift when nothing threatens.
     steer(scene, { shots, hazards, body }, home) {
-        const boss = null;
+        const boss = scene[S.BOSS_ACTIVE] ? { x: scene[S.BOSS_X], y: scene[S.BOSS_Y] } : null;
         const sx = scene[S.SHIP_X],
             sy = scene[S.SHIP_Y];
         const here = this.danger(sx, sy, scene, boss, shots, hazards, body, 0);

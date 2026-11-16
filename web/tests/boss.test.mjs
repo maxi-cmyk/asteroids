@@ -8,8 +8,11 @@ import {
     ATTACK,
     HAZARD,
     KINDS,
+    NINEFOLD,
     PART,
     SHOT,
+    SIGN_KEY,
+    bossBody,
     bossHazards,
     bossParts,
     bossPart,
@@ -66,6 +69,7 @@ const stats = (game) => {
         kind: v[9],
         lifeLost: v[10],
         maximum: v[11],
+        repels: v[12],
     };
 };
 const body = (game) => {
@@ -82,9 +86,16 @@ function shoot(game, target, count, { from = 80 } = {}) {
     set(game, 4, target.y);
     let fired = 0;
     for (let i = 0; i < count * 3 && fired < count; i++) {
-        const s = game.scene(),
-            dx = target.x - s[4],
-            dy = target.y - s[5],
+        const s = game.scene();
+        // Bosses move between attacks: aim at where the part is now, not where it was.
+        const live =
+            target.index !== undefined && target.family === undefined
+                ? bossPart(s, target.index)
+                : null;
+        const tx = live?.exists ? live.x : target.x,
+            ty = live?.exists ? live.y : target.y;
+        const dx = tx - s[4],
+            dy = ty - s[5],
             len = Math.hypot(dx, dy) || 1;
         const press = i % 3 === 0;
         if (press) fired++;
@@ -97,7 +108,7 @@ function shoot(game, target, count, { from = 80 } = {}) {
             y: 2048,
         });
     }
-    ticks(game, 3);
+    ticks(game, 6); // the last shot's flight; targets may be moving
 }
 
 test('every wave fight maps to its boss, its health and its tier', async () => {
@@ -394,7 +405,9 @@ test('every fight keeps its promises: warnings, caps, corridor, entrance, body r
                 if (!scene[S.BOSS_ACTIVE] && steps > 100) break;
                 if (scene[S.BOSS_STAGE] > 0 && steps % 25 === 0)
                     for (const [i, c] of body(game).entries()) {
-                        if (kind === 5 && i > 0) continue; // the S-stars are satellites, not the body
+                        // The Zodiarch's thrown creatures are projectiles, not its body (head,
+                        // snout and 26 segments come first).
+                        if (kind === 5 && i >= 28) continue;
                         minLeft = Math.min(minLeft, c.x - c.r);
                     }
             }
@@ -424,7 +437,10 @@ test('tiers shorten rests and tier II adds a frenzy phase', async () => {
 test('the Ringwarden: blades absorb shots and break, the core only takes what gets through', async () => {
     const game = await practiceGame(1);
     ticks(game, ENTRANCE);
-    const blade = bossParts(game.scene()).find((p) => p.kind === PART.blade && p.slot < 16);
+    // The frontmost outer blade: nothing else stands between it and the pilot (the ring moves).
+    const blade = bossParts(game.scene())
+        .filter((p) => p.kind === PART.blade && p.slot < 16)
+        .sort((a, b) => a.x - b.x)[0];
     const hp = bossState(game.scene()).health;
     shoot(game, blade, 1);
     assert.equal(bossPart(game.scene(), blade.index).exists, false);
@@ -501,19 +517,6 @@ test('the Tidecaller: the bubble shield, and a laser that pops all three', async
     }
     assert.equal(bossParts(game.scene()).filter((p) => p.kind === PART.bubble).length, 0);
     assert(bossState(game.scene()).health < hp);
-});
-
-test('the Horizon Warden: plates absorb shots outside the window', async () => {
-    const game = await practiceGame(5);
-    ticks(game, ENTRANCE);
-    const centre = () => ({ x: bossState(game.scene()).x, y: bossState(game.scene()).y });
-    until(game, (state) => state.aux[1] < 0.5, 500);
-    const hp = bossState(game.scene()).health;
-    shoot(game, centre(), 3, { from: 160 });
-    assert.equal(bossState(game.scene()).health, hp);
-    until(game, (state) => state.aux[1] > 0.5, 700);
-    shoot(game, centre(), 3, { from: 160 });
-    assert(bossState(game.scene()).health < hp, 'the window opens the core');
 });
 
 test('shootable projectiles: missiles take two shots, lobs split into embers and cancel their pool', async () => {
@@ -619,157 +622,6 @@ async function phaseGame(kind, phase, seed = 7) {
 }
 const ENTRANCE_TICKS = ENTRANCE;
 const angleError = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
-
-test('the Warden mirror throws shots back at the pilot instead of taking them', async () => {
-    const game = await phaseGame(5, 2);
-    ticks(game, ENTRANCE_TICKS);
-    until(game, (state) => state.aux[5] > 0.75, 3000);
-    const hp = bossState(game.scene()).health;
-    const centre = { x: bossState(game.scene()).x, y: bossState(game.scene()).y };
-    shoot(game, centre, 1, { from: 150 });
-    ticks(game, 3);
-    const scene = game.scene();
-    assert.equal(bossState(scene).health, hp, 'the core takes nothing through the mirror');
-    const back = bossShots(scene).filter((s) => s.family === SHOT.fast);
-    assert(back.length >= 1, 'a shot comes back');
-    for (const s of back)
-        assert(
-            angleError(s.angle, Math.atan2(scene[S.SHIP_Y] - s.y, scene[S.SHIP_X] - s.x)) < 0.2,
-            'and it is aimed at the pilot who fired',
-        );
-    // Held fire does not stack: shots within 260 ms of a return are absorbed.
-    const count = bossShots(game.scene()).filter((s) => s.family === SHOT.fast).length;
-    shoot(game, centre, 3, { from: 150 });
-    assert(
-        bossShots(game.scene()).filter((s) => s.family === SHOT.fast).length <= count + 2,
-        'returned shots are rate limited',
-    );
-});
-
-test('the Warden mirror reflects the laser as a warned beam, never an instant hit', async () => {
-    const game = await phaseGame(5, 3);
-    ticks(game, ENTRANCE_TICKS);
-    // Catch the mirror as it forms so it is up for the whole 1.5 s the laser takes to charge.
-    until(game, (state) => state.aux[5] > 0.25 && state.aux[5] < 0.75, 3000);
-    until(game, (state) => state.aux[5] > 0.75, 100);
-    const hp = bossState(game.scene()).health;
-    set(game, 3, 100);
-    set(game, 4, 135);
-    for (let i = 0; i < 80; i++) {
-        const scene = game.scene(),
-            dx = bossState(scene).x - scene[S.SHIP_X],
-            dy = bossState(scene).y - scene[S.SHIP_Y],
-            length = Math.hypot(dx, dy);
-        game.step({ y: 0, laser: true, aimX: dx / length, aimY: dy / length });
-    }
-    assert.equal(bossState(game.scene()).health, hp, 'the laser does nothing to the Warden');
-    const beam = bossHazards(game.scene()).find((h) => h.kind === HAZARD.beam);
-    assert(beam, 'the laser returns as a beam');
-    assert(beam.warn >= 800, `with its warning (${beam.warn} ms)`);
-});
-
-// The mirror is the one place a player's own action creates a lethal hazard, so it gets its own
-// rule: every returned laser is a beam with its full warning, and the laser is returned at most
-// once per discharge.
-test('the Warden mirror never makes an unwarned lethal beam, one per laser discharge', async () => {
-    for (const long of [0, 1]) {
-        const game = await phaseGame(5, 3, 31);
-        game.api.web_boss_assist(long, 0);
-        ticks(game, ENTRANCE_TICKS);
-        const warning = long ? 1170 : 900;
-        let discharges = 0,
-            returned = 0,
-            cooldown = 0,
-            known = new Set();
-        for (let i = 0; i < 90 * 50 && bossState(game.scene()).active; i++) {
-            const scene = game.scene(),
-                boss = bossState(scene),
-                dx = boss.x - scene[S.SHIP_X],
-                dy = boss.y - scene[S.SHIP_Y],
-                length = Math.hypot(dx, dy) || 1;
-            // Stand level with the Warden and charge the laser whenever the mirror is holding.
-            set(game, 3, 100);
-            set(game, 4, 135);
-            const mirror = boss.aux[5] > 0.25;
-            game.step({
-                y: 0,
-                laser: mirror && cooldown <= 0,
-                aimX: dx / length,
-                aimY: dy / length,
-            });
-            const after = game.scene(),
-                fired = after[S.LASER_COOLDOWN_MS] > cooldown;
-            cooldown = after[S.LASER_COOLDOWN_MS];
-            if (fired) discharges++;
-            const beams = bossHazards(after).filter((h) => h.kind === HAZARD.beam);
-            const fresh = beams.filter((h) => !known.has(h.index));
-            known = new Set(beams.map((h) => h.index));
-            for (const beam of fresh) {
-                assert.equal(beam.warnTotal, warning, `a beam is born with its full warning`);
-                assert(beam.warn >= warning - 20, 'and has not yet started to count down');
-            }
-            if (fired) returned += fresh.length;
-            assert(fresh.length <= 1 || !fired, 'one laser discharge returns one beam');
-        }
-        assert.equal(stats(game).violations, 0, 'no lethal hazard without its warning');
-        assert(discharges >= 2, `the laser was fired through the mirror (${discharges} times)`);
-        assert(returned >= 1, 'and the mirror threw at least one beam back');
-        assert(returned <= discharges, 'never more beams than discharges');
-    }
-});
-
-test('the Warden cloaks: nothing to hit, nothing to touch, then it is back', async () => {
-    const game = await phaseGame(5, 3);
-    ticks(game, ENTRANCE_TICKS);
-    until(game, (state) => state.aux[4] >= 1, 4000);
-    assert.equal(body(game).length, 0, 'a cloaked Warden cannot be touched');
-    const hp = bossState(game.scene()).health;
-    const centre = { x: bossState(game.scene()).x, y: bossState(game.scene()).y };
-    shoot(game, centre, 3, { from: 200 });
-    assert.equal(bossState(game.scene()).health, hp, 'shots pass through');
-    until(game, (state) => state.aux[4] === 0, 400);
-    assert(body(game).length > 0, 'it solidifies again');
-});
-
-test('the Warden uses every earlier boss attack across the fight', async () => {
-    const seen = new Set();
-    // The attacks are drawn at random, so look across a few fights.
-    for (const seed of [21, 22, 23, 24]) {
-        const game = await phaseGame(5, 3, seed);
-        for (let i = 0; i < 60 * 50 && bossState(game.scene()).active; i++) {
-            game.step({});
-            seen.add(bossState(game.scene()).attack);
-        }
-    }
-    const families = [
-        [
-            ATTACK.lance,
-            ATTACK.fan,
-            ATTACK.volley,
-            ATTACK.cross,
-            ATTACK.prism,
-            ATTACK.pick,
-            'Sentinel/Ringwarden',
-        ],
-        [
-            ATTACK.lob,
-            ATTACK.ember,
-            ATTACK.fanJets,
-            ATTACK.fireNova,
-            ATTACK.ringBurst,
-            'Cinderforge',
-        ],
-        [ATTACK.cannon, ATTACK.missile, ATTACK.mines, ATTACK.broadside, 'Bastion'],
-        [ATTACK.sine, ATTACK.tendril, ATTACK.spore, ATTACK.pulse, 'Tidecaller'],
-    ];
-    for (const family of families) {
-        const name = family.pop();
-        assert(
-            family.some((id) => seen.has(id)),
-            `${name} attacks appear in the last phases`,
-        );
-    }
-});
 
 test('the Tidecaller streams start from all over the bell and its three new attacks work', async () => {
     const game = await phaseGame(4, 3, 11);
@@ -886,4 +738,171 @@ test('the Cinderforge fights with fire that stays: geysers, hammers, vents and a
         assert(seen.has(id), `attack ${id}`);
     assert(most >= 1 && most <= 3, `${most} scorches at once`);
     assert(geyserScorch, 'a geyser leaves a scorch at its base');
+});
+
+test('every boss moves: its rest point follows the pilot between attacks', async () => {
+    for (const kind of KINDS.keys()) {
+        if (kind === 7) continue; // the Shardling already kites on its own
+        const game = await practiceGame(kind, 0, 300 + kind);
+        ticks(game, ENTRANCE);
+        set(game, 5, 1e9); // untouchable: this test is about the boss, not the pilot
+        let low = 999,
+            high = -999,
+            left = 999,
+            right = -999;
+        for (let i = 0; i < 50 * 20; i++) {
+            // The pilot weaves between the top and bottom of the field, in front of the boss.
+            set(game, 3, 60);
+            set(game, 4, i % 500 < 250 ? 50 : 220);
+            game.step();
+            const s = game.scene();
+            if (!s[S.BOSS_ACTIVE]) break;
+            low = Math.min(low, s[S.BOSS_Y]);
+            high = Math.max(high, s[S.BOSS_Y]);
+            left = Math.min(left, s[S.BOSS_X]);
+            right = Math.max(right, s[S.BOSS_X]);
+        }
+        const name = KINDS[kind].name;
+        assert(high - low >= 30, `${name}: moved only ${high - low} px vertically`);
+        assert(right - left >= 5, `${name}: moved only ${right - left} px sideways`);
+    }
+});
+
+test('parking behind or beside a boss sets off a warned repel ring', async () => {
+    for (const kind of KINDS.keys()) {
+        const game = await practiceGame(kind, 0, 400 + kind);
+        ticks(game, ENTRANCE);
+        set(game, 5, 0); // vulnerable
+        let hit = false;
+        // Some bodies (the Ringwarden's blades) touch a parked pilot first; keep parking until
+        // the repel has gone out too.
+        for (let i = 0; i < 50 * 6 && !(hit && stats(game).repels >= 1); i++) {
+            const s = game.scene();
+            set(game, 3, Math.min(460, s[S.BOSS_X] + 70));
+            set(game, 4, s[S.BOSS_Y] + (kind % 2 ? 60 : -60));
+            game.step();
+            hit = stats(game).hitsTaken > 0;
+        }
+        const s = stats(game),
+            name = KINDS[kind].name;
+        assert(s.repels >= 1, `${name}: no repel`);
+        assert(hit, `${name}: a pilot parked behind it was never touched`);
+        assert.equal(s.violations, 0, `${name}: the repel went live without its warning`);
+    }
+});
+
+// ---------------------------------------------------------------- the Zodiarch (P1.2)
+const signParts = (game) => bossParts(game.scene()).filter((p) => p.kind === PART.sign);
+
+test('the Zodiarch swims: its 26 segments trail the head along its path, right of x=216', async () => {
+    const game = await practiceGame(5);
+    ticks(game, ENTRANCE);
+    set(game, 5, 1e9);
+    const first = bossBody(game.scene()).map((s) => [s.x, s.y]);
+    assert.equal(first.length, 26);
+    ticks(game, 100);
+    const later = bossBody(game.scene());
+    assert(Math.hypot(later[0].x - first[0][0], later[0].y - first[0][1]) > 20, 'the neck moved');
+    for (const s of later) assert(s.x - s.r >= 215, `segment at x=${s.x}`);
+    // Each segment sits about 13 px further back along the path than the one before.
+    for (let i = 1; i < later.length; i++) {
+        const gap = Math.hypot(later[i].x - later[i - 1].x, later[i].y - later[i - 1].y);
+        assert(gap > 4 && gap <= 14, `gap ${gap.toFixed(1)} at ${i}`);
+    }
+});
+
+test('a thrown sign forms out of the ring before anything of it is live, and breaking its key star hurts the dragon', async () => {
+    const game = await practiceGame(5);
+    ticks(game, ENTRANCE);
+    set(game, 5, 1e9);
+    until(game, () => signParts(game).length > 0, 400);
+    const forming = signParts(game)[0];
+    assert.equal(forming.state, 0, 'it starts by forming');
+    assert(
+        bossHazards(game.scene()).every((h) => h.kind > HAZARD.arm),
+        'no lethal hazard while it forms',
+    );
+    until(game, () => signParts(game).some((p) => p.state === 1), 60);
+    const live = signParts(game).find((p) => p.state === 1);
+    const hp = bossState(game.scene()).health;
+    for (let k = 0; k < live.hp; k++) set(game, 9, live.index); // three hits on its key star
+    const after = bossPart(game.scene(), live.index);
+    assert(!after.exists || after.state === 2, 'the creature breaks');
+    assert(bossState(game.scene()).health < hp, 'and the dragon is hurt');
+});
+
+test('the Zodiarch: the pearl takes shots only while it is open', async () => {
+    const game = await practiceGame(5);
+    ticks(game, ENTRANCE);
+    set(game, 5, 1e9);
+    const pearl = () => {
+        const a = bossState(game.scene()).aux;
+        return { x: a[4], y: a[5] };
+    };
+    until(game, (state) => state.aux[1] < 0.5 && !signParts(game).length, 600);
+    const hp = bossState(game.scene()).health;
+    shoot(game, pearl(), 2, { from: 120 });
+    assert.equal(bossState(game.scene()).health, hp, 'closed: nothing');
+    until(game, (state) => state.aux[1] > 0.5, 700);
+    let hit = false;
+    for (let k = 0; k < 6 && !hit; k++) {
+        shoot(game, pearl(), 1, { from: 90 });
+        hit = bossState(game.scene()).health < hp;
+    }
+    assert(hit, 'open: the pearl takes damage');
+});
+
+test('every sign has its own attack, and the breath comes in phase 3', async () => {
+    const seen = new Set();
+    for (const phase of [1, 2, 3]) {
+        const game = await phaseGame(5, phase, 40 + phase);
+        for (let i = 0; i < 50 * 70 && seen.size < 13; i++) {
+            game.step();
+            const a = bossState(game.scene()).attack;
+            if (a) seen.add(a);
+        }
+    }
+    for (let sign = 0; sign < 12; sign++) assert(seen.has(ATTACK.aries + sign), `sign ${sign}`);
+    assert(seen.has(ATTACK.breath), 'breath');
+});
+
+// ---------------------------------------------------------------- Ninefold (P1.3)
+const tails = (game) => bossParts(game.scene()).filter((p) => p.kind === PART.tail);
+
+test('Ninefold: its nine tails are its health, and losing one opens the forehead', async () => {
+    const game = await practiceGame(11);
+    ticks(game, ENTRANCE);
+    set(game, 5, 1e9);
+    assert.equal(tails(game).length, 9);
+    const state = bossState(game.scene());
+    set(game, 1, Math.floor((state.maximum * 6.5) / 9)); // between six and seven ninths left
+    ticks(game, 1);
+    assert.equal(tails(game).length, 7);
+    assert(bossState(game.scene()).aux[2] > 0.5, 'the forehead opens');
+    ticks(game, 140);
+    assert(bossState(game.scene()).aux[2] < 0.5, 'and closes again after 2.5 s');
+});
+
+test('Ninefold: a hit on a tail reaches the fox', async () => {
+    const game = await practiceGame(11);
+    ticks(game, ENTRANCE);
+    set(game, 5, 1e9);
+    const hp = bossState(game.scene()).health;
+    const tail = tails(game).sort((a, b) => a.y - b.y)[0];
+    shoot(game, tail, 3, { from: 80 });
+    assert(bossState(game.scene()).health < hp);
+});
+
+test('Ninefold: popping both illusions opens the forehead; while it blinks it cannot be touched', async () => {
+    const game = await practiceGame(11);
+    ticks(game, ENTRANCE);
+    set(game, 5, 1e9);
+    until(game, (state) => state.attack === ATTACK.illusion && state.attackMs >= 700, 2000);
+    const decoys = bossParts(game.scene()).filter((p) => p.kind === PART.decoy);
+    assert.equal(decoys.length, 2);
+    for (const d of decoys) shoot(game, { x: d.x + NINEFOLD.body[0], y: d.y + NINEFOLD.body[1], index: d.index }, 3, { from: 80 });
+    assert.equal(bossParts(game.scene()).filter((p) => p.kind === PART.decoy).length, 0);
+    assert(bossState(game.scene()).aux[2] > 0.5, 'seen through: the forehead opens');
+    until(game, (state) => state.aux[1] > 0.5, 2000);
+    assert.equal(body(game).length, 0, 'gone while it blinks');
 });
