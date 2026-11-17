@@ -18,6 +18,7 @@ export class BossLayer {
         const state = bossState(scene);
         if (!state.active) return;
         const hazards = bossHazards(scene);
+        this.kind = state.kind;
         this.hazards(ctx, hazards, time, 'below');
         this.body(ctx, scene, state, time);
         this.hazards(ctx, hazards, time, 'above');
@@ -68,6 +69,7 @@ export class BossLayer {
                 urgency: warning ? 1 - h.warn / Math.max(1, h.warnTotal) : 1,
                 blink: warning && h.warn < 260 && Math.floor(time / 60) % 2,
                 time,
+                kind: this.kind,
             });
         }
     }

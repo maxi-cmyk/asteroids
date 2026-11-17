@@ -79,7 +79,7 @@ static void bs_hazards_update() {
         }
         if (h.live_left <= FRAME_TIME_MS) {
             float x = h.x, y = h.y, r = h.c;
-            bool pool = h.kind == HK_POOL;
+            bool pool = h.kind == HK_POOL && h.e != 1;   // a black hole's core leaves nothing behind
             h.active = false;
             if (pool) bs_scorch(x, y, r * .85f, 6000);
             continue;

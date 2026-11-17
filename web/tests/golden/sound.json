@@ -89,6 +89,12 @@
   "warden.charge.81": "4:9b53a60b:46:774fdd5a",
   "warden.charge.82": "4:e42a34af:62:7bdd3725",
   "warden.charge.83": "2:a2b1014c:25:53c135cd",
+  "warden.charge.84": "1:7a301b1e:11:f01d46a2",
+  "warden.charge.85": "1:d541ab8d:14:d5c46e22",
+  "warden.charge.86": "2:af23a2:20:69b2cb17",
+  "warden.charge.87": "1:4470fc71:11:41981f67",
+  "warden.charge.88": "1:208ea96c:14:b3be949",
+  "warden.charge.89": "3:f555677f:30:d69ecfc6",
   "warden.charge.90": "1:61d19a75:11:f4b0e41e",
   "warden.charge.91": "1:70cfb4b1:17:e7e423f3",
   "warden.charge.92": "3:dafdcb82:33:8a73c0a1",
@@ -103,6 +109,10 @@
   "warden.shot.5": "1:be4b105b:17:5dff6320",
   "warden.shot.10": "1:f74fa72c:17:5166476d",
   "warden.shot.11": "1:9ebb0152:11:ef865278",
+  "warden.shot.12": "1:2a777bcb:14:c7eb072b",
+  "warden.shot.13": "1:eb0711fe:11:3bfa45b8",
+  "warden.shot.14": "1:1f31a4d7:11:a0975312",
+  "warden.shot.15": "1:ef882efb:14:9446275",
   "warden.part": "2:4a3357a9:24:3705d2d3",
   "warden.open": "3:14a4d7c0:30:4e784b22",
   "warden.phase": "2:f0bdf146:22:dbd82a26",
@@ -115,12 +125,12 @@
   "2": "58:da1e293f",
   "3": "28:2cbd3a34",
   "4": "55:52429dc2",
-  "5": "24:88b436b0",
+  "5": "27:5536a2b5",
   "6": "27:43eb8811",
   "7": "31:138209b1",
   "8": "25:af6da031",
   "9": "29:a353b896",
   "10": "59:297129bb",
-  "11": "45:c869bb74"
+  "11": "46:c1eae53c"
  }
 }

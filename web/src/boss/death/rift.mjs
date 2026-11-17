@@ -59,18 +59,22 @@ export const SCRIPTS = {
     11(d) {
         const { ctx, x, y, age } = d,
             tails = bossParts(d.snap).filter((p) => p.kind === PART.tail),
+            s = bossState(d.snap).aux[5] || 1,
+            fox = s < 0.9 ? 'ninefold-s' : 'ninefold',
             step = 110;
         tails.forEach((tail, k) => {
             const at = k * step;
-            if (age < at) d.art.drawFx(ctx, 'rift', `ninefold-tail-${tail.slot}`, x, y, {});
+            if (age < at) d.art.drawFx(ctx, 'rift', `${fox}-tail-${tail.slot}`, x, y, {});
             else starBurst(ctx, tail.x, tail.y, age - at, 8, 0.08, 500, k);
         });
         const from = tails.length * step,
             p = clamp01((age - from) / 600);
-        if (p < 1) dissolved(d, 'rift', 'ninefold-1', x, y, ease(p));
-        else if (age < from + 700) body(d, 'ninefold-1', { alpha: 0 });
-        if (age > from) starBurst(ctx, x - 20, y, age - from, 20, 0.1, 900, 2);
-        ring(d, x - 33, y - 54, from + 200, { colour: '#ffaad2', speed: 0.2, life: 700, max: 140, squash: 1 });
-        if (age > from + 200) rays(d, x - 33, y - 54, from + 200, { count: 10, reach: 1.2, colours: VIOLET, life: 600 });
+        if (p < 1) dissolved(d, 'rift', `${fox}-1`, x, y, ease(p));
+        else if (age < from + 700) body(d, `${fox}-1`, { alpha: 0 });
+        if (age > from) starBurst(ctx, x - 20 * s, y, age - from, 20, 0.1, 900, 2);
+        const mx = x - 33 * s,
+            my = y - 54 * s;
+        ring(d, mx, my, from + 200, { colour: '#ffaad2', speed: 0.2, life: 700, max: 140, squash: 1 });
+        if (age > from + 200) rays(d, mx, my, from + 200, { count: 10, reach: 1.2, colours: VIOLET, life: 600 });
     },
 };

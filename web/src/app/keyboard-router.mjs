@@ -31,6 +31,7 @@ export class KeyboardRouter {
             { navigation, runtime, menu } = app;
         app.input.device = 'keyboard';
         app.input.physicalKeys.add(event.code);
+        app.input.lastKeyAt = performance.now();
         if (
             event.repeat &&
             ['Enter', 'Space'].includes(event.code) &&

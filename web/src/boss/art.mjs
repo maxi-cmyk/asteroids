@@ -110,8 +110,47 @@ export class BossArt {
         ctx.restore();
         return true;
     }
-    silhouette(sheet, key) {
-        const id = `${sheet}/${key}`;
+    // A cell drawn as a 1 px edge in `colour` all round, under the cell itself: lifts a dark
+    // sprite off a dark background. The edge follows the closed shape: holes in a dithered
+    // fade (a pixel with solid neighbours either side) count as inside, so a fading figure
+    // (Taurus's half body) gets no hatching.
+    drawEdge(ctx, sheet, key, cx, cy, colour, alpha = 1) {
+        const entry = this.sheets.get(sheet),
+            c = entry?.state === 'ready' ? entry.cells[key] : undefined;
+        if (!c) return false;
+        const x = Math.round(cx - c.W / 2) + c.ox,
+            y = Math.round(cy - c.H / 2) + c.oy;
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(this.edgeMask(sheet, key, colour), x - 1, y - 1);
+        ctx.globalAlpha = 1;
+        return true;
+    }
+    edgeMask(sheet, key, colour) {
+        const id = `${sheet}/${key}/edge/${colour}`;
+        let canvas = this.flashes.get(id);
+        if (canvas) return canvas;
+        const shape = this.silhouette(sheet, key, colour),
+            w = shape.width,
+            h = shape.height;
+        const alpha = shape.getContext('2d').getImageData(0, 0, w, h).data;
+        const solid = (i, j) => i >= 0 && j >= 0 && i < w && j < h && alpha[(j * w + i) * 4 + 3] > 0;
+        const closed = (i, j) =>
+            solid(i, j) || (solid(i - 1, j) && solid(i + 1, j)) || (solid(i, j - 1) && solid(i, j + 1));
+        canvas = document.createElement('canvas');
+        canvas.width = w + 2;
+        canvas.height = h + 2;
+        const out = canvas.getContext('2d');
+        out.fillStyle = colour;
+        for (let j = -1; j <= h; j++)
+            for (let i = -1; i <= w; i++) {
+                if (closed(i, j)) continue;
+                if (closed(i - 1, j) || closed(i + 1, j) || closed(i, j - 1) || closed(i, j + 1)) out.fillRect(i + 1, j + 1, 1, 1);
+            }
+        this.flashes.set(id, canvas);
+        return canvas;
+    }
+    silhouette(sheet, key, colour = '#fff4e0') {
+        const id = `${sheet}/${key}/${colour}`;
         let canvas = this.flashes.get(id);
         if (!canvas) {
             const entry = this.sheets.get(sheet),
@@ -122,7 +161,7 @@ export class BossArt {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(entry.image, c.x, c.y, c.w, c.h, 0, 0, c.w, c.h);
             ctx.globalCompositeOperation = 'source-in';
-            ctx.fillStyle = '#fff4e0';
+            ctx.fillStyle = colour;
             ctx.fillRect(0, 0, c.w, c.h);
             this.flashes.set(id, canvas);
         }

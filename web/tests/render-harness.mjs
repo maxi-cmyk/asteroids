@@ -118,6 +118,7 @@ export function fakeArt() {
         draw: bossCalls('draw'),
         drawFx: bossCalls('drawFx'),
         drawRotated: bossCalls('drawRotated'),
+        drawEdge: bossCalls('drawEdge'),
         silhouette: bossCalls('silhouette'),
         icon: bossCalls('icon'),
         rubble: () => [

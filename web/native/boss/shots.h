@@ -6,6 +6,22 @@ static void bs_burst(float x, float y, int n, float speed, float offset = 0) {
     for (int i = 0; i < n; i++)
         bs_shot_at(SF_NEEDLE, x, y, offset + i * TWO_PI / n, speed);
 }
+// A fireball's life ends: five embers fan out along its heading.
+static void bs_fireball_split(const BossShot& s) {
+    float a = bs_atan2(s.dy, s.dx);
+    for (int i = -2; i <= 2; i++) bs_shot_at(SF_EMBER, s.x, s.y, a + i * .45f, 1.3f);
+}
+// A nova star's life ends: `amp` sparks in a ring, leaving the one nearest `phase` out (a
+// phase below -9 leaves none out); a small burst (six or fewer) dies within 700 ms.
+static void bs_nova_burst(const BossShot& s) {
+    unsigned n = unsigned(s.amp);
+    if (!n) return;
+    float step = TWO_PI / n, start = s.phase > -9 ? s.phase + step : bs_rand(0, step);
+    for (unsigned k = 0; k < n; k++) {
+        if (s.phase > -9 && k == n - 1) continue;   // the gap: the spark that would sit on `phase`
+        bs_shot_at(SF_PELLET, s.x, s.y, start + k * step, s.turn, 0, n <= 6 ? 700 : 0);
+    }
+}
 static void bs_ember_split(float x, float y) {
     for (int i = 0; i < 3; i++)
         bs_shot_at(SF_EMBER, x, y, BOSS_PI + (i - 1) * .55f, 1.0f);
@@ -50,7 +66,11 @@ static void bs_shots_update() {
                     s.dx = cosf(have + diff) * 1.4f;
                     s.dy = sinf(have + diff) * 1.4f;
                 }
-            } else if (s.family == SF_CURVE && s.turn != 0) {
+            } else if (s.family == SF_NOVA) {
+                // Flies to its spot and holds there (bx, by), easing in.
+                s.dx = (s.bx - s.x) * .09f;
+                s.dy = (s.by - s.y) * .09f;
+            } else if ((s.family == SF_CURVE || s.family == SF_METEOR) && s.turn != 0) {
                 float c = cosf(s.turn), n = sinf(s.turn);
                 float nx = s.dx * c - s.dy * n, ny = s.dx * n + s.dy * c;
                 s.dx = nx;
@@ -61,6 +81,13 @@ static void bs_shots_update() {
         }
         if (s.life && age >= s.life) {
             if (s.family == SF_LOB) s.active = false;      // lands; the pool goes live
+            else if (s.family == SF_NOVA || s.family == SF_FIREBALL) {
+                const BossShot was = s;   // copy first: the burst may reuse this slot
+                s.active = false;
+                particles_spawn(was.x, was.y);
+                if (was.family == SF_NOVA) bs_nova_burst(was);
+                else bs_fireball_split(was);
+            }
             else if (s.family == SF_MINE || s.family == SF_SPORE) bs_shot_end(s, false);
             else s.active = false;
             continue;

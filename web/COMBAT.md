@@ -200,31 +200,46 @@ figure of eight across the right of the field and its 26 body segments trail the
 so there is no safe spot behind it; its path for the next 0.6 s shows as faint dots. The body
 hurts to touch but does not soak shots; the head does. The weak point is the **pearl** under
 its chin: it opens for 2.5 s every 7 s (the dragon slows to half speed while it is open) and
-the laser reaches it any time. A ring of the twelve zodiac signs turns behind it. Each attack
-throws a sign: its stars fly out and re-form into the sign's creature over 700 ms (that is the
-warning), the creature attacks, then dissolves back into the ring. Every creature shows a
-twinkling **key star**; three hits (or the laser) break it early, which takes its walls, pull or
-cord with it, costs the dragon 4 sub-hits and brings the next pearl window 2 s sooner.
+the laser reaches it any time. A ring of the twelve zodiac signs turns behind it. It throws
+signs: a sign's stars fly out and re-form into its creature over 700 ms (that is the warning)
+in front of the coils (x 185 to 215), the creature attacks, then dissolves back into the ring.
+Up to one sign is out in phase 1, two in phase 2, three in phase 3 and four in the frenzy,
+thrown at least 1.2 s apart, and a compatibility rule keeps the caps: at most one sign that
+walls lanes (Gemini, Cancer, Pisces), one charger (Aries, Taurus, Leo), one field effect
+(Libra's pull, the black hole) and two ranged signs. Between throws the dragon attacks
+itself, holding still while it does. **Every shot and wall leaves a visible point on a
+body** (the emitters: `SIGN_EMIT` in `warden.h`, mirrored in `src/boss/scene.mjs`): light
+gathers there while it is warned and flashes when it fires. Every creature shows a twinkling
+**key star**; three hits (or the laser) break it early, which takes its walls, pull or cord
+with it, costs the dragon 2 sub-hits and brings the next pearl window 2 s sooner. A hit that
+does not break it makes it flinch; a break cracks it apart from the key star.
 
-| Sign | Creature | Attack |
+| Sign | Creature | Attack (from) |
 | --- | --- | --- |
-| Aries | ram | a lane on your row, then the ram charges along it |
-| Taurus | bull | a half-field lane, then its star knot bursts into seven pellets |
-| Gemini | twins | two walls above and below your row, then two nearer (a 48 px gap) |
-| Cancer | crab | two columns pinched from top and bottom, each with a 72 px gap |
-| Leo | lion | a roar ring with one notch, then a pounce lane aimed at you |
-| Virgo | maiden | four seeds, each an aimed needle behind a 500 ms aim line |
-| Libra | scales | a gentle pull toward the top or bottom (not under calm forces), and five weights |
-| Scorpio | scorpion | a sweeping tail lash, then a homing sting (two shots pop it) |
-| Sagittarius | centaur archer | three aim lines, then two arrow volleys down them |
-| Capricorn | sea-goat | dives off the bottom, rises in a wave of stars with one gap |
-| Aquarius | water bearer | a twelve-drop sine stream |
-| Pisces | two fish | both home in slowly; the cord between them is a lethal lane |
+| Aries | ram | a lane from its horns to the edge, then it charges the whole field and off it |
+| Taurus | bull | a red beam sweeps a 16° wedge from its eye (Aldebaran), then it stampedes off the field, its star knot bursting into seven as it passes you |
+| Gemini | twins | a beam from each twin's hand, above and below your row, then two nearer |
+| Cancer | crab | its claws shoot out on tethers up and down past you and snap back |
+| Leo | lion | a roar ring with one notch from its jaws, three suns shed from its mane, then a crouch and a pounce all the way across |
+| Virgo | maiden | four seeds thrown from her hand become turrets (an aimed needle each), then Spica from her wheat ear as a nova star |
+| Libra | scales | a gentle pull toward the top or bottom (not under calm forces), and five weights from the pans |
+| Scorpio | scorpion | from the stinger tip: a venom lash sweeping an arc, then the homing sting (two shots pop it) |
+| Sagittarius | centaur archer | three aim lines from the arrowhead, then two arrow volleys down them |
+| Capricorn | sea-goat | a hard dive, a splash, then two waves of stars over the whole upper half-plane, each with a gap toward you |
+| Aquarius | water bearer | twelve droplets (eight beside another ranged sign) that hang, fuse and burst into six short-lived sparks |
+| Pisces | two fish | the fish part wide with the cord slack (fly between), turn, close in and the cord lights (go round) |
 
-Phase 1 throws spring and summer (Aries to Virgo), phase 2 autumn and winter (Libra to Pisces),
-phase 3 the whole ring with a **starfire breath** every third attack (it stops, opens its jaw
-and breathes three fanned 230 px lanes, never into the corners). From tier II the frenzy adds
-the **Great Conjunction**: three creatures from three sides of the ring at once.
+Its own attacks: **fireballs** from the jaws (from phase 1; three slow balls that split into five
+embers after 1.2 s, or pop harmlessly when shot), an **eye laser** sweeping a 16° wedge and
+**nova stars** flung from its claws to either side of you (from phase 2; eight sparks with the
+gap facing you), and from phase 3 a **black hole** flung from the pearl well away from you
+(3 s; it pulls at 0.8 px a tick, under a quarter of full thrust, swallows your shots and has a
+10 px lethal core), a **meteor fall** of five meteors from the tail fan down pre-drawn curves,
+a **constellation net** (three ring stars joined by lines lethal for 1.5 s) and the **starfire
+breath** (it stops, opens its jaw and breathes three fanned 230 px lanes, never into the
+corners). Phase 1 throws spring and summer (Aries to Virgo), phase 2 autumn and winter (Libra
+to Pisces), phase 3 the whole ring. From tier II the frenzy adds the **Great Conjunction**:
+three creatures from three sides of the ring, 1.2 s apart.
 
 **Ninefold** (the rift mini-boss, internal id `lensimp`) is a nine-tailed star fox. Its tails
 are its health: a hit on any tail reaches the fox, and a tail falls with each ninth of its
@@ -238,7 +253,10 @@ blinks to another height behind a 500 ms shimmer.
 
 Measured on 2026-11-13 with the scripted pilot (`node tests/boss-baseline.mjs`: perfect aim, 6 shots
 a second, five seeds, boss practice), after bosses started moving (P0.3) and the rift fights were
-replaced (P1). The pilot keeps out of the space level with or behind a boss, as a sensible player
+replaced (P1); every row again on 2026-11-17 after the P2.3 Zodiarch attacks (several signs at
+once, its own attacks) and after the pilot learned to keep out of a sweeping beam's whole wedge,
+as a person reads it (that moved the Ringwarden, Cinderforge and Tidecaller hit counts a little;
+no fairness faults). The pilot keeps out of the space level with or behind a boss, as a sensible player
 would. Times are seconds from the start of the fight (the 1.4 s entrance included) to the defeat,
 averaged over the seeds; **hits** is how often the pilot was touched (practice loses no lives).
 People are expected to take about 1.5× the bot time; that figure is an estimate until the S0.2
@@ -247,11 +265,11 @@ playtest records real ones.
 | Fight | Tier I | Tier II | Tier III | Hits (tier I / II / III) | Expected person, tier I |
 | --- | --- | --- | --- | --- | --- |
 | Sentinel | 28 | 46 | 48 | 0 / 0 / 0 | 42 s |
-| Ringwarden | 29 | 33 | 33 | 14 / 26 / 21 | 44 s |
+| Ringwarden | 29 | 33 | 34 | 17 / 22 / 21 | 44 s |
 | Cinderforge | 36 | 44 | 43 | 12 / 10 / 23 | 54 s |
 | Bastion | 44 | 50 | 53 | 0 / 0 / 0 | 66 s |
-| Tidecaller | 43 | 50 | 51 | 3 / 1 / 5 | 65 s |
-| Zodiarch | 62 | 73 | 68 | 0 / 0 / 0 | 93 s |
+| Tidecaller | 43 | 48 | 51 | 4 / 4 / 3 | 65 s |
+| Zodiarch | 47 | 54 | 54 | 1.4 / 2.4 / 2.4 | 70 s |
 | Picket | 18 | 24 | 24 | 0 | 27 s |
 | Shardling | 14 | 16 | 16 | 0 | 21 s |
 | Cinderling | 10 | 23 | 23 | 0 | 15 s |
@@ -262,8 +280,8 @@ playtest records real ones.
 Fairness counters over the same 36 fights (tiers I to III): no lethal hazard without its warning,
 no entrance hit, shots never above the cap of 48 (the Tidecaller reaches it), hazards never above
 the cap of 6 (the Cinderforge reaches it), and the narrowest safe corridor was 230 px, far above
-42. The Zodiarch's twelve creatures, breath and conjunction stay inside those limits (at most four
-lethal hazards, 27 shots). The Ringwarden hurts the bot most (14 to 26 touches), so expect people
+42. The Zodiarch's creatures and its own attacks stay inside those limits with up to three signs
+out (at most four lethal hazards and 41 shots). The Ringwarden hurts the bot most (17 to 22 touches), so expect people
 to find it the busiest of the first three.
 
 Playtest log: Settings → Display → Playtest records one entry per boss attempt (boss, tier, outcome,

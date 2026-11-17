@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-test",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["web/serve.mjs"],
+      "env": { "SERVE_TEST_WASM": "1", "PORT": "4173" },
+      "port": 4173
+    },
+    {
+      "name": "sheet-saver",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["/private/tmp/claude-501/-Users-maxi-Desktop-asteriods/a247dbc0-074a-41f5-8fec-bbf450e09de4/scratchpad/save.mjs", "/private/tmp/claude-501/-Users-maxi-Desktop-asteriods/a247dbc0-074a-41f5-8fec-bbf450e09de4/scratchpad/sheets"],
+      "port": 4181
+    }
+  ]
+}

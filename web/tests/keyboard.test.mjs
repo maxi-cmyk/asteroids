@@ -117,3 +117,37 @@ test('an ordinary key release still only releases that key', async () => {
     assert.deepEqual([...controls.keys], ['KeyD']);
     assert.deepEqual([...app.input.physicalKeys], ['KeyD']);
 });
+
+// A native dropdown swallows the keyup of the Enter that picks an option (and the pointerup
+// that closes it). The key must not stay "held" for good: gameplay waits for every control
+// to be released after a menu, so a stuck key froze the ship after switching practice bosses.
+test('a key whose release was swallowed is let go once it stops auto-repeating', async () => {
+    const { InputHub } = await import('../src/app/input-hub.mjs');
+    const hub = new InputHub({});
+    hub.physicalKeys.add('Enter');
+    hub.lastKeyAt = performance.now();
+    assert.ok(hub.held(null), 'just pressed: still held');
+    hub.lastKeyAt = performance.now() - 900;
+    assert.ok(!hub.held(null), 'no repeat for 900 ms: treated as released');
+    assert.equal(hub.physicalKeys.size, 0);
+});
+
+// The same picker's popup takes focus from the window, which suspends the game loop; the
+// focus event that should wake it is not always sent when the popup closes.
+test('a suspended game loop wakes once the page is visible and focused again', async () => {
+    const { GameLoop } = await import('../src/app/game-loop.mjs');
+    const loop = new GameLoop({});
+    let woken = 0;
+    loop.suspended = true;
+    loop.resume = () => {
+        woken++;
+        loop.suspended = false;
+    };
+    loop.wakeIfFocused({ hidden: false, hasFocus: () => false });
+    assert.equal(woken, 0, 'still unfocused: stays suspended');
+    loop.wakeIfFocused({ hidden: true, hasFocus: () => true });
+    assert.equal(woken, 0, 'hidden: stays suspended');
+    loop.wakeIfFocused({ hidden: false, hasFocus: () => true });
+    assert.equal(woken, 1, 'visible and focused: resumes');
+    assert.equal(loop.suspended, false);
+});

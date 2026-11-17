@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Asteroids — Zodiarch attacks</title>
+  <style>
+    @font-face { font-family:'Jersey 10'; src:url('./assets/fonts/Jersey10-Regular.woff2') format('woff2'); }
+    :root { color-scheme:dark; }
+    body { margin:0; background:#080d1c; color:#eef2ff; font:16px/1.45 ui-monospace, monospace; }
+    main { max-width:1500px; margin:0 auto; padding:20px; }
+    h2 { font:400 30px 'Jersey 10'; letter-spacing:.08em; color:#ffe9c4; border-top:2px solid #33447f; padding-top:10px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(420px, 1fr)); gap:14px; }
+    figure { margin:0; background:#0f1830; border:2px solid #33447f; }
+    canvas { display:block; width:100%; height:auto; image-rendering:pixelated; background:#000; }
+    figcaption { padding:6px 10px; font:400 20px 'Jersey 10'; letter-spacing:.06em; }
+  </style>
+</head>
+<body>
+<main>
+  <p>Every Zodiarch attack from the live engine (P2.3), five moments each.</p>
+  <p id="status">Loading…</p>
+  <div id="tiles"></div>
+</main>
+<script type="module" src="./dev/zodiarch-attacks.mjs"></script>
+</body>
+</html>

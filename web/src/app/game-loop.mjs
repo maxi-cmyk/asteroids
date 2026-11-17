@@ -32,12 +32,20 @@ export class GameLoop {
             app.clock.resync();
             app.audio.suspend(app.isSettingsOpen());
         };
+        this.resume = resume;
         window.addEventListener('blur', () => this.suspend());
         window.addEventListener('focus', resume);
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) this.suspend();
             else resume();
         });
+    }
+    // A native dropdown (the practice boss picker) takes focus from the window while its popup
+    // is open, which suspends the loop, and the window does not always get its focus event
+    // back when the popup closes. The game then stayed frozen after switching bosses. Once the
+    // page is visible and focused again, carry on.
+    wakeIfFocused(doc = document) {
+        if (this.suspended && this.resume && !doc.hidden && doc.hasFocus?.()) this.resume();
     }
     suspend() {
         const { app } = this;
@@ -96,6 +104,7 @@ export class GameLoop {
         // Cross confirms the focused menu action; gameplay bindings stay separate.
         if (app.isSettingsOpen() && app.settingsUi.category === 'calibration')
             app.calibration.update(now);
+        this.wakeIfFocused();
         if (this.suspended) {
             this.previousTime = now;
             return;

@@ -1,6 +1,7 @@
 import { pixelGlow as glow } from '../render/fx.mjs';
-import { NINEFOLD, PART, bossPart, zodiarchPath } from './scene.mjs';
-import { creatures, drawCreature, drawDragonBody, drawRing } from './zodiac.mjs';
+import { ATTACK, NINEFOLD, PART, bossHazards, bossPart, bossShots, foxBend, zodiarchPath } from './scene.mjs';
+import { creatures, drawCreature, drawDragonBody, drawRing, partners } from './zodiac.mjs';
+import { drawZodiacFx } from './zodiac-fx.mjs';
 import { TAU, dottedRing } from './draw-kit.mjs';
 
 // One painter per boss kind (the index is the engine's BossKind). Each receives `b`:
@@ -144,7 +145,7 @@ const warden = (b) => {
     const { ctx, art, scene, x, y, time, aux, parts, alpha, flash, state, A } = b;
     const clock = aux[A.clock];
     drawRing(ctx, clock, aux[A.out], time, alpha);
-    if (state.stage > 0 && aux[A.breath] < 0.5) {
+    if (state.stage > 0 && aux[A.breath] < 0.5 && aux[A.hold] < 0.5) {
         ctx.fillStyle = '#ffd890';
         for (let k = 1; k <= 6; k++) {
             const [px, py] = zodiarchPath(clock + k * 0.1);
@@ -153,7 +154,7 @@ const warden = (b) => {
         }
         ctx.globalAlpha = 1;
     }
-    drawDragonBody(ctx, art, scene, { alpha, flash });
+    drawDragonBody(ctx, art, scene, { alpha, flash, damage: state.damage, time });
     const open = aux[A.coreOpen] > 0.5;
     const head = aux[A.mouth] > 0.5 ? 'zod-head-1' : 'zod-head-0';
     art.draw(ctx, 'rift', head, x - 24, y, { alpha, flash });
@@ -163,7 +164,10 @@ const warden = (b) => {
         py = aux[A.pearlY];
     if (open) glow(ctx, px, py, 24, '255,150,210', 0.45 + 0.15 * Math.sin(time / 90));
     art.draw(ctx, 'rift', open ? 'zod-pearl-1' : 'zod-pearl-0', px, py, { alpha });
-    for (const part of creatures(parts)) drawCreature(ctx, art, part, clock, time, alpha);
+    const thrown = creatures(parts),
+        second = partners(thrown);
+    thrown.forEach((part, i) => drawCreature(ctx, art, part, clock, time, alpha, second[i]));
+    drawZodiacFx(ctx, { hazards: bossHazards(scene), shots: bossShots(scene), creatures: thrown, time });
 };
 
 const picket = (b) => {
@@ -211,23 +215,103 @@ const moonjelly = (b) => {
     b.overlay('moonjelly');
 };
 
-// Ninefold: its tails (each one falls as its health does), the body, and while it casts an
-// illusion two decoys that look the same but for their dark eyes.
-const lensimp = (b) => {
-    const { ctx, art, x, y, time, aux, parts, alpha, flash, A } = b;
-    const blink = aux[A.blink] > 0.5;
-    if (blink && Math.floor(time / 70) % 2) return; // flickers while it blinks away
-    const tails = parts.filter((p) => p.kind === PART.tail);
-    for (const decoy of parts.filter((p) => p.kind === PART.decoy)) {
-        for (const tail of tails) art.draw(ctx, 'rift', `ninefold-tail-${tail.slot}`, decoy.x, decoy.y, { alpha: 0.85 });
-        art.draw(ctx, 'rift', 'ninefold-decoy', decoy.x, decoy.y, { alpha: 0.85 });
+// Ninefold. It breathes (the body rises and falls a pixel), blinks its eyes now and then, and
+// its nine tails sway in a wave that runs across the fan (bend frames, foxBend). Firing comets,
+// each tail draws back and flicks. Its blink is a dissolve: the fox comes apart into stars
+// that stream off, and gathers out of stars at its new place. While it casts an illusion all
+// three foxes are drawn smaller (`ninefold-s`); the two decoys have dark eyes.
+const FOX_TAU = Math.PI * 2;
+// Deterministic star motes over the fox's body and head, for its dissolve.
+const FOX_MOTES = Array.from({ length: 28 }, (_, i) => {
+    const a = (i * 2.399) % FOX_TAU,
+        r = ((i * 37) % 23) / 23;
+    const onHead = i % 3 === 0;
+    return {
+        x: onHead ? -35 + Math.cos(a) * 14 * r : -19 + Math.cos(a) * 22 * r,
+        y: onHead ? -40 + Math.sin(a) * 12 * r : 22 + Math.sin(a) * 34 * r,
+        drift: 0.5 + ((i * 13) % 7) / 7,
+        colour: ['#ffffff', '#c8f0ff', '#96e6ff', '#ffe6a0'][i % 4],
+    };
+});
+function foxMotes(ctx, x, y, s, spread, alpha) {
+    if (alpha <= 0.02) return;
+    ctx.globalAlpha = alpha;
+    for (const m of FOX_MOTES) {
+        // Out and up: the stars lift away as they scatter.
+        const k = spread * 46 * m.drift;
+        const px = x + m.x * s * (1 + spread * 1.4) + Math.cos(m.x) * k * 0.3,
+            py = y + m.y * s * (1 + spread * 0.6) - k;
+        ctx.fillStyle = m.colour;
+        ctx.fillRect(Math.round(px), Math.round(py), 1, 1);
+        if (m.drift > 1.1) ctx.fillRect(Math.round(px) - 1, Math.round(py), 3, 1);
     }
-    const fade = blink ? 0.5 : alpha;
-    for (const tail of tails) art.draw(ctx, 'rift', `ninefold-tail-${tail.slot}`, x, y, { alpha: fade, flash });
+    ctx.globalAlpha = 1;
+}
+const foxEase = (u) => u * u * (3 - 2 * u);
+
+const lensimp = (b) => {
+    const { ctx, art, state, x, y, time, aux, parts, alpha, flash, A } = b;
+    const clock = aux[A.clock],
+        s = aux[A.scale] > 0 ? aux[A.scale] : 1,
+        small = s < 0.9,
+        p = small ? 'ninefold-s' : 'ninefold';
+    const tails = parts.filter((q) => q.kind === PART.tail);
+    // A tail firing a comet draws back just before and flicks forward as it fires.
+    const flick = new Map();
+    if (state.attack === ATTACK.comets) {
+        const n = Math.max(2, (tails.length + 1) >> 1);
+        for (let k = 0; k < n; k++) {
+            const i = Math.floor((k * 9) / n) % 9,
+                fire = k * 150 + 500,
+                dt = state.attackMs - fire;
+            if (dt > -220 && dt < 0) flick.set(i, 4);
+            else if (dt >= 0 && dt < 140) flick.set(i, 0);
+        }
+    }
+    const tailFrame = (slot) => flick.get(slot) ?? foxBend(slot, clock);
+    const drawFox = (fx, fy, prefix, bodyKey, a, f) => {
+        for (const tail of tails) art.draw(ctx, 'rift', `${prefix}-tail-${tail.slot}-${tailFrame(tail.slot)}`, fx, fy, { alpha: a, flash: f });
+        const bob = Math.round(Math.sin((clock * FOX_TAU) / 2.2));
+        art.draw(ctx, 'rift', `${prefix}-${bodyKey}`, fx, fy + bob, { alpha: a, flash: f });
+        return bob;
+    };
+
+    // Decoys first, so the real fox draws over any overlap.
+    for (const decoy of parts.filter((q) => q.kind === PART.decoy)) {
+        drawFox(decoy.x, decoy.y, 'ninefold-s', 'decoy', 0.88 * alpha, 0);
+        if (Math.floor(time / 90 + decoy.slot) % 5 === 0)
+            foxMotes(ctx, decoy.x, decoy.y, NINEFOLD.illusionScale, 0.15, 0.5);
+    }
+
+    // The blink: 500 ms coming apart into stars, then 500 ms gathering at the new place.
+    let a = alpha,
+        motes = 0,
+        spread = 0;
+    if (aux[A.blink] > 0.5) {
+        const t = state.attack === ATTACK.foxBlink ? state.attackMs : 500;
+        if (t < 500) {
+            const u = foxEase(Math.min(1, t / 500));
+            a = alpha * (1 - u);
+            spread = u;
+            motes = Math.min(1, u * 2.5) * (1 - u * 0.4);
+        } else {
+            const u = foxEase(Math.min(1, (t - 500) / 500));
+            a = alpha * u;
+            spread = 1 - u;
+            motes = (1 - u) * 0.9;
+        }
+    }
+    // The illusion's split: a burst of motes as it shrinks (attack 600..900 ms).
+    if (state.attack === ATTACK.illusion && state.attackMs > 600 && state.attackMs < 900)
+        foxMotes(ctx, x, y, s, (state.attackMs - 600) / 300, 1 - (state.attackMs - 600) / 300);
+
     const open = aux[A.open] > 0.5;
-    b.frame(open ? 'ninefold-1' : 'ninefold-0', { alpha: fade });
-    b.overlay('ninefold');
-    if (open) glow(ctx, x + NINEFOLD.mark[0], y + NINEFOLD.mark[1], 16, '255,120,170', 0.5 + 0.2 * Math.sin(time / 80));
+    const shut = !open && time % 3700 < 140; // it blinks its eyes
+    const bob = drawFox(x, y, p, open ? '1' : shut ? 'shut' : '0', a, flash);
+    if (state.damage > 0) art.draw(ctx, 'rift', `${p}-d${state.damage}`, x, y + bob, { alpha: a });
+    foxMotes(ctx, x, y, s, spread, motes);
+    if (open && a > 0.3)
+        glow(ctx, x + NINEFOLD.mark[0] * s, y + NINEFOLD.mark[1] * s + bob, 16 * s, '255,120,170', 0.5 + 0.2 * Math.sin(time / 80));
 };
 
 // Indexed by BossKind: six bosses, then their six minis.

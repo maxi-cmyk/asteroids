@@ -91,6 +91,12 @@ void web_test_boss_set(int field, float value) {
                 break;
             }
     }
+    if (field == 10) {  // start attack `value` now (the attack gallery and tests)
+        boss.atk = int(value);
+        boss.atk_t0 = game_ms + FRAME_TIME_MS;   // the next tick is its first (t = 0)
+        bs_acquire();
+    }
+    if (field == 11) boss.rest_until = game_ms + (unsigned long)value;   // hold the next attack off
 #endif
 }
 void web_test_pickup(int kind) {

@@ -1,5 +1,8 @@
 import { pixelGlow as glow } from '../render/fx.mjs';
-import { HAZARD } from './scene.mjs';
+import { HAZARD, ZOD_STYLE } from './scene.mjs';
+import { blackHole, splash, swirl } from './zodiac-fx.mjs';
+
+const ZODIARCH_KIND = 5;
 import { TAU, COLOUR, px, dotted, dottedRing, dottedArc, band, disc } from './draw-kit.mjs';
 
 // Hazards and their telegraphs. Telegraph language: dashed amber line = lane or beam,
@@ -18,7 +21,10 @@ export const BELOW_BODY = new Set([
 ]);
 
 export const HAZARD_PAINTERS = {
-    [HAZARD.lane](ctx, h, { warning, blink }) {
+    [HAZARD.lane](ctx, h, m) {
+        if (h.e === ZOD_STYLE.net || h.e === ZOD_STYLE.cord) return zodLine(ctx, h, m);
+        if (h.e === ZOD_STYLE.tether && !m.warning) return tether(ctx, h);
+        const { warning, blink } = m;
         const half = h.c,
             x = h.x,
             y = h.y;
@@ -72,6 +78,7 @@ export const HAZARD_PAINTERS = {
         ctx.restore();
     },
     [HAZARD.pool](ctx, h, { warning, urgency, time }) {
+        if (h.e === 1) return; // a black hole's core: the pull draws it
         const r = h.c;
         if (warning) {
             // A pulsing pink ring on the floor, tightening as the plasma arrives.
@@ -105,7 +112,7 @@ export const HAZARD_PAINTERS = {
         disc(ctx, h.x - 2, h.y - 2, 4);
         glow(ctx, h.x, h.y, r + 10, '255,100,40', 0.3);
     },
-    [HAZARD.beam](ctx, h, { warning, blink }) {
+    [HAZARD.beam](ctx, h, { warning, blink, kind }) {
         if (warning) {
             // The whole wedge is dotted, with the opening edge dashed amber.
             dotted(ctx, h.x, h.y, h.c, 420, blink ? COLOUR.white : COLOUR.amber, 8, 2);
@@ -115,12 +122,32 @@ export const HAZARD_PAINTERS = {
             return;
         }
         dotted(ctx, h.x, h.y, h.e, 420, COLOUR.warn, 14);
-        band(ctx, h.x, h.y, h.a, 520, 10, '#8a60e8');
-        band(ctx, h.x, h.y, h.a, 520, 6, '#d8c4ff');
+        // The Zodiarch's beams come from an eye (its own, or Aldebaran): red.
+        const [outer, inner] = kind === ZODIARCH_KIND ? ['#c8281e', '#ff8a70'] : ['#8a60e8', '#d8c4ff'];
+        band(ctx, h.x, h.y, h.a, 520, 10, outer);
+        band(ctx, h.x, h.y, h.a, 520, 6, inner);
         band(ctx, h.x, h.y, h.a, 520, 2, '#ffffff');
     },
-    [HAZARD.ring](ctx, h, { warning }) {
+    [HAZARD.ring](ctx, h, { warning, urgency, time }) {
         const gap = { a: h.a, half: h.c };
+        if (warning && h.d > 1.5) {
+            // A fast ring that starts inside a body (a boss's repel): its own small warning ring
+            // would hide behind the sprite, so show where it is going. Ripples run out from it to
+            // the reach it will sweep, brightening as it nears, with the safe gap left open.
+            const reach = Math.min(260, h.b + h.d * 40);
+            for (let k = 0; k < 3; k++) {
+                const u = ((time / 700 + k / 3) % 1) * 0.85 + 0.15;
+                const r = h.b + (reach - h.b) * u;
+                ctx.globalAlpha = (0.35 + 0.5 * urgency) * (1 - u * 0.7);
+                dottedRing(ctx, h.x, h.y, r, k ? '#ff7a8a' : '#fff0e0', Math.round(r * 1.2) + 12, 0, gap);
+            }
+            ctx.globalAlpha = 1;
+            for (const side of [-1, 1]) {
+                const a = h.a + side * h.c;
+                dotted(ctx, h.x + Math.cos(a) * h.b, h.y + Math.sin(a) * h.b, a, reach - h.b, COLOUR.white, 6);
+            }
+            return;
+        }
         if (warning) {
             dottedRing(
                 ctx,
@@ -163,7 +190,8 @@ export const HAZARD_PAINTERS = {
         // A crisp ring line ties the dots together.
         dottedRing(ctx, h.x, h.y, h.b, '#7a2a50', Math.round(h.b * 2), 0, gap);
     },
-    [HAZARD.arm](ctx, h, { warning, blink }) {
+    [HAZARD.arm](ctx, h, { warning, blink, kind }) {
+        if (kind === ZODIARCH_KIND && !warning) return venom(ctx, h);
         if (warning) {
             dottedArc(ctx, h.x, h.y, h.b, h.c, h.e, blink ? COLOUR.white : COLOUR.pink, 5);
             dotted(ctx, h.x, h.y, h.c, h.b, COLOUR.warn, 8);
@@ -181,6 +209,8 @@ export const HAZARD_PAINTERS = {
     },
     // An area about to land.
     [HAZARD.tell](ctx, h, { blink, time }) {
+        if (h.e === ZOD_STYLE.splash) return splash(ctx, h);
+        if (h.e === ZOD_STYLE.swirl) return swirl(ctx, h, time);
         const r = h.b * (1 - 0.1 * Math.sin(time / 70));
         dottedRing(
             ctx,
@@ -193,18 +223,103 @@ export const HAZARD_PAINTERS = {
         );
     },
     // A spread: the centre line and the two edges.
-    [HAZARD.arc](ctx, h) {
+    [HAZARD.arc](ctx, h, { blink }) {
+        if (h.e) return meteorPath(ctx, h, blink);
+        if (h.d === 15) return fan(ctx, h, blink);
         for (const side of [-1, 0, 1])
             dotted(ctx, h.x, h.y, h.a + side * h.b, h.c, side ? COLOUR.warn : COLOUR.amber, 7);
     },
     // An aimed shot.
     [HAZARD.aim](ctx, h, { blink }) {
+        if (h.e === ZOD_STYLE.fish) return dotted(ctx, h.x, h.y, h.a, h.b, blink ? COLOUR.white : '#aaa0ff', 6);
+        // A seed is in flight for the first 40% of its warning (zodiac-fx draws it).
+        if (h.e === ZOD_STYLE.seed && 1 - h.warn / h.warnTotal < 0.55) return;
         dotted(ctx, h.x, h.y, h.a, h.b, blink ? COLOUR.white : COLOUR.aim, 4);
     },
     // A gravity well drawing the ship in.
-    [HAZARD.pull](ctx, h, { time }) {
+    [HAZARD.pull](ctx, h, { warning, time }) {
+        if (h.e === 1) return warning ? undefined : blackHole(ctx, h, time);
         const pulse = (time / 14) % 90;
         for (let k = 0; k < 3; k++)
             dottedRing(ctx, h.x, h.y, 150 - ((pulse + k * 30) % 90) * 1.6, '#a88cff', 36, k);
     },
 };
+
+// The Zodiarch's styled lines. A constellation net or the fish's cord: dotted while warned,
+// a thin glowing line when live.
+function zodLine(ctx, h, { warning, blink }) {
+    const colour = h.e === ZOD_STYLE.cord ? '#aaa0ff' : '#b8a8ff';
+    if (warning) {
+        dotted(ctx, h.x, h.y, h.a, h.b, blink ? COLOUR.white : colour, 4);
+        return;
+    }
+    const mid = [h.x + (Math.cos(h.a) * h.b) / 2, h.y + (Math.sin(h.a) * h.b) / 2];
+    glow(ctx, mid[0], mid[1], Math.min(40, h.b / 2), '170,160,255', 0.3);
+    band(ctx, h.x, h.y, h.a, h.b, 4, colour);
+    band(ctx, h.x, h.y, h.a, h.b, 1, COLOUR.white);
+    if (h.e === ZOD_STYLE.net)
+        for (const d of [0, h.b]) {
+            const X = h.x + Math.cos(h.a) * d,
+                Y = h.y + Math.sin(h.a) * d;
+            glow(ctx, X, Y, 10, '200,190,255', 0.6);
+            ctx.fillStyle = COLOUR.white;
+            px(ctx, X - 1, Y - 1, 3, 3);
+        }
+}
+// Cancer's claw on its tether: out along the lane for its first 250 ms, back for the last.
+function tether(ctx, h) {
+    const out = h.live > 250 ? 1 - (h.live - 250) / 250 : h.live / 250;
+    const reach = h.b * Math.max(0, Math.min(1, out));
+    ctx.strokeStyle = '#b4e6d2';
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.moveTo(h.x, h.y);
+    ctx.lineTo(h.x + Math.cos(h.a) * reach, h.y + Math.sin(h.a) * reach);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const X = h.x + Math.cos(h.a) * reach,
+        Y = h.y + Math.sin(h.a) * reach;
+    glow(ctx, X, Y, 14, '180,232,210', 0.5);
+    ctx.fillStyle = '#2a0c24';
+    px(ctx, X - 4, Y - 4, 9, 9);
+    ctx.fillStyle = '#dffff0';
+    px(ctx, X - 3, Y - 3, 7, 7);
+    ctx.fillStyle = '#ffffff';
+    px(ctx, X - 1, Y - 1, 3, 3);
+}
+// A meteor's path, drawn ahead: heading a, turning e per tick at d px per tick.
+function meteorPath(ctx, h, blink) {
+    let x = h.x,
+        y = h.y,
+        a = h.a;
+    ctx.fillStyle = blink ? COLOUR.white : '#ffb070';
+    for (let i = 0; i < 260; i++) {
+        x += Math.cos(a) * h.d;
+        y += Math.sin(a) * h.d;
+        a += h.e;
+        if (x < -10 || x > 490 || y < -10 || y > 280) break;
+        if (i % 3 === 0) px(ctx, x, y);
+    }
+}
+// Capricornus's fan: the lanes its waves will fly down, growing out from the splash.
+function fan(ctx, h, blink) {
+    const u = 1 - h.warn / h.warnTotal,
+        n = h.d;
+    for (let k = 0; k < n; k++) {
+        const a = h.a - h.b + (2 * h.b * k) / (n - 1);
+        ctx.globalAlpha = 0.35 + 0.4 * u;
+        dotted(ctx, h.x, h.y, a, 40 + 120 * u, blink && u > 0.6 ? COLOUR.white : '#a0c8ff', 5);
+    }
+    ctx.globalAlpha = 1;
+}
+// Scorpius's venom lash: a red beam from the stinger tip, venom dripping from its end.
+function venom(ctx, h) {
+    band(ctx, h.x, h.y, h.a, h.b, 7, '#c8281e');
+    band(ctx, h.x, h.y, h.a, h.b, 3, '#ffe0d8');
+    const tx = h.x + Math.cos(h.a) * h.b,
+        ty = h.y + Math.sin(h.a) * h.b;
+    glow(ctx, h.x, h.y, 14, '255,110,100', 0.7);
+    glow(ctx, tx, ty, 12, '255,90,90', 0.5);
+    ctx.fillStyle = '#ff8a7a';
+    for (let k = 0; k < 4; k++) px(ctx, tx - Math.cos(h.a) * k * 18, ty - Math.sin(h.a) * k * 18 + 4 + ((k * 5) % 7), 1, 2);
+}

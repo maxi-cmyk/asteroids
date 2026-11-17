@@ -113,6 +113,63 @@ def overlay(size, frames, level, seed, q=4):
     return Image.fromarray(out, 'RGBA').resize((lw * q, lh * q), Image.NEAREST).crop((0, 0, W, H))
 
 
+def star_overlay(size, frames, level, seed, q=1):
+    """Damage for the star-filled rift bodies, whose dark navy hides ink cracks. The body tears
+    along thin fissures that light leaks through (pale pink at level 1; hotter, wider and more
+    of them at level 2, where patches of stars have also gone dark). Clipped to the pixels
+    every frame shares; the fissures are 1 px lines, as fine as the constellation lines."""
+    W, H = size
+    lw, lh = (W + q - 1) // q, (H + q - 1) // q
+    mask = np.ones((lh, lw), bool)
+    for f in frames:
+        sample = alpha(f)[q // 2::q, q // 2::q][:lh, :lw]
+        mask &= np.pad(sample, ((0, lh - sample.shape[0]), (0, lw - sample.shape[1])))
+    mask = erode(mask, 4)
+    out = np.zeros((lh, lw, 4), np.uint8)
+    if mask.any():
+        rng = random.Random(seed)
+        ys, xs = np.nonzero(mask)
+        gy, gx = np.mgrid[0:lh, 0:lw]
+        if level == 2:   # stars gone out: soft dark patches, solid (no checker)
+            for _ in range(3):
+                i = rng.randrange(len(xs))
+                r = rng.uniform(7, 12)
+                d = np.hypot(gx - xs[i], (gy - ys[i]) * 1.2)
+                patch = mask & (d < r)
+                out[patch, :3] = (6, 8, 26)
+                out[patch, 3] = np.where(d[patch] < r * .6, 200, 120)
+        img = Image.new('L', (lw, lh), 0)
+        d = ImageDraw.Draw(img)
+        size_k = min(1, max(W, H) / 120)   # fewer, shorter fissures on a small body segment
+        for _ in range(max(1, round((4 if level == 1 else 8) * size_k))):
+            i = rng.randrange(len(xs))
+            x, y, ang = float(xs[i]), float(ys[i]), rng.random() * math.tau
+            pts = [(x, y)]
+            for _ in range(max(3, round(rng.randint(5, 10) * size_k))):
+                ang += rng.uniform(-.7, .7)
+                x += math.cos(ang) * rng.uniform(4, 7)
+                y += math.sin(ang) * rng.uniform(4, 7)
+                pts.append((x, y))
+                if rng.random() < .25:   # a short branch
+                    b = ang + rng.choice((-1, 1)) * rng.uniform(.6, 1.1)
+                    d.line([(x, y), (x + math.cos(b) * 6, y + math.sin(b) * 6)], fill=255, width=1)
+            d.line(pts, fill=255, width=1)
+        core = np.asarray(img) > 0
+        halo = dilate(core, 1) & ~core
+        edge = (255, 150, 205) if level == 2 else (240, 190, 230)
+        out[halo, :3] = edge
+        out[halo, 3] = 230 if level == 2 else 170
+        out[core, :3] = (255, 240, 250) if level == 2 else (20, 10, 34)
+        out[core, 3] = 255
+        out[~mask] = 0
+    return Image.fromarray(out, 'RGBA').resize((lw * q, lh * q), Image.NEAREST).crop((0, 0, W, H))
+
+
+def with_star_damage(sheet, stem, frames, size, seed):
+    for level in (1, 2):
+        sheet.add(f'{stem}-d{level}', star_overlay(size, frames, level, seed + level))
+
+
 def with_damage(sheet, stem, frames, size, seed):
     for level in (1, 2):
         sheet.add(f'{stem}-d{level}', overlay(size, frames, level, seed + level))
@@ -205,13 +262,19 @@ def rift():
     dragon = zod.dragon_cells()
     for name, im in dragon.items():
         sh.add(name, im)
-    with_damage(sh, 'zod-head', [dragon['zod-head-0'], dragon['zod-head-1']], (120, 84), 110)
-    for k, (im, _key) in enumerate(zod.sign_cells()):
-        sh.add(f'sign-{k}', im)
-    fox = zod.fox_cells()
-    for name, im in fox.items():
+    with_star_damage(sh, 'zod-head', [dragon['zod-head-0'], dragon['zod-head-1']], (120, 84), 110)
+    for r in zod.SEGMENT_RADII:   # the body tears too, a segment at a time
+        with_star_damage(sh, f'zod-seg-{r}', [dragon[f'zod-seg-{r}-0'], dragon[f'zod-seg-{r}-1']], (56, 56), 130 + r)
+    # The twelve creatures after the classical star-atlas figures (P2.2): hold and strike
+    # frames, Gemini and Pisces as one figure per creature (they split in the fight).
+    import zodiac_myth
+    for name, im in zodiac_myth.game_cells()[0].items():
         sh.add(name, im)
-    with_damage(sh, 'ninefold', [fox['ninefold-0'], fox['ninefold-1']], zod.FOX_SIZE, 120)
+    for k, prefix in ((1.0, 'ninefold'), (zod.FOX_ILLUSION_SCALE, 'ninefold-s')):
+        fox = zod.fox_cells(k=k, prefix=prefix)
+        for name, im in fox.items():
+            sh.add(name, im)
+        with_star_damage(sh, prefix, [fox[f'{prefix}-0'], fox[f'{prefix}-1']], fox[f'{prefix}-0'].size, 120)
     for i, rgb in enumerate([(154, 208, 255), (255, 233, 160), (255, 176, 112), (255, 255, 255)]):
         sh.add(f'star-{i}', star_sprite(rgb))
     return sh

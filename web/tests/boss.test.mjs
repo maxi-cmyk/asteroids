@@ -11,6 +11,7 @@ import {
     NINEFOLD,
     PART,
     SHOT,
+    SIGN_EMIT,
     SIGN_KEY,
     bossBody,
     bossHazards,
@@ -859,11 +860,117 @@ test('every sign has its own attack, and the breath comes in phase 3', async () 
         for (let i = 0; i < 50 * 70 && seen.size < 13; i++) {
             game.step();
             const a = bossState(game.scene()).attack;
-            if (a) seen.add(a);
+            if ((a >= ATTACK.aries && a <= ATTACK.pisces) || a === ATTACK.breath) seen.add(a);
         }
     }
     for (let sign = 0; sign < 12; sign++) assert(seen.has(ATTACK.aries + sign), `sign ${sign}`);
     assert(seen.has(ATTACK.breath), 'breath');
+});
+
+// ---------------------------------------------------------------- Zodiarch attacks (P2.3)
+// Start attack `id` now, with no creatures or threats left over from the practice fight.
+async function zodAttack(id, phase = 2, seed = 5) {
+    const game = await phaseGame(5, phase, seed);
+    ticks(game, ENTRANCE);
+    set(game, 8, 0);
+    set(game, 2, 0);
+    set(game, 10, id);
+    return game;
+}
+
+test('Zodiarch: every sign\'s first shot or wall leaves from its emitter on the creature', async () => {
+    const cases = [
+        [0, 'lane', ['horns'], { y: 0 }],
+        [1, 'beam', ['eye']],
+        [2, 'lane', ['hand', 'bHand']],
+        [3, 'lane', ['clawNear', 'clawFar']],
+        [4, 'ring', ['mouth']],
+        [5, 'nova', ['wheat']],
+        [6, 'pellet', ['panNear', 'panFar']],
+        [7, 'arm', ['sting']],
+        [8, 'aim', ['arrow']],
+        [10, 'nova', ['urn']],
+    ];
+    for (const [sign, what, emitters, override = {}] of cases) {
+        const game = await zodAttack(ATTACK.aries + sign);
+        const old = new Set();
+        let found = null;
+        for (let i = 0; i < 50 * 4 && !found; i++) {
+            game.step();
+            const creature = bossParts(game.scene()).filter((p) => p.kind === PART.sign && p.slot === sign && p.state === 1);
+            const items = what in HAZARD ? bossHazards(game.scene()).filter((h) => h.kind === HAZARD[what]) : bossShots(game.scene()).filter((s) => s.family === SHOT[what]);
+            for (const it of items) {
+                if (i === 0) old.add(it.index);
+                else if (!old.has(it.index) && creature.length) found = { it, creature };
+            }
+        }
+        assert(found, `${sign}: no ${what} appeared`);
+        const { it, creature } = found;
+        const near = creature.some((c) =>
+            emitters.some((name) => {
+                const [dx, dy] = SIGN_EMIT[sign][name];
+                const ex = c.x + dx,
+                    ey = c.y + ('y' in override ? override.y : dy);
+                return Math.hypot(it.x - ex, it.y - ey) <= (what === 'nova' ? 12 : 8); // a nova has taken its first step
+            }),
+        );
+        assert(near, `${sign}: ${what} at ${Math.round(it.x)},${Math.round(it.y)}, creature at ${Math.round(creature[0].x)},${Math.round(creature[0].y)}`);
+    }
+});
+
+test('Zodiarch: Aries, Taurus and Leo charge all the way off the screen', async () => {
+    for (const sign of [0, 1, 4]) {
+        const game = await zodAttack(ATTACK.aries + sign);
+        let least = 999,
+            lane = 0;
+        for (let i = 0; i < 50 * 7; i++) {
+            game.step();
+            const c = bossParts(game.scene()).find((p) => p.kind === PART.sign && p.slot === sign);
+            if (c && c.state === 1) least = Math.min(least, c.x);
+            for (const h of bossHazards(game.scene())) if (h.kind === HAZARD.lane && h.c >= 12) lane = Math.max(lane, h.b);
+        }
+        assert(least < -40, `${sign}: stopped at x ${Math.round(least)}`);
+        assert(lane > 150, `${sign}: lane only ${Math.round(lane)} px`);
+    }
+});
+
+test('Zodiarch: one sign out in phase 1, two in phase 2, three in phase 3, inside the caps', async () => {
+    for (const [phase, limit] of [[1, 1], [2, 2], [3, 3]]) {
+        const game = await phaseGame(5, phase, 60 + phase);
+        let most = 0;
+        for (let i = 0; i < 50 * 60; i++) {
+            game.step();
+            const leads = new Set(bossParts(game.scene()).filter((p) => p.kind === PART.sign && p.state !== 2).map((p) => p.slot));
+            most = Math.max(most, leads.size);
+        }
+        const stats = new Float32Array(game.api.memory.buffer, game.api.web_test_boss_stats(), 16);
+        assert(most <= limit, `phase ${phase}: ${most} signs out`);
+        if (phase > 1) assert(most >= limit, `phase ${phase}: never more than ${most} out`);
+        assert.equal(stats[0], 0, 'no warning shorter than the minimum');
+        assert(stats[2] <= 6, `lethal hazards ${stats[2]}`);
+        assert(stats[4] >= 42, `corridor ${stats[4]}`);
+    }
+});
+
+test('Zodiarch: a black hole pulls gently, swallows shots and leaves no scorch', async () => {
+    const game = await zodAttack(ATTACK.blackHole, 3);
+    let hole = null;
+    for (let i = 0; i < 60 && !hole; i++) {
+        game.step();
+        hole = bossHazards(game.scene()).find((h) => h.kind === HAZARD.pull && h.e === 1 && h.warn === 0);
+    }
+    assert(hole, 'it opens');
+    assert(hole.b <= 0.4 * 3.65625, 'full thrust escapes');
+    assert(Math.hypot(hole.x - 90, hole.y - 135) > 100, 'well away from the pilot');
+    for (let i = 0; i < 50 * 4; i++) game.step();
+    assert(!bossHazards(game.scene()).some((h) => h.kind === HAZARD.burn), 'no scorch left');
+});
+
+test('Zodiarch: a fireball pops when shot and splits into five embers if not', async () => {
+    const game = await zodAttack(ATTACK.fireball, 1);
+    for (let i = 0; i < 50 * 2.2; i++) game.step();
+    const embers = bossShots(game.scene()).filter((s) => s.family === SHOT.ember).length;
+    assert(embers >= 10, `${embers} embers`);
 });
 
 // ---------------------------------------------------------------- Ninefold (P1.3)
@@ -897,10 +1004,19 @@ test('Ninefold: popping both illusions opens the forehead; while it blinks it ca
     const game = await practiceGame(11);
     ticks(game, ENTRANCE);
     set(game, 5, 1e9);
-    until(game, (state) => state.attack === ATTACK.illusion && state.attackMs >= 700, 2000);
+    until(game, (state) => state.attack === ATTACK.illusion && state.attackMs >= 1000, 2000);
     const decoys = bossParts(game.scene()).filter((p) => p.kind === PART.decoy);
     assert.equal(decoys.length, 2);
-    for (const d of decoys) shoot(game, { x: d.x + NINEFOLD.body[0], y: d.y + NINEFOLD.body[1], index: d.index }, 3, { from: 80 });
+    // Three smaller foxes, spread apart and wholly on screen (a fox at .6 size spans about
+    // -48..+45 vertically from its centre).
+    const fox = bossState(game.scene());
+    const centres = [{ x: fox.x, y: fox.y }, ...decoys];
+    for (const c of centres) assert(c.y - 48 >= 0 && c.y + 45 <= 270 && c.x - 45 >= 216, `fox at ${c.x},${c.y}`);
+    for (let i = 0; i < 3; i++)
+        for (let j = i + 1; j < 3; j++)
+            assert(Math.hypot(centres[i].x - centres[j].x, centres[i].y - centres[j].y) > 70, 'spread apart');
+    const s = NINEFOLD.illusionScale;
+    for (const d of decoys) shoot(game, { x: d.x + NINEFOLD.body[0] * s, y: d.y + NINEFOLD.body[1] * s, index: d.index }, 3, { from: 80 });
     assert.equal(bossParts(game.scene()).filter((p) => p.kind === PART.decoy).length, 0);
     assert(bossState(game.scene()).aux[2] > 0.5, 'seen through: the forehead opens');
     until(game, (state) => state.aux[1] > 0.5, 2000);

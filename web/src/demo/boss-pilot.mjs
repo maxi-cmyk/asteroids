@@ -23,15 +23,28 @@ const wrap = (a) => {
     while (a < -Math.PI) a += 2 * Math.PI;
     return a;
 };
-const SHOT_R = [2, 3, 3, 4, 2.5, 4, 5, 5, 18, 2, 2.5, 3];
+const SHOT_R = [2, 3, 3, 4, 2.5, 4, 5, 5, 18, 2, 2.5, 3, 6, 3.5, 3.5, 4];
 
 export function hazardHits(h, px, py, r = SHIP) {
     const dx = px - h.x,
         dy = py - h.y;
     switch (h.kind) {
-        case HAZARD.lane:
         case HAZARD.beam:
-        case HAZARD.arm: {
+        case HAZARD.arm:
+            // A sweeping beam or arm: a person keeps out of the whole wedge it will sweep
+            // (c to e), not just where it points now.
+            if (h.e !== h.c && h.e !== 0) {
+                const dist = Math.hypot(dx, dy),
+                    len = h.kind === HAZARD.beam ? 520 : h.b;
+                if (dist > len + r) return false;
+                const lo = Math.min(h.c, h.e),
+                    hi = Math.max(h.c, h.e),
+                    pad = Math.atan2(r + 5, Math.max(1, dist));
+                const ang = h.c + wrap(Math.atan2(dy, dx) - h.c);
+                if (ang >= lo - pad && ang <= hi + pad) return true;
+            }
+        // falls through: the line it points along now
+        case HAZARD.lane: {
             const ca = Math.cos(h.a),
                 sa = Math.sin(h.a),
                 along = dx * ca + dy * sa,
@@ -129,10 +142,17 @@ export class BossPilot {
                 if (aux[1] > 0.5) return null;
                 const decoys = parts.filter((p) => p.kind === PART.decoy);
                 if (decoys.length)
-                    return nearest(decoys.map((p) => ({ x: p.x + NINEFOLD.body[0], y: p.y + NINEFOLD.body[1] })));
-                if (aux[2] > 0.5) return { x: x + NINEFOLD.mark[0], y: y + NINEFOLD.mark[1] };
+                    return nearest(
+                        decoys.map((p) => ({
+                            x: p.x + NINEFOLD.body[0] * NINEFOLD.illusionScale,
+                            y: p.y + NINEFOLD.body[1] * NINEFOLD.illusionScale,
+                        })),
+                    );
+                const s = aux[5] || 1,
+                    mark = { x: x + NINEFOLD.mark[0] * s, y: y + NINEFOLD.mark[1] * s };
+                if (aux[2] > 0.5) return mark;
                 const tails = parts.filter((p) => p.kind === PART.tail);
-                return tails.length ? nearest(tails) : { x: x + NINEFOLD.mark[0], y: y + NINEFOLD.mark[1] };
+                return tails.length ? nearest(tails) : mark;
             }
             default:
                 return { x, y };
@@ -177,6 +197,9 @@ export class BossPilot {
         const sx = scene[S.SHIP_X],
             sy = scene[S.SHIP_Y];
         const here = this.danger(sx, sy, scene, boss, shots, hazards, body, 0);
+        // A sweeping wedge can take more than 22 ticks to leave from a corner: look further.
+        const wedge = hazards.some((h) => (h.kind === HAZARD.beam || h.kind === HAZARD.arm) && h.e !== h.c && h.e !== 0);
+        const horizon = wedge ? [1, 3, 6, 10, 15, 22, 30, 40] : [1, 3, 6, 10, 15, 22];
         let best = null;
         for (let dy = -1; dy <= 1; dy++)
             for (let dx = -1; dx <= 1; dx++) {
@@ -184,7 +207,7 @@ export class BossPilot {
                     mx = (dx / len) * SPEED,
                     my = (dy / len) * SPEED;
                 let cost = 0;
-                for (const ahead of [1, 3, 6, 10, 15, 22]) {
+                for (const ahead of horizon) {
                     const px = sx + mx * ahead,
                         py = sy + my * ahead;
                     cost += this.danger(
@@ -235,6 +258,12 @@ function speedOf(s) {
             return 2.4;
         case SHOT.curve:
             return 2;
+        case SHOT.fireball:
+            return 1.1;
+        case SHOT.sun:
+            return 1.7;
+        case SHOT.meteor:
+            return 1.9;
         default:
             return 0;
     }

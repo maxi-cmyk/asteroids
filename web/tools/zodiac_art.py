@@ -481,11 +481,19 @@ FOX_SIZE = (250, 196)
 FOX_TAIL_BASE = (124, 128)
 
 
-def _fox_tail_path(i):
+# Tail sway: each tail has five bend frames (-2..2, 2 is the rest frame `ninefold-tail-i`).
+# A bend turns the tail about its root, the tip more than the middle. The engine moves each
+# tail's hit point by the same rule (warden.h, bs_fox_sway), so the hit circle follows.
+FOX_BEND_MID, FOX_BEND_TIP = .02, .045   # radians per bend step
+FOX_ILLUSION_SCALE = .6                  # the three foxes of an illusion are drawn smaller
+
+
+def _fox_tail_path(i, bend=0):
     a = math.radians(-128 + i * 17)
     base = FOX_TAIL_BASE
-    mid = (base[0] + 50 * math.cos(a) + 10, base[1] + 46 * math.sin(a) - 10)
-    tip = (base[0] + 92 * math.cos(a + .3) + 14, base[1] + 80 * math.sin(a + .3) - 8)
+    am, at = a + bend * FOX_BEND_MID, a + .3 + bend * FOX_BEND_TIP
+    mid = (base[0] + 50 * math.cos(am) + 10, base[1] + 46 * math.sin(am) - 10)
+    tip = (base[0] + 92 * math.cos(at) + 14, base[1] + 80 * math.sin(at) - 8)
     return base, mid, tip
 
 
@@ -498,41 +506,49 @@ def fox_geometry():
         tails.append((round(x - cx), round(y - cy)))
     return {
         'tails': tails,
+        'base': (FOX_TAIL_BASE[0] - cx, FOX_TAIL_BASE[1] - cy),
         'head': (90 - cx, 58 - cy, 17),
         'mark': (92 - cx, 44 - cy),
         'body': (106 - cx, 120 - cy, 30),
     }
 
 
-def fox_cells(seed=21):
-    """Ninefold for the game: the body three ways (normal, forehead open, decoy with dark eyes)
-    and each tail on its own, every cell in the same frame so they stack by the centre."""
-    S = FOX_SIZE
+def fox_cells(seed=21, k=1.0, prefix='ninefold'):
+    """Ninefold for the game, every cell in the same frame so they stack by the centre:
+    the body four ways (normal, forehead open, eyes shut for its blink, decoy with dark eyes)
+    and each tail in five bend frames. `k` scales the whole drawing (the illusion uses .6)."""
+    S = (round(FOX_SIZE[0] * k), round(FOX_SIZE[1] * k))
+    P = lambda pts: [(x * k, y * k) for x, y in pts]   # noqa: E731
     cells = {}
     for i in range(9):
-        t = tube(mask(S), bezier(list(_fox_tail_path(i)), 50), lambda u: 4 + 9 * math.sin(math.pi * min(1, u * 1.15)))
-        cells[f'ninefold-tail-{i}'] = starfill(t, rim=FOX_RIM, seed=seed + i)
+        for bend in (-2, -1, 0, 1, 2):
+            t = tube(mask(S), P(bezier(list(_fox_tail_path(i, bend)), 50)),
+                     lambda u: (4 + 9 * math.sin(math.pi * min(1, u * 1.15))) * k)
+            cells[f'{prefix}-tail-{i}-{bend + 2}'] = starfill(t, rim=FOX_RIM, seed=seed + i)
+        cells[f'{prefix}-tail-{i}'] = cells[f'{prefix}-tail-{i}-2']
 
     def body(eyes, mark):
-        far_paw = poly(mask(S), [(70, 164), (82, 164), (84, 172), (68, 172)])
-        b = ellipse(mask(S), 112, 124, 21, 40)
-        ellipse(b, 96, 106, 16, 28)
-        poly(b, [(84, 74), (102, 70), (108, 96), (88, 100)])
+        far_paw = poly(mask(S), P([(70, 164), (82, 164), (84, 172), (68, 172)]))
+        b = ellipse(mask(S), 112 * k, 124 * k, 21 * k, 40 * k)
+        ellipse(b, 96 * k, 106 * k, 16 * k, 28 * k)
+        poly(b, P([(84, 74), (102, 70), (108, 96), (88, 100)]))
         legs = mask(S)
         for x in (86, 99):
-            poly(legs, [(x + 1, 112), (x + 7, 112), (x + 6, 166), (x + 9, 172), (x - 2, 172), (x, 164)])
-        haunch = ellipse(mask(S), 124, 148, 17, 21)
-        hind_paw = poly(mask(S), [(108, 162), (128, 160), (132, 172), (104, 172)])
-        head = ellipse(mask(S), 90, 58, 19, 16)
-        poly(head, [(78, 54), (56, 66), (60, 70), (84, 72)])
-        poly(head, [(78, 48), (72, 20), (92, 44)])
-        poly(head, [(92, 46), (102, 18), (108, 50)])
+            poly(legs, P([(x + 1, 112), (x + 7, 112), (x + 6, 166), (x + 9, 172), (x - 2, 172), (x, 164)]))
+        haunch = ellipse(mask(S), 124 * k, 148 * k, 17 * k, 21 * k)
+        hind_paw = poly(mask(S), P([(108, 162), (128, 160), (132, 172), (104, 172)]))
+        head = ellipse(mask(S), 90 * k, 58 * k, 19 * k, 16 * k)
+        poly(head, P([(78, 54), (56, 66), (60, 70), (84, 72)]))
+        poly(head, P([(78, 48), (72, 20), (92, 44)]))
+        poly(head, P([(92, 46), (102, 18), (108, 50)]))
         detail = mask(S)
-        thin(detail, [(76, 28), (80, 44)])
-        thin(detail, [(101, 26), (102, 44)])
-        keys = [(92, 44, mark)]
-        if eyes:
-            keys.append((74, 56, (150, 230, 255)))
+        thin(detail, P([(76, 28), (80, 44)]))
+        thin(detail, P([(101, 26), (102, 44)]))
+        if eyes == 'shut':
+            thin(detail, P([(70, 57), (78, 56)]))   # a closed lid
+        keys = [(round(92 * k), round(44 * k), mark)]
+        if eyes is True:
+            keys.append((round(74 * k), round(56 * k), (150, 230, 255)))
         return stack(S, [
             starfill(far_paw, rim=FOX_RIM, seed=seed + 19),
             starfill(b, rim=FOX_RIM, seed=seed + 20),
@@ -543,7 +559,8 @@ def fox_cells(seed=21):
             starfill(detail, rim=FOX_RIM, seed=seed + 23, density=0),
         ])
 
-    cells['ninefold-0'] = body(True, (150, 90, 130))
-    cells['ninefold-1'] = body(True, (255, 120, 170))
-    cells['ninefold-decoy'] = body(False, (110, 80, 120))
+    cells[f'{prefix}-0'] = body(True, (150, 90, 130))
+    cells[f'{prefix}-1'] = body(True, (255, 120, 170))
+    cells[f'{prefix}-shut'] = body('shut', (150, 90, 130))
+    cells[f'{prefix}-decoy'] = body(False, (110, 80, 120))
     return cells

@@ -27,7 +27,7 @@ notes) is kept untouched in `docs/nextSteps-2026-10-26.archive.md`. Boss rules n
 | ESP32 firmware | The original handheld. Frozen while the web game is finished, then S8 ships a **barebones single-player** version. Until then, every shared C++ change must still compile for ESP32 and pass the host tests |
 | Finished work | Summarised below, not re-specified |
 
-**Contents:** Shipped · Tools · Roadmap at a glance · P0 Playtest fixes · P1 Boss redesigns · S0 Boss close-out · S1 Hardware
+**Contents:** Shipped · Tools · Roadmap at a glance · P0 Playtest fixes · P1 Boss redesigns · P2 Boss polish · S0 Boss close-out · S1 Hardware
 acceptance · S2 Combo bonuses · The three ways to play together · S3 Net foundation · S4 LAN · S5 Hosted · S6 Versus ·
 S7 Modifiers · S8 ESP32 handheld · Standing rules · Open decisions
 
@@ -97,6 +97,7 @@ are gone, so both show up as new files to commit).
 | --- | --- | --- | --- |
 | P0 | ~~Playtest fixes (2026-11-13): music start, hitboxes, boss movement, pickup feedback, aim indicator, co-op hull pick~~ **Done 2026-11-13** (optional boss backstop not built) | none (do first) | M |
 | P1 | ~~Boss redesigns: star-fill art pipeline, Zodiarch dragon with zodiac creatures, nine-tailed fox, Bastion capital ship, Gunnery light cruiser~~ **Done** 2026-11-13 (ascendant flavour not built) | P0.3 | XL |
+| P2 | Boss polish: Ninefold runs between perches with a real gait; Zodiarch's twelve creatures redrawn after the classical star-atlas figures (done); Zodiarch attacks fired from a body, full charges, several signs at once (done; creature idle motion open) | P1 | L |
 | S0 | Boss close-out: playtest tuning, performance, audio sign-off, housekeeping | none | M |
 | S1 | Hardware acceptance of the existing build | none (parallel to S0) | M |
 | S2 | Maximum-combo bonuses (task 7) | co-op, scoring | M |
@@ -420,6 +421,319 @@ Reference: `assets/inspo/gunnery-light-cruiser.webp`. Today it is a small tube w
 - [x] Remove the eye; the weak point is the bridge block or the nacelles.
 - [x] Its hull unlock icon (the mini-boss unlock) updates to match. (The unlock shows the
   hull's own icon; the boss name in the unlock text comes from the display name.)
+
+---
+
+## P2. Boss polish: Ninefold runs, mythological zodiac (2026-11-16)
+
+Playtest of the P1 bosses (state sheets from `web/dev/boss-states.html`): Ninefold has legs but
+never uses them, and the twelve Zodiarch creatures look basic and cartoony next to the dragon.
+Same rule as P1: **draft PNGs first** (in `web/assets/bosses/draft-*`, git-ignored and not
+shipped) for approval, then build.
+
+### P2.1 Ninefold runs (up, down, left, right)
+
+Today it sits in one pose and the framework slides it (`BOSS_MOTION`, `{60, 50, 1.4}`), so it
+glides. It should **run** between perches like a fox, and sit to cast.
+
+**Movement**
+- [ ] Its own motion (`own = true` in `BOSS_MOTION`, like the Zodiarch and Shardling). Between
+  attacks it picks a **perch** from a 3×3 grid in the right of the field (x 270 / 345 / 420,
+  y 92 / 140 / 188, all keeping the whole fox on screen and the body at x ≥ 216) and runs there.
+  Runs go in any direction: left and right along a row, up and down a column, or diagonally.
+- [ ] Never two runs to the same perch in a row; never a perch whose straight path passes within
+  50 px of a pilot (no running through the player); prefer a perch level with the nearest pilot
+  in front, so it still answers players who hide high or low (replaces P0.3's steering for it).
+- [ ] Speed about 3.2 px/tick with ease in and out (a short crouch before, a skid after), so a
+  run across the field takes about 0.6 s. Attacks only start once it has sat down; it never
+  moves while an attack is warned (same rule as P0.3). Rest times stay as today, so the fight
+  length should not change much: re-measure the difficulty table and boss-bot time.
+- [ ] Running is not a free hit on the pilot: contact circles follow the running pose; the run
+  path is chosen clear of pilots (above). Tails stay shootable while it runs (they are still
+  its health), the forehead mark only while sitting.
+
+**Animation (art in `zodiac_art.py`, sheet `rift`)**
+- [ ] **Run cycle**, facing left: 6 frames of a gallop (gather, reach, stretch, land), body long
+  and low, ears back, all nine tails streaming behind as one flowing mass with a wave through
+  it. Facing right: the same frames mirrored when it runs away from the pilot; it turns back
+  to face left (2-frame turn) before it sits.
+- [ ] **Up and down**: the same cycle with the body tilted about 25° (separate frames drawn
+  tilted, not rotated in the browser, to keep the pixels crisp); a short **leap** pose for runs
+  of more than 80 px vertically.
+- [ ] **Transitions**: sit → rise (2 frames), run, skid → sit (2 frames). The seated pose keeps
+  the P1/P2 idle (breathing, eye blink, tail sway).
+- [ ] **Star paw prints**: each footfall leaves a small star that fades over 600 ms, so its route
+  reads like a constellation being drawn. Cosmetic only.
+- [ ] Tail hit points per pose: a table of the nine tail offsets for the seated pose (today) and
+  for the running pose, mirrored when facing right; the engine and `NINEFOLD` share it (as the
+  P1 geometry does) so the hit circles follow the drawn tails.
+
+**Attacks that use the legs**
+- [ ] **Illusion**: the three foxes run to their places instead of gliding (each picks a perch
+  of the illusion triangle); the swap to the small size happens in the shimmer, as now.
+- [ ] **Blink** stays the star dissolve; it reforms on a perch.
+- [ ] Optional new attack, **Fox run**: it dashes along a warned lane (900 ms, like every lane)
+  across the right of the field and back to a perch, leaving a trail of star prints that flare
+  into short-lived comets aimed at the pilot. Only if the fight needs more variety after
+  playtest.
+
+**Checks**: body x ≥ 216 and on screen at every frame of a run; `min_corridor` ≥ 42;
+no lethal hazard without its warning; boss-bot beats it within 150 s; the repel ring still
+fires for a pilot behind it; state sheet regenerated (`boss-states.html?kind=11`) with a run
+strip (run left, right, up, down, leap, sit).
+
+**Draft for approval first**: `draft-p2-ninefold-run.png` with the run cycle both ways, the
+tilted up/down frames, the leap, the turn and the sit/rise transitions, plus an animated
+preview strip.
+
+### P2.2 Zodiarch: mythological zodiac creatures
+
+The twelve creatures (P1.2) are small, round, simple shapes. Redraw them after the classical
+figures of the constellations: the forms in Ptolemy's catalogue as engraved in the great star
+atlases (Bayer's *Uranometria*, 1603; Hevelius's *Uranographia*, 1690; Flamsteed's *Atlas
+Coelestis*, 1729; *Urania's Mirror*, 1824). All are public domain, so reference prints can go in
+`web/assets/inspo/zodiac/` (with their sources in the README; build already excludes `inspo`).
+
+**Look**
+- [x] Real proportions and anatomy, not chibi: no round heads or big eyes. Each figure is drawn
+  as the engraved atlases draw it: muscle, fleece, feathers and drapery as fine **engraving
+  lines** in the creature's rim colour (the star-fill `detail` layer), over the navy star-fill.
+- [x] Bigger: about 90-120 px across for the large figures (today 60-90), so the detail reads.
+  Still within the shot and hazard limits, and still clear of `min_corridor`. *Built:* 72-168 px
+  (Scorpius is the widest, for its claws). Contact stays the P1 12 px circle at the centre (8
+  for a fish): a charging creature's lane is warned for that width, so the art may be bigger
+  but the body never reaches past what was warned. Each live creature gets a 1 px edge and a
+  soft glow in its sign colour so it reads against the navy dragon.
+- [x] Two frames each: the **hold** pose (the atlas pose, while it forms) and the **strike**
+  pose (when it attacks). Plus the existing bob while it is live.
+- [x] The **key star** sits on that constellation's real named star, so the weak point is the
+  star an astronomer would point to. The ring glyphs (`zodiac.mjs` GLYPHS/CHAINS) are redrawn
+  to the true star patterns so a sign in the ring matches the creature it becomes. *The key
+  stars are done; the ring glyphs are not redrawn yet (they are close to the real patterns
+  already).* Gemini's key is on each twin's head (where the atlases put Castor and Pollux), not
+  the star over his cap: a twin can spawn high, and a key 52 px up would leave the screen.
+
+**The twelve** (myth, figure, key star; the attack stays as in P1.2 unless noted)
+
+| Sign | Myth | Figure (after the atlases) | Key star |
+| --- | --- | --- | --- |
+| Aries | Chrysomallos, the golden-fleeced ram of Phrixus and Helle | Crouched ram, head turned back over its shoulder, heavy curled horns, fleece in gold curls; strike: rears and charges | Hamal (on the horn) |
+| Taurus | Zeus as the white bull that carried off Europa | **Forepart only**, charging, head low and horns forward, the hindquarters dissolving into stars; Hyades as the face, Pleiades as a cluster on the shoulder | Aldebaran (the red eye) |
+| Gemini | Castor and Pollux, the Dioscuri | Two youths side by side, an arm round each other; one holds a lyre, the other a club; strike: they step apart | Pollux (one head) |
+| Cancer | Karkinos, the crab Hera sent against Heracles at the Hydra | Broad armoured crab (lobster-like in the Renaissance atlases), raised claws | Praesepe, the Beehive cluster on the shell |
+| Leo | The Nemean lion, whose hide no weapon could pierce | Striding lion, full mane, tail with a tuft; strike: rears to pounce | Regulus (the heart) |
+| Virgo | Astraea or Dike, maiden of justice who left the earth last | Winged maiden in long robes, an ear of wheat in her hand; strike: wings open | Spica (the ear of wheat) |
+| Libra | The scales of Astraea; to the Greeks the scorpion's claws (Chelae) | The balance held in two great claws, so it is not a plain scales icon; strike: the beam tips | Zubenelgenubi (a pan) |
+| Scorpius | The scorpion Gaia sent against Orion | Long segmented body, claws forward, tail arched high over the back | Antares (the red heart) |
+| Sagittarius | The centaur archer (Crotus, or Chiron) | Keep the approved P1 centaur (rearing, cloak, overhead draw), redrawn in the engraved style | Alnasl (the arrowhead) |
+| Capricornus | Pan, who took a fish's tail fleeing Typhon (or the goat Amalthea) | Sea-goat: goat foreparts with swept-back horns and a long curling fish tail with fins | Deneb Algedi (the tail) |
+| Aquarius | Ganymede, cupbearer of the gods | A youth pouring a stream from an urn on his shoulder; the stream is part of the figure and becomes the attack | Sadalmelik (the shoulder) |
+| Pisces | Aphrodite and Eros, turned into fish fleeing Typhon | Two fish, one swimming up and one along, tied by a long cord knotted at its middle | Alrescha (the knot) |
+
+**Engine and tests**
+- [x] Update `SIGN_KEY` (engine and `scene.mjs`) for the new key positions; the creature hit
+  circles and the break test follow. Re-check `min_corridor` with the bigger figures.
+- [x] Attacks unchanged except where the figure suggests it reads better: Gemini splits into
+  its two youths, Aquarius's stream comes from the urn, Libra's claws close on the beam.
+  *Built as art only:* Gemini and Pisces now draw one twin / one fish per creature (they
+  already split in two); attack behaviour is unchanged.
+- [x] Regenerate the rift sheet, the attack gallery (`boss-attacks.html`) and the state sheet.
+  (Rift sheet and state sheet regenerated; the attack gallery reads the same sheet.)
+
+**Draft approved 2026-11-16** (`draft-p2-zodiac-myth.png`, from `tools/make-p2-zodiac-draft.py`;
+art in `tools/zodiac_myth.py`). It shows all twelve in both poses, each beside its current P1
+creature. The public-domain atlas plates were not downloaded into `inspo/`.
+
+### P2.3 Zodiarch attacks: fired from a body, full charges, several signs at once
+
+**Built 2026-11-17** (sections 1 to 5; section 6 hurt and break, idle still open). Where the
+build differs from the plan below:
+- One eye beam, not two, and a 16° wedge (Taurus's too), not 25°: with the wider wedge a
+  pilot pinned in a corner could not get out in time.
+- No new hazard kinds: the black hole is an `HK_PULL` (0.8 px a tick, about a fifth of full
+  thrust) plus a 10 px `HK_POOL` core, both styled `e = 1`; the net is three `HK_LANE`s
+  styled `ZS_NET`. New shot families: `SF_FIREBALL`, `SF_NOVA` (also Aquarius's droplets),
+  `SF_SUN` (Leo) and `SF_METEOR`. Hazard slots 10 to 16 (scene: 1560 floats).
+- Breaking a creature costs the dragon 2 sub-hits, not 4: with several signs out the bot
+  broke so many that the fight fell to 40 s.
+- Stages are x 185 to 215 (the coils reach x 260 at the left of the swim).
+- Hurt is a key-star hit that does not break the creature (creatures still have no body
+  hit circle, so shots pass through them as before).
+- The scripted pilot now keeps out of a sweeping beam's whole wedge and looks further ahead
+  while one is warned (as a person would); that moved three other bosses' hit counts a
+  little. Re-measured in `web/COMBAT.md`: 47 / 54 / 54 s, 1.4 / 2.4 / 2.4 bot hits.
+- Live-engine frames of every attack: `web/dev/zodiarch-attacks.html`; test hooks 10 (start
+  an attack) and 11 (hold the next one off).
+
+Playtest (2026-11-17): shots and walls often appear out of nowhere instead of coming from the
+dragon or the creature; a charging sign stops halfway; only one sign is ever out (three only
+in the tier III frenzy). Today's sources, from `bs_sign_act` in `warden.h`:
+
+| Sign | Today | Problem |
+| --- | --- | --- |
+| Aries | lane from the right edge, charges 480 px | lane starts at the screen edge, not the ram |
+| Taurus | charges 180 px, then bursts | stops halfway |
+| Gemini | four lanes from the right edge (x 476) | walls come from the edge, not the twins |
+| Cancer | two columns from the top and bottom edges | nothing to do with the crab's claws |
+| Leo | roar ring from the lion (good), pounce 320 px | the pounce stops mid-field |
+| Virgo | four turrets appear at random spots | seeds come from nowhere |
+| Libra | field pull, five weights from mid-body | weights not from the pans |
+| Scorpius | lash arm and sting from its centre | not from the tail and stinger |
+| Sagittarius | arrows from a fixed offset (x - 46) | close, but not the art's arrowhead |
+| Capricornus | wave of stars from the bottom edge | not from the sea-goat |
+| Aquarius | stream from a fixed offset | close, but not the urn's mouth |
+| Pisces | lethal cord between the two fish | fine |
+
+The dragon's only own attack is the starfire breath (phase 3).
+
+**1. Every shot has a visible source.**
+- [x] **Emitters from the art.** `zodiac_myth.py` exports, per sign and pose, the points things
+  come out of (eyes, mouth, hands, claws, bow, urn, pans, stinger, tail splash), as offsets
+  from the frame centre, like `SIGN_KEY`. The dragon gets the same: both eyes, mouth, the
+  pearl and the two pairs of claws. The engine and renderer share the table (`SIGN_EMIT`,
+  `ZOD_EMIT`).
+- [x] **Charge, then release.** While an attack is warned, light gathers at its emitter
+  (inflowing motes and a glow that brightens with the warning). On release there is a muzzle
+  flash there and the shot leaves from that point with a short trail. Warning lines start at
+  the emitter, not at the screen edge.
+- [x] **Fix today's sources** (same attacks, honest origins): Gemini's walls become beams
+  from each twin's outstretched hand; Cancer's columns become the crab's claws shooting out
+  on tethers (pincer lanes) and snapping back; Virgo throws her seeds (each flies on a visible
+  arc to its spot, then sprouts); Libra's weights drop from the pans; Scorpius's lash and
+  sting both leave the **stinger tip** (not the tail root: storyboard review 2026-11-17);
+  Capricornus's wave erupts from where it splashes down; Sagittarius and Aquarius use the
+  art's arrowhead and urn mouth.
+- [x] The source holds still while its attack is warned (the P0.3 rule: a warned lane stays
+  where it was shown).
+- [x] Creatures form **in front of** the dragon's coils (stages at about x 190-260 while the
+  dragon swims the right side), not on top of them: navy on navy does not read even with the
+  P2.2 edge glow (seen in the storyboard).
+
+**2. Charges go all the way.**
+- [x] Aries, Taurus and Leo's pounce run their warned lane to the far edge of the screen and
+  out of it; the creature then dissolves off-screen and its stars stream back to the ring.
+  The lane is drawn full length from the creature to the edge.
+- [x] Taurus's star-knot burst happens as it passes the pilot's column (the knot flares
+  300 ms before, the burst leaves from the bull), not at a halfway stop.
+- [x] Breaking the key star mid-charge stops it where it is, as now.
+
+**3. New attacks** (each with its emitter, warning and counter; all inside the caps: 48 shots,
+6 lethal hazards, `min_corridor` 42, 900 ms minimum warning)
+
+| Attack | Who | What | Warning | Answer |
+| --- | --- | --- | --- | --- |
+| **Eye lasers** | Zodiarch (both eyes); Taurus (Aldebaran); Leo | Two thin beams from the eyes that sweep a short arc (about 25°) toward the pilot | eyes glow, aim lines from each eye, 900 ms | stay outside the arc, or behind the sweep |
+| **Fireballs** | Zodiarch (mouth); Leo (roar) | Three large slow fireballs that split into five embers after 1.2 s; shooting one pops it early, harmlessly | mouth glows, three short aim lines | dodge the slow balls, or shoot them before they split |
+| **Nova stars** | Zodiarch (claws); Virgo (wheat ear) | Stars flung to marked spots, each with a shrinking countdown ring, that explode into a ring of eight sparks with one gap | landing ring at each spot, 1200 ms | stand off, or in the gap's line |
+| **Black hole** | Zodiarch (pearl) | A singularity flung to a spot well away from the pilot: pulls the ship gently (never more than 40% of full thrust, so full thrust always escapes), swallows the pilot's shots that pass through it, small lethal core (10 px); 3 s | a swirl of inflowing stars where it will form, 900 ms | keep thrusting away; shoot around it |
+| **Meteor fall** | Zodiarch (tail fan) | The tail flicks a fan of five meteors that fall in curved paths | tail glows, dotted arcs | read the arcs |
+| **Constellation net** | Zodiarch (ring) | Three ring stars light up and join with lines that become lethal for 1.5 s (one triangle, always with room outside it) | the lines draw in dotted first, 900 ms | stay out of the lines |
+
+- [x] New engine pieces: shot families `SF_FIREBALL` (splits), `SF_NOVA` (placed star with a
+  timer); hazards `HK_SINGULARITY` (pull plus shot swallowing; at most one), `HK_NET`
+  (segments between points). Reuse `HK_BEAM` for eye lasers and `HK_ARC` for meteors.
+- [x] Art: an eye-glow frame for the dragon head, a fireball and its embers, a nova star with
+  its countdown ring, a black hole (dark disc, star-streak accretion swirl), meteors.
+- [x] Sound: a charge and a release cue for each (`sound/book/warden.mjs`).
+- [x] Guide entries (`guide.mjs`) and the attack gallery for each new attack.
+- [x] Assists: long warnings stretch every new warning; calm removes the black hole's pull
+  (it still swallows shots).
+
+**4. Several signs at once.**
+- [x] The dragon no longer waits for every sign to dissolve: it throws the next one while
+  earlier ones still act, up to **1 sign in phase 1, 2 in phase 2, 3 in phase 3** (4 in the
+  tier III frenzy), at least 1.2 s apart, and keeps using its own attacks between throws.
+- [x] A **compatibility table** decides which signs can share the field, so the caps and
+  `min_corridor` hold: at most one sign that walls lanes (Gemini, Cancer, Pisces), at most one
+  charger, at most one field effect (Libra's pull, the black hole). The dragon's own attacks
+  pick from what fits beside the signs already out.
+- [x] Phase 1 stays readable: one sign at a time plus fireballs. Phase 2 adds eye lasers and
+  nova stars; phase 3 adds the black hole, meteor fall, net and the breath.
+- [x] Re-measure the difficulty table and boss-bot time; the bot must still clear every tier
+  within 150 s with no fairness faults. Add tests: emitters (each shot's first position is
+  within 6 px of its emitter), full charges reach the screen edge, concurrent-sign caps.
+
+**5. Sign reworks from the storyboard review (2026-11-17)** (all drawn in the storyboard)
+- [x] **Scorpius**: one emitter, the stinger tip (`EMIT_POINTS` sting moved onto the tip
+  pixel). Tell: the tail cocks back 4 px while venom gathers at the tip and a fan of dotted
+  lanes shows the arc. Release: a venom beam (`HK_BEAM`, 7 px) whips the arc from the tip,
+  venom drips off it, the body lurches 6 px after it. Then a second gather with a flickering
+  aim line, and the sting itself flies from the tip and homes (gentle wobble, no hard turn).
+- [x] **Capricornus**: the delay is cut. A hard 350 ms dive (it is part of the tell), then a
+  big splash: white flash, a spray column, a crown of 30 droplets that fall back, three
+  ripples along the bottom. The fan of 15 lanes it will fire down flickers for 650 ms (dive
+  plus fan = 1000 ms, inside the 900 ms rule). Then **two waves** burst out over the whole
+  upper half-plane, the second 280 ms later on the half-angles; each wave leaves the lane
+  nearest the pilot empty (the second wave also its neighbour), so there is always a way
+  out. The sea-goat leaps back up through its own spray. At most 28 shots; counts against
+  the 48 cap (no other ranged sign beside it).
+- [x] **Aquarius**: the stream is 12 **fusing droplets**. Each slows and hangs where it lands
+  (spread 70-240 px from the urn); then fuses for 1.1 s: two motes spiral together, the core
+  swells and burns blue, white, gold and flickers faster, under a warning ring that closes
+  on it; then it bursts into six sparks (rotated per droplet). Engine: `SF_NOVA` with a small
+  radius and six sparks, no gap needed (six is sparse); at most 12 droplets plus 72 sparks
+  spread over 1.1 s, so the stream thins to 8 droplets if another ranged sign is out.
+- [x] **Pisces**: two passes. First the fish part as wide as the field allows (y 40 and 230,
+  just inside the edges) with the cord **slack and harmless** (dim, dashed): the gap between
+  them is the way through, and they swim the length of the field. They turn round, close in
+  (y 96 and 176) and the cord pulls taut and flashes for 900 ms, then **lights** (lethal):
+  the gap is filled, the way round is outside the fish (0-78 and 194-270, both over
+  `min_corridor`). The fish themselves are warned lanes on both passes.
+- [x] **Leo**: no gathering light until it means to pounce. Roar: the mane flares (14 rays)
+  and the head shudders while sound arcs leave the jaws and a dotted preview of the ring
+  shows its notch; then the ring. Its shots are **suns shed from the mane** (new `mane`
+  emitter): three bud out of the mane, hover spinning with short aim ticks, and are tossed
+  off one at a time with a 4 px jerk of the head; each sun has turning rays and a flame tail
+  (a sprite distinct from the dragon's splitting fireballs). Only then the pounce tell: it
+  draws back 12 px and down 6 px (crouch), the eye glints with the charge glow, the lane is
+  warned 900 ms, and it pounces all the way across.
+
+**6. Creature states** (the same set for every sign, each with its own motion)
+
+Every creature runs: **form** (stars stream from the ring, 700 ms) → **hold** (alive, idle)
+→ **tell** (per attack) → **release** → **recoil** → back to hold or the next attack →
+**exit**. Two states are new and come from the player: **hurt** (a shot hits the body, not
+the key star: a 2 px flinch away from the hit, a white edge flash, stars spill from the hit
+point; no damage) and **break** (the key star is shot: the figure cracks along its
+constellation lines, the pieces drift apart and wink out, the stars fly back to the ring
+dim; any warned attack is cancelled, a lane already live finishes). **Exit** is the
+dissolve back to the ring, or off-screen for chargers (the stars stream back from the edge).
+
+| Sign | Hold (idle) | Tell | Recoil | Hurt | Break |
+| --- | --- | --- | --- | --- | --- |
+| Aries | paws the ground (dust motes from the hooves), head dips | head lowers, horns glow | none (it is gone) | head jerks up | horns snap off first |
+| Taurus | snorts (two puffs from the muzzle), tail flicks | Aldebaran kindles; for the stampede, scrapes a hoof | head tosses after the beam | stamps | the star knot (Pleiades) scatters as seven sparks |
+| Gemini | the twins sway out of step, hands near | hands rise, light in the palms | arms kick back | the hit twin staggers, the other looks | both break together, the cord of light between them snaps |
+| Cancer | claws open and close, legs shuffle sideways | claws rear up | claws snap shut on return | claws pull in to guard | the shell splits down the middle |
+| Leo | mane ripples, tail sways | mane flares (roar), crouch (pounce) | head tosses (suns) | a snarl: the jaw drops one frame | the mane bursts outward as rays |
+| Virgo | wheat ear sways, robe stars drift | hand draws back | follow-through of the throw | turns her head away | the wheat ear falls separately, Spica last |
+| Libra | pans bob against each other | the beam tips | pans swing back | the beam rocks | the chains snap, pans fall |
+| Scorpius | tail sways, stinger twitches | tail cocks, venom at the tip | body lurches after the shot | the tail curls in | the tail segments come apart from the tip down |
+| Sagittarius | horse body paces on the spot | bow drawn, arrowhead glows | bow arm rebounds | rears | the bow string snaps first |
+| Capricornus | fish tail sweeps, slow rise and fall | dives | leaps up through the spray | ducks under the surface line | the fish tail and goat body part |
+| Aquarius | water drips from the urn lip | the urn tips | urn rights itself | water spills | the urn shatters, its stream falls as harmless drops |
+| Pisces | the fish nose about, the cord ripples | they part (pass 1), they turn and close (pass 2) | none | the hit fish darts aside | the cord snaps, each fish fades on its own |
+
+- [x] Hurt (flinch, white edge, spilled stars) and break (cracks from the key star, seven
+  shards, stars home) in `src/boss/zodiac.mjs`; the engine keeps a broken creature's hp at 0
+  and fades it over 900 ms.
+- [ ] Art: `hold` needs two or three extra frames per sign (or a part-animated layer: tail,
+  claws, urn, bow), `hurt` reuses the strike frame with an edge flash, `break` is drawn by
+  the renderer from the constellation lines (no new frames). Signs that change pose (tell,
+  recoil) use the hold and strike frames with small offsets, as the storyboard does.
+- [ ] Hold, tell and recoil motion per sign in the renderer (keyed by the attack timer);
+  the storyboard's states row shows them.
+- [x] Storyboard: a "Creature states" row in `web/dev/zodiarch-storyboard.html`, one tile per
+  sign: form, hold, a body hit (hurt) and a key-star hit (break), drawn from the strike
+  frame with transforms, particles and clipped shards (2026-11-17).
+- [x] Art fix found there (done in `BossArt.drawEdge`: the edge follows the closed shape): the starlight edge (`drawEdge`) traces the dithered star-fade on
+  Taurus's half body as orange hatching (also in the game today); the edge silhouette should
+  skip the fade dither (mask it in `make-bosses.py`, or a separate edge mask cell).
+
+**Storyboard for approval first**: animated, at `web/dev/zodiarch-storyboard.html` (served by
+`npm run stress`): every sign's summon and attack and the dragon's own attacks on a loop, drawn
+with the real sprites and the P2.3 emitters (`tools/zodiac_myth.py` `EMIT_POINTS`), plus
+phase 3 with three signs out at once. A mock-up, not the engine.
 
 ---
 

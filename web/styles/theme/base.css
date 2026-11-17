@@ -12,9 +12,20 @@
     font-display: swap;
 }
 
+/* Pixelify Sans draws 5 like an S and 6 like a G. Body text takes its digits from Jersey 10
+   instead (clear numerals), scaled up to sit level with Pixelify's letters. */
+@font-face {
+    font-family: 'Body Digits';
+    src: url('../../assets/fonts/Jersey10-Regular.woff2') format('woff2');
+    font-weight: 400 700;
+    font-display: swap;
+    unicode-range: U+0030-0039;
+    size-adjust: 116%;
+}
+
 :root {
     --font-display: 'Jersey 10', 'Pixelify Sans', ui-monospace, Consolas, monospace;
-    --font-body: 'Pixelify Sans', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+    --font-body: 'Body Digits', 'Pixelify Sans', ui-monospace, 'SFMono-Regular', Consolas, monospace;
     /* Jersey 10 is condensed and small on the page: these sizes are tuned to it. */
     --size-label: 18px;
     --size-menu: 24px;

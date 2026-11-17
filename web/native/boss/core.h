@@ -5,7 +5,7 @@ static const unsigned long BOSS_ENTRANCE_MS = 1400;
 static const unsigned long BOSS_RECOVERY_MS = 1200;
 static const float BOSS_PI = 3.14159265f;
 static const unsigned BOSS_SHOTS = 48;
-static const unsigned BOSS_HAZARDS = 10;
+static const unsigned BOSS_HAZARDS = 16;
 static const unsigned BOSS_LETHAL_CAP = 6;
 static const unsigned BOSS_PARTS = 32;
 static const unsigned BOSS_CIRCLES = 112;
@@ -17,7 +17,11 @@ enum BossKind : uint8_t {
 };
 enum ShotFamily : uint8_t {
     SF_NEEDLE, SF_SHARD, SF_BOLT, SF_SINE, SF_PELLET, SF_MISSILE, SF_MINE,
-    SF_LOB, SF_SPORE, SF_EMBER, SF_CURVE, SF_FAST
+    SF_LOB, SF_SPORE, SF_EMBER, SF_CURVE, SF_FAST,
+    SF_FIREBALL,    // slow, shootable (pops harmlessly); splits into five embers when its life ends
+    SF_NOVA,        // flies to (bx, by) and holds; bursts into `amp` sparks when its life ends
+    SF_SUN,         // a small sun shed from Leo's mane
+    SF_METEOR       // falls on a curve (turn per tick), like SF_CURVE
 };
 enum HazardKind : uint8_t {
     HK_LANE, HK_POOL, HK_BEAM, HK_RING, HK_ARM,         // lethal when live
@@ -40,6 +44,7 @@ enum {
     MA_BOLTS = 60, MA_SHARDS, MA_CURVE1, MA_BLINK, MA_SINE6,
     ZA_SIGN = 70,               // + sign 0..11: the Zodiarch throws that sign (70 Aries .. 81 Pisces)
     ZA_CONJ = 82, ZA_BREATH,    // Great Conjunction (three signs at once), starfire breath
+    ZA_EYES = 84, ZA_FIREBALL, ZA_NOVA, ZA_HOLE, ZA_METEOR, ZA_NET,  // the dragon's own (P2.3)
     NA_COMETS = 90, NA_FOXFIRE, NA_ILLUSION, NA_BLINK  // Ninefold
 };
 
@@ -260,11 +265,11 @@ static void bs_hit_pilot(unsigned i) {
 
 // ---------------------------------------------------------------- pools
 static float bs_shot_radius(uint8_t f) {
-    static const float r[] = {2, 3, 3, 4, 2.5f, 4, 5, 5, 18, 2, 2.5f, 3};
+    static const float r[] = {2, 3, 3, 4, 2.5f, 4, 5, 5, 18, 2, 2.5f, 3, 6, 3.5f, 3.5f, 4};
     return r[f];
 }
 static bool bs_shootable(uint8_t f) {
-    return f == SF_MISSILE || f == SF_MINE || f == SF_LOB || f == SF_SPORE;
+    return f == SF_MISSILE || f == SF_MINE || f == SF_LOB || f == SF_SPORE || f == SF_FIREBALL;
 }
 static unsigned bs_shot_count() {
     unsigned n = 0;

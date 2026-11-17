@@ -26,6 +26,10 @@ export const SHOT = Object.freeze({
     ember: 9,
     curve: 10,
     fast: 11,
+    fireball: 12,
+    nova: 13,
+    sun: 14,
+    meteor: 15,
 });
 export const HAZARD = Object.freeze({
     lane: 0,
@@ -66,19 +70,42 @@ export const SIGNS = Object.freeze([
 ]);
 // Each creature's key star (its weak point), from its centre; mirrors SIGN_KEY in warden.h.
 export const SIGN_KEY = Object.freeze([
-    [-24, -7],
-    [-7, -9],
-    [-12, -29],
-    [0, 2],
-    [-24, -6],
-    [-30, -36],
-    [0, -27],
-    [11, -20],
-    [-46, -2],
-    [-29, -17],
-    [-18, -25],
-    [-13, -2],
+    [-34, -7],
+    [-38, 5],
+    [1, -33],
+    [4, 17],
+    [-20, -6],
+    [-48, -42],
+    [-45, 17],
+    [-2, 14],
+    [-54, -26],
+    [55, 4],
+    [17, -21],
+    [10, 2],
 ]);
+// Where each creature's attacks come out, from its centre in the strike frame (mirrors
+// SIGN_EMIT in warden.h; from tools/zodiac_myth.py EMIT_POINTS).
+export const SIGN_EMIT = Object.freeze([
+    { horns: [-48, 4], hooves: [-34, 38] },
+    { eye: [-38, 5], muzzle: [-52, 14] },
+    { hand: [-18, -58], bHand: [-28, -24] },
+    { clawNear: [-50, -26], clawFar: [32, -34] },
+    { mouth: [-58, -15], eye: [-48, -23], mane: [-32, -20] },
+    { wheat: [-48, -42], hand: [-42, -28] },
+    { panNear: [-45, 14], panFar: [45, -8] },
+    { sting: [16, -25], tail: [62, 10] },
+    { arrow: [-54, -26] },
+    { mouth: [-52, 2], tail: [54, 4] },
+    { urn: [-5, -42] },
+    { mouth: [26, -2] }, // the fish art faces right
+]);
+// The colour each sign's charge and muzzle flash burn with (r,g,b).
+export const SIGN_CHARGE = Object.freeze([
+    '255,200,110', '255,90,70', '140,220,255', '180,232,210', '255,210,90', '200,240,140',
+    '230,230,255', '255,96,90', '255,170,210', '160,200,255', '110,200,255', '170,160,255',
+]);
+// Hazard styles the Zodiarch writes into `e` (mirrors ZS_* in warden.h).
+export const ZOD_STYLE = Object.freeze({ plain: 0, net: 1, tether: 2, cord: 3, seed: 5, swirl: 8, splash: 9, fish: 11 });
 // The Zodiarch's swim (mirrors bs_zod_path): the head's point at a given clock, for the
 // telegraphed path ahead and the ring.
 export const ZODIARCH = Object.freeze({ cx: 372, cy: 135, ax: 92, ay: 80, period: 16, rx: 118, ry: 100 });
@@ -87,7 +114,17 @@ export const zodiarchPath = (clock) => {
     return [ZODIARCH.cx + ZODIARCH.ax * Math.sin(w * clock), ZODIARCH.cy + ZODIARCH.ay * Math.sin(2 * w * clock)];
 };
 // Ninefold's geometry from its frame centre (mirrors FOX_* in warden.h).
-export const NINEFOLD = Object.freeze({ mark: [-33, -54], head: [-35, -40], body: [-19, 22] });
+export const NINEFOLD = Object.freeze({
+    mark: [-33, -54],
+    head: [-35, -40],
+    body: [-19, 22],
+    illusionScale: 0.6, // the three foxes of an illusion
+    swayPeriod: 2.4, // s, a wave across the nine tails
+});
+// Tail i's bend frame (0..4, 2 at rest) for the engine's fox clock: the same wave the engine
+// moves the tail's hit point by (bs_fox_bend).
+export const foxBend = (i, clock) =>
+    Math.round(2 * Math.sin((2 * Math.PI * clock) / NINEFOLD.swayPeriod - i * 0.55)) + 2;
 export const ATTACK = Object.freeze({
     lance: 1,
     fan: 2,
@@ -144,6 +181,13 @@ export const ATTACK = Object.freeze({
     pisces: 81,
     conjunction: 82,
     breath: 83,
+    // The Zodiarch's own (P2.3)
+    eyes: 84,
+    fireball: 85,
+    novaStars: 86,
+    blackHole: 87,
+    meteors: 88,
+    net: 89,
     // Ninefold
     comets: 90,
     foxfire: 91,
@@ -214,7 +258,7 @@ export const KINDS = Object.freeze([
         size: [120, 84],
         phases: [0.7, 0.35],
         hull: null,
-        aux: { clock: 0, coreOpen: 1, busy: 2, out: 3, pearlX: 4, pearlY: 5, mouth: 6, breath: 7 },
+        aux: { clock: 0, coreOpen: 1, busy: 2, out: 3, pearlX: 4, pearlY: 5, mouth: 6, breath: 7, hold: 8 },
     },
     {
         id: 'picket',
@@ -274,7 +318,7 @@ export const KINDS = Object.freeze([
         size: [250, 196],
         phases: [],
         hull: 'comet',
-        aux: { clock: 0, blink: 1, open: 2, tails: 3, illusion: 4 },
+        aux: { clock: 0, blink: 1, open: 2, tails: 3, illusion: 4, scale: 5 },
     },
 ]);
 export const REGION_SHEETS = Object.freeze([

@@ -29,6 +29,7 @@ export class LaunchController {
                 event.preventDefault();
                 event.stopImmediatePropagation();
                 this.app.input.physicalKeys.add(event.code);
+                this.app.input.lastKeyAt = performance.now();
                 if (event.repeat) return;
                 if (event.code === 'Escape') this.sequence.cancel();
                 else if (['Enter', 'Space'].includes(event.code)) this.sequence.skip();

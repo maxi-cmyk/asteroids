@@ -12,6 +12,7 @@ export class InputHub {
         this.activePadIndex = null;
         this.device = 'keyboard'; // 'keyboard' | 'mouse' | 'controller'
         this.gameplayReady = false; // controls were released since the last interruption
+        this.lastKeyAt = 0; // performance.now() of the last keydown (auto-repeat included)
     }
     anyPadButton() {
         return this.connectedPads().some((pad) =>
@@ -30,6 +31,11 @@ export class InputHub {
     }
     // Anything pressed on any device (the player must let go before gameplay resumes).
     held(pad) {
+        // A key whose release was swallowed (a native dropdown takes the keyup of the Enter
+        // that picks an option) would hold gameplay off for good. A key really held down
+        // keeps auto-repeating, so one with no keydown for 800 ms is let go; if it is still
+        // down, its next repeat puts it back.
+        if (this.physicalKeys.size && performance.now() - this.lastKeyAt > 800) this.physicalKeys.clear();
         return (
             this.physicalKeys.size ||
             this.pointerButtons.size ||
@@ -91,6 +97,20 @@ export class InputHub {
             this.pointerButtons.add(event.button);
         });
         window.addEventListener('pointerup', (event) => this.pointerButtons.delete(event.button));
+        // A native dropdown's popup eats the pointerup that closes it, which would leave a
+        // mouse button "held" and gameplay waiting for its release. Any pointer event with no
+        // buttons down puts that right, and so does choosing from (or leaving) a dropdown.
+        window.addEventListener('pointermove', (event) => {
+            if (event.buttons === 0) this.pointerButtons.clear();
+        });
+        const resync = (event) => {
+            if (event.target instanceof HTMLSelectElement) {
+                this.pointerButtons.clear();
+                this.physicalKeys.clear();
+            }
+        };
+        document.addEventListener('change', resync, true);
+        document.addEventListener('focusout', resync, true);
         window.addEventListener('pointerdown', () => app.unlockAudio());
         // Any key counts too, in the menus as well as in flight.
         window.addEventListener('keydown', () => app.unlockAudio(), { capture: true });
