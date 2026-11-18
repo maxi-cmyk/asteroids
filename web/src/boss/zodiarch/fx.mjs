@@ -3,9 +3,9 @@
 // spiral in, a glow grows); when it goes live, or a shot appears, a muzzle flash. Also the
 // pieces drawn from the attack timers the engine already sends: Virgo's seeds in flight,
 // Capricornus's splash, the black hole's inflow and the slack cord between the fish.
-import { pixelGlow as glow } from '../render/fx.mjs';
-import { HAZARD, SHOT, SIGN_CHARGE, SIGN_EMIT, ZOD_STYLE } from './scene.mjs';
-import { TAU, dotted, px } from './draw-kit.mjs';
+import { pixelGlow as glow } from '../../render/fx.mjs';
+import { HAZARD, SHOT, SIGN_CHARGE, SIGN_EMIT, ZOD_STYLE } from '../scene.mjs';
+import { TAU, dotted, px } from '../draw-kit.mjs';
 
 const DRAGON_CHARGE = '255,210,140';
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
@@ -60,7 +60,16 @@ function fromEmitter(h) {
 
 // When each hazard went live, for the muzzle flash (keyed by slot and warning length).
 const liveSince = new Map();
-const flashFamilies = new Set([SHOT.needle, SHOT.fast, SHOT.pellet, SHOT.missile, SHOT.fireball, SHOT.sun, SHOT.meteor, SHOT.nova]);
+const flashFamilies = new Set([
+    SHOT.needle,
+    SHOT.fast,
+    SHOT.pellet,
+    SHOT.missile,
+    SHOT.fireball,
+    SHOT.sun,
+    SHOT.meteor,
+    SHOT.nova,
+]);
 
 export function drawZodiacFx(ctx, { hazards, shots, creatures, time }) {
     const seen = new Set();
@@ -120,7 +129,12 @@ function slackCord(ctx, creatures, hazards, time) {
     ctx.setLineDash([3, 3]);
     ctx.beginPath();
     ctx.moveTo(a.x + back, a.y);
-    ctx.quadraticCurveTo((a.x + b.x) / 2 + back * 1.8 + Math.sin(time / 200) * 6, (a.y + b.y) / 2, b.x + back, b.y);
+    ctx.quadraticCurveTo(
+        (a.x + b.x) / 2 + back * 1.8 + Math.sin(time / 200) * 6,
+        (a.y + b.y) / 2,
+        b.x + back,
+        b.y,
+    );
     ctx.stroke();
     ctx.restore();
 }
@@ -162,36 +176,69 @@ export function splash(ctx, h) {
     }
     ctx.globalAlpha = 1;
 }
-// Where a black hole will open: stars streak inward.
+// Where a black hole will open (P3.6): stars streak inward from 80 px, and a dotted ring marks
+// the lethal core (18 px) so the warned area is the lethal one.
 export function swirl(ctx, h, time) {
     const u = 1 - h.warn / h.warnTotal;
-    for (let k = 0; k < 18; k++) {
-        const a = (k / 18) * TAU + time / 300,
-            r = 50 * (1 - ((u * 2 + k / 18) % 1)) + 6;
+    for (let k = 0; k < 30; k++) {
+        const a = (k / 30) * TAU + time / 300,
+            r = 80 * (1 - ((u * 2 + k / 30) % 1)) + 10;
         ctx.globalAlpha = 0.4 + 0.5 * u;
         ctx.fillStyle = k % 3 ? '#b49cff' : '#ffffff';
         px(ctx, h.x + Math.cos(a) * r, h.y + Math.sin(a) * r);
-        dotted(ctx, h.x + Math.cos(a) * r, h.y + Math.sin(a) * r, a + Math.PI * 0.6, 5, '#7a5ad0', 2);
+        dotted(
+            ctx,
+            h.x + Math.cos(a) * r,
+            h.y + Math.sin(a) * r,
+            a + Math.PI * 0.6,
+            6,
+            '#7a5ad0',
+            2,
+        );
+    }
+    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = '#ff8a6a';
+    for (let k = 0; k < 32; k++) {
+        const a = (k / 32) * TAU + time / 200;
+        px(ctx, h.x + Math.cos(a) * 18, h.y + Math.sin(a) * 18);
     }
     ctx.globalAlpha = 1;
-    glow(ctx, h.x, h.y, 8 + 14 * u, '120,80,220', 0.5 * u);
+    glow(ctx, h.x, h.y, 10 + 20 * u, '120,80,220', 0.5 * u);
 }
-// The black hole itself: a dark disc in a turning ring of star streaks.
+// The black hole itself: a dark core of 20 px behind a tilted, turning disc of accretion
+// streaks out to 60 px (hot at its inner edge) and a lensing rim of light bent round its edge.
 export function blackHole(ctx, h, time) {
-    glow(ctx, h.x, h.y, 40, '120,80,220', 0.35);
-    for (let k = 0; k < 28; k++) {
-        const r = 14 + ((k * 7) % 20),
-            a = (k / 28) * TAU + time / (180 + r * 12);
-        ctx.fillStyle = k % 4 ? '#8a6ae0' : '#ffffff';
-        px(ctx, h.x + Math.cos(a) * r, h.y + Math.sin(a) * r * 0.8, k % 3 ? 1 : 2, 1);
-    }
+    glow(ctx, h.x, h.y, 80, '120,80,220', 0.35);
+    const disc = (front) => {
+        for (let k = 0; k < 90; k++) {
+            const r = 24 + ((k * 13) % 38),
+                a = (k / 90) * TAU + time / (120 + r * 9),
+                sy = Math.sin(a);
+            if (front !== sy > 0) continue;
+            ctx.fillStyle =
+                r < 32 ? (k % 3 ? '#ffd0a0' : '#ffffff') : k % 4 ? '#8a6ae0' : '#d8c4ff';
+            px(ctx, h.x + Math.cos(a) * r, h.y + sy * r * 0.32, k % 3 ? 2 : 1, 1);
+        }
+    };
+    disc(false);
     ctx.fillStyle = '#05020c';
-    for (let dy = -10; dy <= 10; dy++) {
-        const half = Math.floor(Math.sqrt(100 - dy * dy));
+    for (let dy = -20; dy <= 20; dy++) {
+        const half = Math.floor(Math.sqrt(400 - dy * dy));
         ctx.fillRect(Math.round(h.x) - half, Math.round(h.y) + dy, half * 2 + 1, 1);
     }
-    ctx.strokeStyle = '#d8c4ff';
+    ctx.strokeStyle = '#f0e4ff';
+    ctx.globalAlpha = 0.85;
+    for (let k = 0; k < 5; k++) {
+        const a0 = (k / 5) * TAU + time / 900;
+        ctx.beginPath();
+        ctx.arc(Math.round(h.x), Math.round(h.y), 22, a0, a0 + 0.9);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = '#b49cff';
     ctx.beginPath();
-    ctx.arc(Math.round(h.x), Math.round(h.y), 11, 0, TAU);
+    ctx.arc(Math.round(h.x), Math.round(h.y), 25, 0, TAU);
     ctx.stroke();
+    ctx.globalAlpha = 1;
+    disc(true);
 }

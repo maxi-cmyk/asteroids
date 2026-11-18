@@ -280,4 +280,3 @@ static void test_repeated_runs(int expected_writes) {
     }
     assert(Preferences::writes == expected_writes);
 }
-

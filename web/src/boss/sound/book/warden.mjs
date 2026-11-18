@@ -25,7 +25,15 @@ const own = {
                 (v, d) => {
                     const f = 440 * 2 ** (sign / 12);
                     for (const [i, m] of [1, 1.5, 2].entries())
-                        v.tone({ f: f * m, to: f * m * 1.06, type: 'sine', at: i * 0.06, dur: d, vol: 0.05, env: 'swell' });
+                        v.tone({
+                            f: f * m,
+                            to: f * m * 1.06,
+                            type: 'sine',
+                            at: i * 0.06,
+                            dur: d,
+                            vol: 0.05,
+                            env: 'swell',
+                        });
                     v.noise({ dur: d, vol: 0.03, f: 7000, type: 'highpass', env: 'swell' });
                 },
             ]),
@@ -34,40 +42,87 @@ const own = {
         [ATTACK.conjunction]: (v, d) => {
             v.tone({ f: 45, to: 90, type: 'sine', dur: d, vol: 0.25, env: 'swell' });
             for (const f of [523, 659, 784])
-                v.tone({ f, to: f * 1.5, type: 'sine', dur: d, vol: 0.05, env: 'swell', vib: { rate: 6, depth: 8 } });
+                v.tone({
+                    f,
+                    to: f * 1.5,
+                    type: 'sine',
+                    dur: d,
+                    vol: 0.05,
+                    env: 'swell',
+                    vib: { rate: 6, depth: 8 },
+                });
         },
         // The starfire breath drawing in.
         [ATTACK.breath]: (v, d) => {
             v.noise({ dur: d, vol: 0.12, f: 300, to: 5000, type: 'bandpass', env: 'swell' });
             v.tone({ f: 70, to: 220, type: 'sawtooth', dur: d, vol: 0.08, env: 'swell' });
         },
-        // The Zodiarch's own: a hot breath for fireballs, a whine for the eye, chimes for the
-        // novas, a falling sub for the black hole, a rumble for meteors, glass for the net.
-        [ATTACK.fireball]: (v, d) => v.noise({ dur: d, vol: 0.08, f: 400, to: 2400, type: 'bandpass', env: 'swell' }),
-        [ATTACK.eyes]: (v, d) => v.tone({ f: 600, to: 1800, type: 'sawtooth', dur: d, vol: 0.05, env: 'swell' }),
+        // The Zodiarch's own: a creak and a rising roar for the coil-spit, a hiss for the lunge,
+        // a whine for the eye, chimes for the novas, a falling sub for the black hole, a rumble
+        // for meteors.
+        [ATTACK.coilSpit]: (v, d) => {
+            v.noise({ dur: d * 0.5, vol: 0.05, f: 120, to: 260, type: 'bandpass', env: 'swell' });
+            v.noise({
+                at: d * 0.5,
+                dur: d * 0.5,
+                vol: 0.09,
+                f: 400,
+                to: 2400,
+                type: 'bandpass',
+                env: 'swell',
+            });
+        },
+        [ATTACK.lunge]: (v, d) => {
+            v.noise({ dur: d, vol: 0.07, f: 2500, to: 6000, type: 'highpass', env: 'swell' });
+            v.tone({ at: d, f: 220, to: 60, type: 'square', dur: 0.08, vol: 0.12 });
+        },
+        [ATTACK.eyes]: (v, d) =>
+            v.tone({ f: 600, to: 1800, type: 'sawtooth', dur: d, vol: 0.05, env: 'swell' }),
         [ATTACK.novaStars]: (v, d) => {
-            for (const [i, f] of [880, 1320].entries()) v.tone({ f, type: 'sine', at: i * 0.1, dur: d, vol: 0.05, env: 'swell' });
+            for (const [i, f] of [880, 1320].entries())
+                v.tone({ f, type: 'sine', at: i * 0.1, dur: d, vol: 0.05, env: 'swell' });
         },
-        [ATTACK.blackHole]: (v, d) => v.tone({ f: 120, to: 30, type: 'sine', dur: d, vol: 0.25, env: 'swell' }),
-        [ATTACK.meteors]: (v, d) => v.noise({ dur: d, vol: 0.1, f: 200, to: 900, type: 'lowpass', env: 'swell' }),
-        [ATTACK.net]: (v, d) => {
-            for (const [i, f] of [1568, 1976, 2349].entries()) v.tone({ f, type: 'triangle', at: i * 0.12, dur: d, vol: 0.04 });
-        },
+        [ATTACK.blackHole]: (v, d) =>
+            v.tone({ f: 120, to: 30, type: 'sine', dur: d, vol: 0.25, env: 'swell' }),
+        [ATTACK.meteors]: (v, d) =>
+            v.noise({ dur: d, vol: 0.1, f: 200, to: 900, type: 'lowpass', env: 'swell' }),
         // Ninefold: a flick for the comets, a soft wisp for foxfire, a shimmer for the
         // illusion and a scatter of ticks for the blink.
         [ATTACK.comets]: (v, d) => {
             v.tone({ f: 900, to: 1800, type: 'triangle', dur: Math.min(d, 0.4), vol: 0.07 });
         },
         [ATTACK.foxfire]: (v, d) => {
-            v.tone({ f: 330, to: 660, type: 'sine', dur: d, vol: 0.07, env: 'swell', vib: { rate: 7, depth: 30 } });
+            v.tone({
+                f: 330,
+                to: 660,
+                type: 'sine',
+                dur: d,
+                vol: 0.07,
+                env: 'swell',
+                vib: { rate: 7, depth: 30 },
+            });
         },
         [ATTACK.illusion]: (v, d) => {
             for (const det of [-20, 0, 20])
-                v.tone({ f: 660, to: 990, type: 'sine', dur: d, vol: 0.04, detune: det, env: 'swell' });
+                v.tone({
+                    f: 660,
+                    to: 990,
+                    type: 'sine',
+                    dur: d,
+                    vol: 0.04,
+                    detune: det,
+                    env: 'swell',
+                });
         },
         [ATTACK.foxBlink]: (v, d) => {
             for (let i = 0; i < 7; i++)
-                v.tone({ f: 900 + ((i * 331) % 1400), type: 'square', at: (i * d) / 7, dur: 0.05, vol: 0.04 });
+                v.tone({
+                    f: 900 + ((i * 331) % 1400),
+                    type: 'square',
+                    at: (i * d) / 7,
+                    dur: 0.05,
+                    vol: 0.04,
+                });
         },
     },
     live: {
@@ -89,7 +144,15 @@ const own = {
     shot: {
         [SHOT.fast]: (v) => v.tone({ f: 2200, to: 900, type: 'triangle', dur: 0.08, vol: 0.05 }),
         [SHOT.sine]: (v) => v.tone({ f: 1100, to: 1300, type: 'sine', dur: 0.06, vol: 0.035 }),
-        [SHOT.missile]: (v) => v.tone({ f: 260, to: 520, type: 'sine', dur: 0.3, vol: 0.06, vib: { rate: 8, depth: 20 } }),
+        [SHOT.missile]: (v) =>
+            v.tone({
+                f: 260,
+                to: 520,
+                type: 'sine',
+                dur: 0.3,
+                vol: 0.06,
+                vib: { rate: 8, depth: 20 },
+            }),
         [SHOT.needle]: (v) => v.tone({ f: 1800, to: 700, type: 'sine', dur: 0.1, vol: 0.06 }),
         [SHOT.pellet]: (v) =>
             v.tone({
@@ -99,7 +162,8 @@ const own = {
                 dur: 0.05,
                 vol: 0.035,
             }),
-        [SHOT.fireball]: (v) => v.noise({ dur: 0.25, vol: 0.08, f: 900, to: 300, type: 'bandpass' }),
+        [SHOT.fireball]: (v) =>
+            v.noise({ dur: 0.25, vol: 0.08, f: 900, to: 300, type: 'bandpass' }),
         [SHOT.nova]: (v) => v.tone({ f: 1500, to: 2400, type: 'sine', dur: 0.12, vol: 0.04 }),
         [SHOT.sun]: (v) => v.tone({ f: 700, to: 1400, type: 'triangle', dur: 0.15, vol: 0.05 }),
         [SHOT.meteor]: (v) => v.noise({ dur: 0.35, vol: 0.08, f: 1800, to: 200, type: 'bandpass' }),

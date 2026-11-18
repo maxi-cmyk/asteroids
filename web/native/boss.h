@@ -14,7 +14,6 @@
 //   3 a 42 px safe corridor exists; 4 at most 48 shots / 6 hazards;
 //   6 dying never resets the boss; 7 the body stays in the right 55%.
 
-
 #include "boss/core.h"
 #include "boss/kinds.h"
 #include "boss/hazards.h"

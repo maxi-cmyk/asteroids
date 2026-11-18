@@ -35,7 +35,8 @@ export class InputHub {
         // that picks an option) would hold gameplay off for good. A key really held down
         // keeps auto-repeating, so one with no keydown for 800 ms is let go; if it is still
         // down, its next repeat puts it back.
-        if (this.physicalKeys.size && performance.now() - this.lastKeyAt > 800) this.physicalKeys.clear();
+        if (this.physicalKeys.size && performance.now() - this.lastKeyAt > 800)
+            this.physicalKeys.clear();
         return (
             this.physicalKeys.size ||
             this.pointerButtons.size ||

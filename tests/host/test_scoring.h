@@ -290,8 +290,8 @@ static void test_score_versioning() {
     // A valid score in the wrong order must also reject the whole table.
     for (int byte = 0; byte < SCORE_ENTRY_BYTES; byte++) {
         std::swap(Preferences::blobs[TABLE_KEY][SCORE_RECORD_HEADER + byte],
-                  Preferences::blobs[TABLE_KEY]
-                                    [SCORE_RECORD_HEADER + SCORE_ENTRY_BYTES + byte]);
+                  Preferences::blobs[TABLE_KEY][SCORE_RECORD_HEADER
+                                                + SCORE_ENTRY_BYTES + byte]);
     }
     highscore_init();
     assert(highscore_count() == 0);
@@ -353,4 +353,3 @@ static void test_initials_navigation() {
     navigate_initials(input);
     assert(navigation_direction == 0);
 }
-

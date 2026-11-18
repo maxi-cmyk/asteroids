@@ -8,7 +8,7 @@ enum PickupKind {
     PICKUP_SHIELD,
 #ifdef WEB_HD
     PICKUP_DOUBLE_FIRE,
-    PICKUP_HEALTH,  // never random: only a defeated boss drops one
+    PICKUP_HEALTH, // never random: only a defeated boss drops one
 #endif
 };
 
@@ -23,7 +23,8 @@ static Pickup pickup = {};
 static unsigned long collection_cue_left = 0;
 static float collection_x = 0;
 static float collection_y = 0;
-static uint8_t collection_kind = 0;  // which pickup the cue is for (the browser animates each)
+static uint8_t collection_kind
+        = 0; // which pickup the cue is for (the browser animates each)
 
 void powerups_init() {
     pickup = {};
@@ -53,7 +54,9 @@ static void collect_pickup(Ship& ship) {
     } else if (pickup.kind == PICKUP_DOUBLE_FIRE) {
         ship.effects.double_fire_left_ms = 6000;
     } else if (pickup.kind == PICKUP_HEALTH) {
-        if (ship.lives < PICKUP_HEALTH_MAX_LIVES) ship.lives++;
+        if (ship.lives < PICKUP_HEALTH_MAX_LIVES) {
+            ship.lives++;
+        }
 #endif
     } else {
         ship.effects.shield = true;
@@ -68,7 +71,7 @@ static void collect_pickup(Ship& ship) {
 void powerups_update(Ship& ship) {
 #ifdef WEB_HD
     ship.effects.double_fire_left_ms -= min(ship.effects.double_fire_left_ms,
-                                             (unsigned long)FRAME_TIME_MS);
+                                            (unsigned long)FRAME_TIME_MS);
 #endif
     ship.effects.multishot_left_ms -= min(ship.effects.multishot_left_ms,
                                           (unsigned long)FRAME_TIME_MS);

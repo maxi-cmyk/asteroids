@@ -8,10 +8,24 @@ import postcss from 'postcss';
 const order = [
     'styles/shared.css',
     'styles/screens.css',
-    'styles/shell.css',
+    'styles/shell/frame.css',
+    'styles/shell/screens.css',
+    'styles/shell/coop.css',
     ...[
-        'base', 'panels', 'playfield', 'hud', 'home', 'hangar', 'settings', 'refinements',
-        'pause', 'playfield-fit', 'practice', 'results', 'boss', 'records',
+        'base',
+        'panels',
+        'playfield',
+        'hud',
+        'home',
+        'hangar',
+        'settings',
+        'refinements',
+        'pause',
+        'playfield-fit',
+        'practice',
+        'results',
+        'boss',
+        'records',
     ].map((name) => `styles/theme/${name}.css`),
 ];
 const write = process.argv.includes('--write');
@@ -53,21 +67,32 @@ for (const list of groups.values()) {
         if (!later) continue;
         if (early.decl.important && !later.decl.important) continue;
         removed++;
-        if (process.argv.includes('--explain') && /dvh|svh|lvh|clamp\(|min\(|max\(|env\(|color-mix|oklch|aspect-ratio|var\(|calc\(/.test(later.decl.value))
-            console.log(`${early.file}: ${early.decl.prop}: ${early.decl.value}  ->  ${later.decl.value}  (${later.file})`);
+        if (
+            process.argv.includes('--explain') &&
+            /dvh|svh|lvh|clamp\(|min\(|max\(|env\(|color-mix|oklch|aspect-ratio|var\(|calc\(/.test(
+                later.decl.value,
+            )
+        )
+            console.log(
+                `${early.file}: ${early.decl.prop}: ${early.decl.value}  ->  ${later.decl.value}  (${later.file})`,
+            );
         perFile.set(early.file, (perFile.get(early.file) || 0) + 1);
         early.dead = true;
     }
 }
-for (const list of groups.values())
-    for (const entry of list) if (entry.dead) entry.decl.remove();
+for (const list of groups.values()) for (const entry of list) if (entry.dead) entry.decl.remove();
 // Drop rules left empty (and at-rules left empty).
 for (const { root } of roots) {
     let again = true;
     while (again) {
         again = false;
         root.walk((node) => {
-            if ((node.type === 'rule' || node.type === 'atrule') && node.nodes && node.nodes.length === 0 && node.name !== 'font-face') {
+            if (
+                (node.type === 'rule' || node.type === 'atrule') &&
+                node.nodes &&
+                node.nodes.length === 0 &&
+                node.name !== 'font-face'
+            ) {
                 node.remove();
                 again = true;
             }

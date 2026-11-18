@@ -285,8 +285,9 @@ void asteroids_update(unsigned long now) {
 }
 
 static void draw_asteroid(const Asteroid& asteroid, Adafruit_SSD1306& display) {
-    // Every vertex ends one edge and starts the next, so work each out once (one sinf and one
-    // cosf per vertex instead of two of each) and join neighbours.
+    // Every vertex ends one edge and starts the next, so work each out once
+    // (one sinf and one cosf per vertex instead of two of each) and join
+    // neighbours.
     float vertex_x[ASTEROID_VERTICES];
     float vertex_y[ASTEROID_VERTICES];
 
@@ -466,16 +467,17 @@ static float respawn_clearance(int position_x, int position_y) {
         float distance_y = asteroid.position_y - position_y;
         float distance_squared
                 = distance_x * distance_x + distance_y * distance_y;
-        // This rock only lowers the clearance if it is nearer than `reach`; compare squares
-        // and take the square root just for rocks that can win. The respawn search calls this
-        // tens of thousands of times in one frame when the field is crowded.
+        // This rock only lowers the clearance if it is nearer than `reach`;
+        // compare squares and take the square root just for rocks that can win.
+        // The respawn search calls this tens of thousands of times in one frame
+        // when the field is crowded.
         float reach = clearance + asteroid.radius + SHIP_RADIUS;
         if (reach <= 0 || distance_squared >= reach * reach) {
             continue;
         }
-        clearance = min(clearance,
-                        sqrtf(distance_squared) - asteroid.radius
-                                - SHIP_RADIUS);
+        clearance
+                = min(clearance,
+                      sqrtf(distance_squared) - asteroid.radius - SHIP_RADIUS);
     }
 
     return clearance;

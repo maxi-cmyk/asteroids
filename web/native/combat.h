@@ -44,7 +44,8 @@ struct CombatState {
 static CombatInput combat_input = {};
 static CombatState combat = {};
 static bool practice_mode = false;
-// Practice pickups the player has switched on: held at full time until switched off.
+// Practice pickups the player has switched on: held at full time until switched
+// off.
 static bool practice_hold_multishot = false;
 static bool practice_hold_double_fire = false;
 static unsigned long practice_empty_since = 0;
@@ -90,8 +91,12 @@ static void combat_collect_and_arm_shield() {
     bool active_before = ship.effects.shield;
     powerups_update(ship);
     if (practice_mode) {
-        if (practice_hold_multishot) ship.effects.multishot_left_ms = MULTISHOT_DURATION_MS;
-        if (practice_hold_double_fire) ship.effects.double_fire_left_ms = 6000;
+        if (practice_hold_multishot) {
+            ship.effects.multishot_left_ms = MULTISHOT_DURATION_MS;
+        }
+        if (practice_hold_double_fire) {
+            ship.effects.double_fire_left_ms = 6000;
+        }
     }
     if (!active_before && ship.effects.shield) {
         combat.shield_stored = true;
@@ -129,7 +134,8 @@ static bool combat_fire_volley() {
 
 static void combat_award(uint32_t points) {
     if (points) {
-        if (!combat.chain || game_ms - combat.last_scoring_kill >= SCORE_CHAIN_WINDOW_MS) {
+        if (!combat.chain
+            || game_ms - combat.last_scoring_kill >= SCORE_CHAIN_WINDOW_MS) {
             combat.chain = 0;
         }
         combat.chain++;
@@ -151,7 +157,9 @@ static void combat_update_cps(bool pressed) {
     }
     combat.cps = 0;
     for (unsigned long time : combat.press_times) {
-        if (time && game_ms - time < 1000) combat.cps++;
+        if (time && game_ms - time < 1000) {
+            combat.cps++;
+        }
     }
     combat.peak_cps = max(combat.peak_cps, combat.cps);
 }
@@ -159,7 +167,9 @@ static void combat_update_cps(bool pressed) {
 static void combat_primary_event() {
     if (combat_fire_volley()) {
         combat.primary_volleys++;
-        if (practice_mode) practice_goals |= 4;
+        if (practice_mode) {
+            practice_goals |= 4;
+        }
         weapon_shot_succeeded(ship.weapon, game_ms);
         sound_play(SFX_SHOOT);
     } else {
@@ -176,10 +186,12 @@ static bool combat_beam_hits(const Asteroid& rock) {
     float radius = rock.radius + 2.0f;
     bool intersects = along >= 0 ? across * across <= radius * radius
                                  : x * x + y * y <= radius * radius;
-    // Any visible part counts: a rock still entering from the right edge can be lasered.
+    // Any visible part counts: a rock still entering from the right edge can be
+    // lasered.
     float r = rock.radius;
-    return intersects && rock.position_x + r >= 0 && rock.position_x - r < SCREEN_W
-           && rock.position_y + r >= 0 && rock.position_y - r < SCREEN_H;
+    return intersects && rock.position_x + r >= 0
+           && rock.position_x - r < SCREEN_W && rock.position_y + r >= 0
+           && rock.position_y - r < SCREEN_H;
 }
 
 static void combat_destroy_laser_targets() {
@@ -256,8 +268,11 @@ static void combat_ship_hit() {
         return;
     }
     ship_die(ship);
-    // Dying never resets a boss, but its attacks are cleared so the return is fair.
-    if (boss.active) bs_clear_threats();
+    // Dying never resets a boss, but its attacks are cleared so the return is
+    // fair.
+    if (boss.active) {
+        bs_clear_threats();
+    }
     memset(combat.pending_shots, 0, sizeof(combat.pending_shots));
     combat.chain = 0;
     combat.charging = false;
@@ -272,7 +287,9 @@ static void combat_ship_hit() {
 }
 
 static void combat_collisions() {
-    if (asteroid_hits_ship(ship)) combat_ship_hit();
+    if (asteroid_hits_ship(ship)) {
+        combat_ship_hit();
+    }
 }
 static void combat_update_playing(bool laser_pressed) {
     const InputState& input = input_get();
@@ -307,7 +324,9 @@ static void combat_update_playing(bool laser_pressed) {
             }
         }
     } else {
-        if (!boss_controls_wave()) asteroids_update(game_ms);
+        if (!boss_controls_wave()) {
+            asteroids_update(game_ms);
+        }
     }
     bool laser_fired = combat_update_laser(laser_pressed);
     combat_update_cps(input.fire_pressed);
@@ -315,8 +334,11 @@ static void combat_update_playing(bool laser_pressed) {
     for (unsigned long& due : combat.pending_shots) {
         if (due && game_ms >= due) {
             due = 0;
-            if (!combat.charging && !laser_fired) combat_primary_event();
-            else combat.primary_laser_blocked++;
+            if (!combat.charging && !laser_fired) {
+                combat_primary_event();
+            } else {
+                combat.primary_laser_blocked++;
+            }
         }
     }
     if (input.fire_pressed) {
@@ -327,7 +349,10 @@ static void combat_update_playing(bool laser_pressed) {
             combat_primary_event();
             if (ship.effects.double_fire_left_ms) {
                 for (unsigned long& due : combat.pending_shots) {
-                    if (!due) { due = game_ms + 80; break; }
+                    if (!due) {
+                        due = game_ms + 80;
+                        break;
+                    }
                 }
             }
         }
@@ -341,7 +366,9 @@ static void combat_update_playing(bool laser_pressed) {
     }
     particles_update();
     combat_collisions();
-    if (state == STATE_PLAYING && (!practice_mode || boss.practice)) boss_update(laser_fired);
+    if (state == STATE_PLAYING && (!practice_mode || boss.practice)) {
+        boss_update(laser_fired);
+    }
 }
 
 static void combat_game_update() {

@@ -133,9 +133,12 @@ export class BossArt {
             w = shape.width,
             h = shape.height;
         const alpha = shape.getContext('2d').getImageData(0, 0, w, h).data;
-        const solid = (i, j) => i >= 0 && j >= 0 && i < w && j < h && alpha[(j * w + i) * 4 + 3] > 0;
+        const solid = (i, j) =>
+            i >= 0 && j >= 0 && i < w && j < h && alpha[(j * w + i) * 4 + 3] > 0;
         const closed = (i, j) =>
-            solid(i, j) || (solid(i - 1, j) && solid(i + 1, j)) || (solid(i, j - 1) && solid(i, j + 1));
+            solid(i, j) ||
+            (solid(i - 1, j) && solid(i + 1, j)) ||
+            (solid(i, j - 1) && solid(i, j + 1));
         canvas = document.createElement('canvas');
         canvas.width = w + 2;
         canvas.height = h + 2;
@@ -144,7 +147,8 @@ export class BossArt {
         for (let j = -1; j <= h; j++)
             for (let i = -1; i <= w; i++) {
                 if (closed(i, j)) continue;
-                if (closed(i - 1, j) || closed(i + 1, j) || closed(i, j - 1) || closed(i, j + 1)) out.fillRect(i + 1, j + 1, 1, 1);
+                if (closed(i - 1, j) || closed(i + 1, j) || closed(i, j - 1) || closed(i, j + 1))
+                    out.fillRect(i + 1, j + 1, 1, 1);
             }
         this.flashes.set(id, canvas);
         return canvas;

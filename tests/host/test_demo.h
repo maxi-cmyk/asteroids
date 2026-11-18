@@ -81,4 +81,3 @@ static void test_demo_lifecycle() {
     assert(state == STATE_COUNTDOWN);
     fire(false);
 }
-

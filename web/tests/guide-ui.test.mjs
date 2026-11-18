@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { assembleHtml } from '../tools/assemble-html.mjs';
 
-const css = await readFile(new URL('../styles/theme/guide.css', import.meta.url), 'utf8');
+const css = await readFile(new URL('../styles/theme/guide/help.css', import.meta.url), 'utf8');
 const atlas = JSON.parse(
     await readFile(new URL('../assets/sprites.json', import.meta.url), 'utf8'),
 );

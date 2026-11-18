@@ -196,8 +196,7 @@ static void update_playing(const InputState& input) {
     bullets_check_asteroids(award_asteroid_score, powerups_drop);
     particles_update();
 
-    bool collision = !ship.invincible_left
-                     && asteroid_hits_ship(ship);
+    bool collision = !ship.invincible_left && asteroid_hits_ship(ship);
     if (collision && ship.effects.shield) {
         ship.effects.shield = false;
         ship.invincible_left = SHIELD_PROTECTION_MS;

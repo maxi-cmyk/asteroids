@@ -1,6 +1,6 @@
 import { pixelGlow as glow } from '../render/fx.mjs';
 import { HAZARD, ZOD_STYLE } from './scene.mjs';
-import { blackHole, splash, swirl } from './zodiac-fx.mjs';
+import { blackHole, splash, swirl } from './zodiarch/fx.mjs';
 
 const ZODIARCH_KIND = 5;
 import { TAU, COLOUR, px, dotted, dottedRing, dottedArc, band, disc } from './draw-kit.mjs';
@@ -22,7 +22,7 @@ export const BELOW_BODY = new Set([
 
 export const HAZARD_PAINTERS = {
     [HAZARD.lane](ctx, h, m) {
-        if (h.e === ZOD_STYLE.net || h.e === ZOD_STYLE.cord) return zodLine(ctx, h, m);
+        if (h.e === ZOD_STYLE.cord) return zodLine(ctx, h, m);
         if (h.e === ZOD_STYLE.tether && !m.warning) return tether(ctx, h);
         const { warning, blink } = m;
         const half = h.c,
@@ -123,7 +123,8 @@ export const HAZARD_PAINTERS = {
         }
         dotted(ctx, h.x, h.y, h.e, 420, COLOUR.warn, 14);
         // The Zodiarch's beams come from an eye (its own, or Aldebaran): red.
-        const [outer, inner] = kind === ZODIARCH_KIND ? ['#c8281e', '#ff8a70'] : ['#8a60e8', '#d8c4ff'];
+        const [outer, inner] =
+            kind === ZODIARCH_KIND ? ['#c8281e', '#ff8a70'] : ['#8a60e8', '#d8c4ff'];
         band(ctx, h.x, h.y, h.a, 520, 10, outer);
         band(ctx, h.x, h.y, h.a, 520, 6, inner);
         band(ctx, h.x, h.y, h.a, 520, 2, '#ffffff');
@@ -139,12 +140,29 @@ export const HAZARD_PAINTERS = {
                 const u = ((time / 700 + k / 3) % 1) * 0.85 + 0.15;
                 const r = h.b + (reach - h.b) * u;
                 ctx.globalAlpha = (0.35 + 0.5 * urgency) * (1 - u * 0.7);
-                dottedRing(ctx, h.x, h.y, r, k ? '#ff7a8a' : '#fff0e0', Math.round(r * 1.2) + 12, 0, gap);
+                dottedRing(
+                    ctx,
+                    h.x,
+                    h.y,
+                    r,
+                    k ? '#ff7a8a' : '#fff0e0',
+                    Math.round(r * 1.2) + 12,
+                    0,
+                    gap,
+                );
             }
             ctx.globalAlpha = 1;
             for (const side of [-1, 1]) {
                 const a = h.a + side * h.c;
-                dotted(ctx, h.x + Math.cos(a) * h.b, h.y + Math.sin(a) * h.b, a, reach - h.b, COLOUR.white, 6);
+                dotted(
+                    ctx,
+                    h.x + Math.cos(a) * h.b,
+                    h.y + Math.sin(a) * h.b,
+                    a,
+                    reach - h.b,
+                    COLOUR.white,
+                    6,
+                );
             }
             return;
         }
@@ -231,7 +249,8 @@ export const HAZARD_PAINTERS = {
     },
     // An aimed shot.
     [HAZARD.aim](ctx, h, { blink }) {
-        if (h.e === ZOD_STYLE.fish) return dotted(ctx, h.x, h.y, h.a, h.b, blink ? COLOUR.white : '#aaa0ff', 6);
+        if (h.e === ZOD_STYLE.fish)
+            return dotted(ctx, h.x, h.y, h.a, h.b, blink ? COLOUR.white : '#aaa0ff', 6);
         // A seed is in flight for the first 40% of its warning (zodiac-fx draws it).
         if (h.e === ZOD_STYLE.seed && 1 - h.warn / h.warnTotal < 0.55) return;
         dotted(ctx, h.x, h.y, h.a, h.b, blink ? COLOUR.white : COLOUR.aim, 4);
@@ -257,14 +276,6 @@ function zodLine(ctx, h, { warning, blink }) {
     glow(ctx, mid[0], mid[1], Math.min(40, h.b / 2), '170,160,255', 0.3);
     band(ctx, h.x, h.y, h.a, h.b, 4, colour);
     band(ctx, h.x, h.y, h.a, h.b, 1, COLOUR.white);
-    if (h.e === ZOD_STYLE.net)
-        for (const d of [0, h.b]) {
-            const X = h.x + Math.cos(h.a) * d,
-                Y = h.y + Math.sin(h.a) * d;
-            glow(ctx, X, Y, 10, '200,190,255', 0.6);
-            ctx.fillStyle = COLOUR.white;
-            px(ctx, X - 1, Y - 1, 3, 3);
-        }
 }
 // Cancer's claw on its tether: out along the lane for its first 250 ms, back for the last.
 function tether(ctx, h) {
@@ -321,5 +332,6 @@ function venom(ctx, h) {
     glow(ctx, h.x, h.y, 14, '255,110,100', 0.7);
     glow(ctx, tx, ty, 12, '255,90,90', 0.5);
     ctx.fillStyle = '#ff8a7a';
-    for (let k = 0; k < 4; k++) px(ctx, tx - Math.cos(h.a) * k * 18, ty - Math.sin(h.a) * k * 18 + 4 + ((k * 5) % 7), 1, 2);
+    for (let k = 0; k < 4; k++)
+        px(ctx, tx - Math.cos(h.a) * k * 18, ty - Math.sin(h.a) * k * 18 + 4 + ((k * 5) % 7), 1, 2);
 }

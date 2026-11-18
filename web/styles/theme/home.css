@@ -1,6 +1,6 @@
-/* ---- Home: logo and a bare menu over the violet backdrop ------------------
-   The list floats on a soft dark gradient baked into home-scene.png, so no
-   panel is needed. Selection is a chevron, a bright label, and an underline. */
+/* ---- Home: logo and a bare menu over a plain night sky ---------------------
+   The list floats straight on the dark sky, so no panel is needed. Selection is
+   a chevron, a bright label, and an underline. */
 .home-view {
     image-rendering: pixelated;
 }

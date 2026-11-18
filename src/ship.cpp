@@ -19,7 +19,8 @@ void ship_respawn(Ship& ship,
 
 static const float SHIP_HULL[SHIP_HULL_COUNT][2] = SHIP_HULL_CIRCLES;
 
-void ship_hull_circle(const Ship& ship, int index, float& x, float& y, float& radius) {
+void ship_hull_circle(
+        const Ship& ship, int index, float& x, float& y, float& radius) {
     float facing_x = ship.facing_x, facing_y = ship.facing_y;
     if (facing_x == 0 && facing_y == 0) {
         facing_x = 1;

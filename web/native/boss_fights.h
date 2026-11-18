@@ -1,6 +1,6 @@
 #pragma once
-// The twelve fights, one header per family (a boss and its mini-boss), tied together by
-// the BossOps table in boss/ops.h.
+// The twelve fights, one header per family (a boss and its mini-boss), tied
+// together by the BossOps table in boss/ops.h.
 #include "boss/fights/common.h"
 #include "boss/fights/sentinel.h"
 #include "boss/fights/ringwarden.h"

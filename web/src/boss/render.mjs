@@ -2,7 +2,16 @@
 // telegraphs. Everything is a pure function of the scene and the visual clock, so pausing
 // freezes it. The painters live next door: body-painters (one per boss), hazard-painters
 // and shot-painters.
-import { KINDS, REGION_SHEETS, bossHazards, bossParts, bossShots, bossState } from './scene.mjs';
+import {
+    bossBlocks,
+    bossHazards,
+    bossParts,
+    bossShots,
+    bossState,
+    KINDS,
+    REGION_SHEETS,
+} from './scene.mjs';
+import { glance } from './feedback.mjs';
 import { BODY_PAINTERS } from './body-painters.mjs';
 import { BELOW_BODY, HAZARD_PAINTERS } from './hazard-painters.mjs';
 import { SHOT_PAINTERS } from './shot-painters.mjs';
@@ -23,6 +32,8 @@ export class BossLayer {
         this.body(ctx, scene, state, time);
         this.hazards(ctx, hazards, time, 'above');
         this.shots(ctx, scene, time);
+        // Shots stopped by a hard surface glance off in a gold spark (nextSteps.md P3.3).
+        for (const b of bossBlocks(scene)) glance(ctx, b.x, b.y, b.angle, b.age / 300);
     }
     body(ctx, scene, state, time) {
         const { art } = this,

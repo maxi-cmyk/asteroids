@@ -1,5 +1,6 @@
-// Host gameplay tests: the firmware sources are compiled for the desktop and driven frame
-// by frame. Each group lives in its own header; main runs them all.
+// Host gameplay tests: the firmware sources are compiled for the desktop and
+// driven frame by frame. Each group lives in its own header; main runs them
+// all.
 #include "harness.h"
 #include "test_gameplay.h"
 #include "test_scoring.h"
@@ -40,4 +41,3 @@ int main() {
 
     std::cout << "Host gameplay checks passed\n";
 }
-

@@ -1,6 +1,6 @@
 #pragma once
-// Shared host-test harness: the firmware sources compiled together, display and sound
-// stubs, and helpers that advance the game one frame at a time.
+// Shared host-test harness: the firmware sources compiled together, display and
+// sound stubs, and helpers that advance the game one frame at a time.
 #include <cassert>
 #include <iostream>
 #include "../../src/rock_random.cpp"
@@ -55,4 +55,3 @@ static int active_bullet_count() {
 
     return count;
 }
-

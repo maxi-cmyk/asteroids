@@ -1,0 +1,84 @@
+/* ---- How to Play and the co-op lobby on the violet theme --------------------
+   Same backdrop, heading and quiet violet panels as Settings and Mode. Amber marks
+   what you can act on; pilot colours (cyan diamond, amber square) mark the crew. */
+.utility-view[data-view='help'],
+.utility-view[data-view='lobby'] {
+    padding: clamp(16px, 3.4vh, 36px) clamp(18px, 5vw, 64px) clamp(12px, 2vh, 24px);
+    border: 0;
+    background:
+        linear-gradient(#0a0518d9, #0a0518f0),
+        url('../../../assets/home-scene.png') center / cover;
+    image-rendering: pixelated;
+    scrollbar-color: #5a3c98 #0e0624;
+}
+.utility-view[data-view='help']:not([hidden]),
+.utility-view[data-view='lobby']:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 2vh, 20px);
+    overflow: auto;
+}
+.utility-view[data-view='help'] > h1,
+.utility-view[data-view='lobby'] > h1 {
+    margin: 0;
+    font-size: clamp(28px, 3.6vw, 46px);
+    color: transparent;
+    background: linear-gradient(#fff4d6 0 40%, #ffbe6e 40% 72%, #e8608c 72%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(2px 2px 0 #340e4a);
+    width: max-content;
+    max-width: 100%;
+}
+.utility-view[data-view='help'] .help-lede,
+.utility-view[data-view='lobby'] .lobby-lede {
+    margin: 0;
+    max-width: 68ch;
+    color: #8a76b0;
+    font-size: var(--size-small);
+    line-height: 1.4;
+}
+
+/* Both screens fill wide windows: type and controls scale with the viewport, and the content
+   sits centred in a column that stops growing at --guide-w. */
+.utility-view[data-view='help'],
+.utility-view[data-view='lobby'] {
+    --guide-w: 1500px;
+    --size-label: clamp(18px, 1.3vw, 30px);
+    --size-body: clamp(17px, 1.25vw, 28px);
+    --size-small: clamp(15px, 1.1vw, 24px);
+    --size-menu: clamp(24px, 1.8vw, 40px);
+}
+.utility-view[data-view='help']:not([hidden]) > :first-child,
+.utility-view[data-view='lobby']:not([hidden]) > :first-child {
+    margin-top: auto;
+}
+.utility-view[data-view='help']:not([hidden]) > :last-child,
+.utility-view[data-view='lobby']:not([hidden]) > :last-child {
+    margin-bottom: auto;
+}
+.utility-view[data-view='help'] > h1,
+.utility-view[data-view='lobby'] > h1 {
+    font-size: clamp(32px, 3.4vw, 76px);
+    align-self: center;
+}
+.utility-view[data-view='help'] > h1,
+.utility-view[data-view='lobby'] > h1,
+.utility-view[data-view='help'] .help-lede,
+.utility-view[data-view='lobby'] .lobby-lede {
+    text-align: center;
+}
+.utility-view[data-view='help'] .help-lede,
+.utility-view[data-view='lobby'] .lobby-lede {
+    align-self: center;
+    max-width: 72ch;
+}
+.utility-view[data-view='lobby'] .crew-slot select {
+    min-height: clamp(40px, 3vw, 64px);
+}
+.utility-view[data-view='help'] .primary,
+.utility-view[data-view='lobby'] .primary,
+.utility-view[data-view='lobby'] .crew-slot button {
+    min-height: clamp(40px, 3vw, 64px);
+}

@@ -70,8 +70,9 @@ void loop() {
     unsigned long elapsed = now - last_frame_ms;
 
     if (elapsed < FRAME_TIME_MS) {
-        // Sleep out the rest of the frame instead of spinning on millis(): the core idles
-        // (and FreeRTOS can run other tasks) for most of every 20 ms.
+        // Sleep out the rest of the frame instead of spinning on millis(): the
+        // core idles (and FreeRTOS can run other tasks) for most of every 20
+        // ms.
         delay(FRAME_TIME_MS - elapsed);
         now = millis();
     }

@@ -174,8 +174,8 @@ Each fight has a signature rule: Sentinel plates open only between attacks;
 Ringwarden blades absorb shots and break (the laser pierces both rings);
 Cinderforge's shell opens at vents or at panels broken with three hits; Bastion's
 bridge takes half damage while a hardpoint lives; Tidecaller's bell is shielded
-by bubbles (the laser pops all three); the Zodiarch's pearl opens for 2.5 s every 7 s, sooner
-for every creature you break.
+by bubbles (the laser pops all three); the Zodiarch's pearl surfaces, for about 3 s, on the
+part of its body each of its attacks comes from.
 
 The Cinderforge's fire stays. A lob's lava pool (4 s) burns down into **scorched ground** for
 another 6 s (`HK_BURN`, `bs_scorch` in `native/boss/hazards.h`): standing in it burns you, the
@@ -194,25 +194,50 @@ adds three attacks: a *tidal wall* (pellets across the field with one marked gap
 rain* (spores fall from random columns) and *whirlpools* (two closing rings that open
 anywhere but on the pilot).
 
-**The Zodiarch** (the final boss, `native/boss/fights/warden.h`; internal id `warden`) is a star
-dragon drawn in constellations (art: `tools/zodiac_art.py`, `tools/starfill.py`). It swims a
-figure of eight across the right of the field and its 26 body segments trail the head's path,
-so there is no safe spot behind it; its path for the next 0.6 s shows as faint dots. The body
-hurts to touch but does not soak shots; the head does. The weak point is the **pearl** under
-its chin: it opens for 2.5 s every 7 s (the dragon slows to half speed while it is open) and
-the laser reaches it any time. A ring of the twelve zodiac signs turns behind it. It throws
-signs: a sign's stars fly out and re-form into its creature over 700 ms (that is the warning)
-in front of the coils (x 185 to 215), the creature attacks, then dissolves back into the ring.
-Up to one sign is out in phase 1, two in phase 2, three in phase 3 and four in the frenzy,
-thrown at least 1.2 s apart, and a compatibility rule keeps the caps: at most one sign that
-walls lanes (Gemini, Cancer, Pisces), one charger (Aries, Taurus, Leo), one field effect
-(Libra's pull, the black hole) and two ranged signs. Between throws the dragon attacks
-itself, holding still while it does. **Every shot and wall leaves a visible point on a
-body** (the emitters: `SIGN_EMIT` in `warden.h`, mirrored in `src/boss/scene.mjs`): light
-gathers there while it is warned and flashes when it fires. Every creature shows a twinkling
-**key star**; three hits (or the laser) break it early, which takes its walls, pull or cord
-with it, costs the dragon 2 sub-hits and brings the next pearl window 2 s sooner. A hit that
-does not break it makes it flinch; a break cracks it apart from the key star.
+**The Zodiarch** (the final boss, `native/boss/fights/warden.h` and `fights/zodiarch/`;
+internal id `warden`) is a star dragon drawn in constellations (art: `tools/zodiac_art.py`,
+`tools/starfill.py`). **It steers itself** (nextSteps.md P3.1, `zodiarch/swim.h`): the head
+turns toward a goal at a capped rate (no tighter than 48 px at speed, 26 px when slow, 22 px in
+an emergency turn at the edge of its swim box, x 305 to 445), a sideways wave gives the serpent
+S, and its 26 body segments are laid along the trail the head leaves, so the body only ever
+curves. Between attacks it picks a move from where the pilot is, never the same twice running:
+stalk the pilot's row, surge across, glide, dive and rise behind the ring, or cruise; it rears
+as it calls a sign down. The head
+is drawn turned to its heading (pre-turned frames, mirrored past 90 degrees), and its eye, jaw
+and pearl turn with it. The body hurts to touch but does not soak shots; the head does, and a
+stopped shot shows a gold spark (every boss: the scene's `BLOCKS` events). The weak point is
+its **pearl**. It rests shut in the forehead, under two brow scales that stop bullets. With
+each attack it surfaces on the part of the body that attack comes from (`ZOD_WEAK` in
+`zodiarch/data.h`): the forehead for the eye laser and black hole, the throat (segments 2 to 3)
+for the breath and coil-spit, the stretched neck (8) for the lunge, the hind claw (15) for the
+nova stars, the tail fan (23) for the meteors and the chest (5) as it
+rears to summon. The scales there twitch for 600 ms, then part for 2.2 to 3 s (a ring counts
+the time down, the whole body's rim turns pink and the dragon slows to 0.6×); then it sinks back
+to the forehead. The laser reaches it any time.
+A ring of the twelve zodiac signs turns behind it. It **summons** signs: a beam from its eye
+wakes the sign on the ring, the constellation arcs over to where the creature will stand (a
+ring marks the spot) and the engraving uncovers itself from the key star, 900 ms in all (that
+is the warning); the creature attacks, then goes back the same way. Up to one sign is out in
+phase 1 and two after that (the frenzy too), thrown at least 1.2 s apart,
+and a compatibility rule keeps the caps: at most one sign that walls lanes (Gemini, Cancer,
+Pisces), one charger (Aries, Taurus, Leo), one field effect (Libra's pull, the black hole) and
+two ranged signs. Between throws the dragon attacks itself; first it turns to face the pilot
+(for attacks from its head) and settles, so every emitter stays put while it is warned.
+**Every shot and wall leaves a visible point on a body** (the emitters: `SIGN_EMIT` in
+`zodiarch/data.h`, mirrored in `src/boss/scene.mjs`): light gathers there while it is warned and
+flashes when it fires. Every creature shows a pulsing **key star** with three pips; three hits
+(or the laser) break it early, which takes its walls, pull or cord with it, costs the dragon 3
+sub-hits. A hit that does not break it makes it
+flinch; a break cracks it apart from the key star.
+
+Its own attacks: the **coil-spit** (phase 1 on; it winds into a spiral, turns to the pilot, fire
+climbs its body under three 900 ms aim lines, then it spits three streams of three or four fire
+globs that can be shot down and burst into two embers each), the **eye laser**, **nova stars**
+and the **lunge** (phase 2 on: it draws its neck back into an S while a 40 px wide lane from its
+jaw is warned for 900 ms, strikes down it, never past x 120 at the snout, then stays stretched
+out with its pearl on the neck; twice from phase 3), and from phase 3 the **black hole** (a
+core of 18 px in a 60 px accretion disc, swallowing shots in 28 px), the **meteor fall** and
+the **starfire breath**.
 
 | Sign | Creature | Attack (from) |
 | --- | --- | --- |
@@ -234,12 +259,13 @@ embers after 1.2 s, or pop harmlessly when shot), an **eye laser** sweeping a 16
 **nova stars** flung from its claws to either side of you (from phase 2; eight sparks with the
 gap facing you), and from phase 3 a **black hole** flung from the pearl well away from you
 (3 s; it pulls at 0.8 px a tick, under a quarter of full thrust, swallows your shots and has a
-10 px lethal core), a **meteor fall** of five meteors from the tail fan down pre-drawn curves,
-a **constellation net** (three ring stars joined by lines lethal for 1.5 s) and the **starfire
-breath** (it stops, opens its jaw and breathes three fanned 230 px lanes, never into the
-corners). Phase 1 throws spring and summer (Aries to Virgo), phase 2 autumn and winter (Libra
+10 px lethal core), a **meteor fall** of five meteors from the tail fan down pre-drawn curves, and
+the **starfire breath**, always head on: it turns to face the pilot (within 0.3 rad, never
+stopping early at an edge), stops, opens its jaw and breathes three fanned 230 px lanes straight
+out of its mouth, the middle one down the line the head points; if it could not come round it
+does not breathe. (The constellation net was removed on 2026-11-18.) Phase 1 throws spring and summer (Aries to Virgo), phase 2 autumn and winter (Libra
 to Pisces), phase 3 the whole ring. From tier II the frenzy adds the **Great Conjunction**:
-three creatures from three sides of the ring, 1.2 s apart.
+two creatures from two sides of the ring, 1.2 s apart.
 
 **Ninefold** (the rift mini-boss, internal id `lensimp`) is a nine-tailed star fox. Its tails
 are its health: a hit on any tail reaches the fox, and a tail falls with each ninth of its
@@ -256,7 +282,9 @@ a second, five seeds, boss practice), after bosses started moving (P0.3) and the
 replaced (P1); every row again on 2026-11-17 after the P2.3 Zodiarch attacks (several signs at
 once, its own attacks) and after the pilot learned to keep out of a sweeping beam's whole wedge,
 as a person reads it (that moved the Ringwarden, Cinderforge and Tidecaller hit counts a little;
-no fairness faults). The pilot keeps out of the space level with or behind a boss, as a sensible player
+no fairness faults); the Zodiarch row again on 2026-11-18 after P3 (steered swim, forehead pearl,
+coil-spit, lunge) and again after the pearl moved to the attacking body part and the signs out
+were capped at two (its health is 2 sub-hits per design hit, a break costs it 3). The pilot keeps out of the space level with or behind a boss, as a sensible player
 would. Times are seconds from the start of the fight (the 1.4 s entrance included) to the defeat,
 averaged over the seeds; **hits** is how often the pilot was touched (practice loses no lives).
 People are expected to take about 1.5× the bot time; that figure is an estimate until the S0.2
@@ -269,7 +297,7 @@ playtest records real ones.
 | Cinderforge | 36 | 44 | 43 | 12 / 10 / 23 | 54 s |
 | Bastion | 44 | 50 | 53 | 0 / 0 / 0 | 66 s |
 | Tidecaller | 43 | 48 | 51 | 4 / 4 / 3 | 65 s |
-| Zodiarch | 47 | 54 | 54 | 1.4 / 2.4 / 2.4 | 70 s |
+| Zodiarch | 48 | 55 | 54 | 0.8 / 1.2 / 1.2 | 81 s |
 | Picket | 18 | 24 | 24 | 0 | 27 s |
 | Shardling | 14 | 16 | 16 | 0 | 21 s |
 | Cinderling | 10 | 23 | 23 | 0 | 15 s |
@@ -280,7 +308,7 @@ playtest records real ones.
 Fairness counters over the same 36 fights (tiers I to III): no lethal hazard without its warning,
 no entrance hit, shots never above the cap of 48 (the Tidecaller reaches it), hazards never above
 the cap of 6 (the Cinderforge reaches it), and the narrowest safe corridor was 230 px, far above
-42. The Zodiarch's creatures and its own attacks stay inside those limits with up to three signs
+42. The Zodiarch's creatures and its own attacks stay inside those limits with up to two signs
 out (at most four lethal hazards and 41 shots). The Ringwarden hurts the bot most (17 to 22 touches), so expect people
 to find it the busiest of the first three.
 

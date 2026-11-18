@@ -13,7 +13,8 @@ void web_boss_practice(int kind, int tier, int phase) {
     begin_game();
     combat_reset();
     boss = {};
-    boss_begin_practice(constrain(kind, 0, int(BK_COUNT) - 1), constrain(tier, 0, 3));
+    boss_begin_practice(constrain(kind, 0, int(BK_COUNT) - 1),
+                        constrain(tier, 0, 3));
     if (phase > 1) {
         unsigned top = bs_phases() + (boss.tier >= 2 && !boss.mini ? 1 : 0);
         boss.start_phase = constrain(unsigned(phase), 1u, top);
@@ -50,8 +51,12 @@ void web_practice_hold(int multishot, int double_fire) {
 #ifdef WEB_HD
     practice_hold_multishot = multishot != 0;
     practice_hold_double_fire = double_fire != 0;
-    if (!practice_hold_multishot) ship.effects.multishot_left_ms = 0;
-    if (!practice_hold_double_fire) ship.effects.double_fire_left_ms = 0;
+    if (!practice_hold_multishot) {
+        ship.effects.multishot_left_ms = 0;
+    }
+    if (!practice_hold_double_fire) {
+        ship.effects.double_fire_left_ms = 0;
+    }
 #else
     (void)multishot;
     (void)double_fire;
@@ -59,7 +64,9 @@ void web_practice_hold(int multishot, int double_fire) {
 }
 void web_practice_double_fire() {
 #ifdef WEB_HD
-    if (practice_mode) ship.effects.double_fire_left_ms = 6000;
+    if (practice_mode) {
+        ship.effects.double_fire_left_ms = 6000;
+    }
 #endif
 }
 void web_practice_multishot() {

@@ -1,17 +1,19 @@
-// Serialises the game into the flat float array the browser reads (the scene ABI).
-// Offsets come from scene_layout.h, generated from scene-layout.mjs: add or move a
-// field there, never here.
+// Serialises the game into the flat float array the browser reads (the scene
+// ABI). Offsets come from scene_layout.h, generated from scene-layout.mjs: add
+// or move a field there, never here.
 #pragma once
 #include "scene_layout.h"
 
 static_assert(ASTEROID_MAX == SCENE_ROCKS_COUNT, "rock block size");
 static_assert(BULLET_MAX == SCENE_BULLETS_COUNT, "bullet block size");
 static_assert(PARTICLE_MAX == SCENE_PARTICLES_COUNT, "particle block size");
-static_assert(HIGHSCORE_CAPACITY == SCENE_HIGHSCORES_COUNT, "highscore block size");
+static_assert(HIGHSCORE_CAPACITY == SCENE_HIGHSCORES_COUNT,
+              "highscore block size");
 #ifdef WEB_HD
 static_assert(BOSS_PARTS == SCENE_BOSS_PARTS_COUNT, "boss part block size");
 static_assert(BOSS_SHOTS == SCENE_BOSS_SHOTS_COUNT, "boss shot block size");
-static_assert(BOSS_HAZARDS == SCENE_BOSS_HAZARDS_COUNT, "boss hazard block size");
+static_assert(BOSS_HAZARDS == SCENE_BOSS_HAZARDS_COUNT,
+              "boss hazard block size");
 #endif
 
 static void scene_core(float *scene) {
@@ -24,7 +26,8 @@ static void scene_core(float *scene) {
     scene[SCENE_SHIP_ALIVE] = ship.alive;
     scene[SCENE_LIVES] = ship.lives;
     scene[SCENE_INVINCIBLE_MS] = ship.invincible_left;
-    // Heat/delay slots 9, 10, 12 and 13 are reserved; primary fire is unrestricted.
+    // Heat/delay slots 9, 10, 12 and 13 are reserved; primary fire is
+    // unrestricted.
     scene[SCENE_LAST_SHOT_MS] = ship.weapon.last_shot_ms;
     scene[SCENE_MULTISHOT_MS] = ship.effects.multishot_left_ms;
     scene[SCENE_SHIELD] = ship.effects.shield;
@@ -34,9 +37,10 @@ static void scene_core(float *scene) {
     scene[SCENE_WAVE] = wave_number;
     scene[SCENE_PENDING_ROCKS] = pending_asteroids;
     scene[SCENE_SPAWN_Y] = pending_spawn_y;
-    scene[SCENE_SPAWN_WARNING] = pending_asteroids
-                                 && (game_ms >= next_spawn_ms
-                                     || next_spawn_ms - game_ms <= SPAWN_WARNING_MS);
+    scene[SCENE_SPAWN_WARNING]
+            = pending_asteroids
+              && (game_ms >= next_spawn_ms
+                  || next_spawn_ms - game_ms <= SPAWN_WARNING_MS);
     scene[SCENE_WAVE_CUE] = game_ms - wave_started_ms < WAVE_CUE_MS;
     scene[SCENE_COLLECT_CUE_MS] = collection_cue_left;
     scene[SCENE_COLLECT_X] = collection_x;
@@ -64,7 +68,8 @@ static void scene_core(float *scene) {
     scene[SCENE_AIM_X] = combat.aim_x;
     scene[SCENE_AIM_Y] = combat.aim_y;
     scene[SCENE_CHARGING] = combat.charging;
-    scene[SCENE_CHARGE_MS] = combat.charging ? game_ms - combat.charge_started_ms : 0;
+    scene[SCENE_CHARGE_MS]
+            = combat.charging ? game_ms - combat.charge_started_ms : 0;
     scene[SCENE_LASER_COOLDOWN_MS] = combat.cooldown_left_ms;
     scene[SCENE_BEAM_MS] = combat.beam_left_ms;
     scene[SCENE_BEAM_X] = combat.beam_x;
@@ -145,16 +150,19 @@ static void scene_boss(float *scene) {
     b[SCENE_BOSS_KIND] = boss.kind;
     b[SCENE_BOSS_MINI] = boss.mini;
     b[SCENE_BOSS_TIER] = boss.tier;
-    b[SCENE_BOSS_DAMAGE] = boss.maximum == 0 ? 0
+    b[SCENE_BOSS_DAMAGE] = boss.maximum == 0                    ? 0
                            : boss.health * 3 > boss.maximum * 2 ? 0
-                           : boss.health * 3 > boss.maximum ? 1 : 2;
-    b[SCENE_BOSS_FLASH_MS] = game_ms < boss.flash_until ? boss.flash_until - game_ms : 0;
+                           : boss.health * 3 > boss.maximum     ? 1
+                                                                : 2;
+    b[SCENE_BOSS_FLASH_MS]
+            = game_ms < boss.flash_until ? boss.flash_until - game_ms : 0;
     b[SCENE_BOSS_ATTACK] = boss.atk;
     b[SCENE_BOSS_ATTACK_MS] = boss.atk ? game_ms - boss.atk_t0 : 0;
     b[SCENE_BOSS_GATE] = boss.aux[0];
-    b[SCENE_BOSS_ENTRANCE] = bs_since(boss.born) >= BOSS_ENTRANCE_MS
-                                 ? 1
-                                 : bs_since(boss.born) / float(BOSS_ENTRANCE_MS);
+    b[SCENE_BOSS_ENTRANCE]
+            = bs_since(boss.born) >= BOSS_ENTRANCE_MS
+                      ? 1
+                      : bs_since(boss.born) / float(BOSS_ENTRANCE_MS);
     b[SCENE_BOSS_PRACTICE] = boss.practice;
     b[SCENE_BOSS_DEFEATED_MASK] = boss.defeated_mask;
     b[SCENE_BOSS_HITS_TAKEN] = boss.hits_taken;
@@ -162,7 +170,9 @@ static void scene_boss(float *scene) {
     b[SCENE_BOSS_MAX_SHOTS] = boss.max_shots;
     b[SCENE_BOSS_MAX_HAZARDS] = boss.max_hazards;
     b[SCENE_BOSS_MIN_CORRIDOR] = boss.min_corridor;
-    for (int i = 0; i < SCENE_BOSS_AUX_COUNT; i++) b[SCENE_BOSS_AUX + i] = boss.aux[i];
+    for (int i = 0; i < SCENE_BOSS_AUX_COUNT; i++) {
+        b[SCENE_BOSS_AUX + i] = boss.aux[i];
+    }
     for (unsigned i = 0; i < BOSS_PARTS; i++) {
         const BossPart& p = boss.parts[i];
         float *at = scene + SCENE_BOSS_PARTS_AT + i * SCENE_BOSS_PARTS_STRIDE;
@@ -193,9 +203,18 @@ static void scene_boss(float *scene) {
         at[1] = boss.seg[i][1];
         at[2] = boss.seg[i][2];
     }
+    for (unsigned i = 0; i < SCENE_BOSS_BLOCKS_COUNT; i++) {
+        float *at = scene + SCENE_BOSS_BLOCKS_AT + i * SCENE_BOSS_BLOCKS_STRIDE;
+        bool seen = i < boss.block_next && game_ms - boss.block_at[i] < 1000;
+        at[0] = boss.block_fx[i][0];
+        at[1] = boss.block_fx[i][1];
+        at[2] = boss.block_fx[i][2];
+        at[3] = seen ? float(game_ms - boss.block_at[i]) : -1;
+    }
     for (unsigned i = 0; i < BOSS_HAZARDS; i++) {
         const BossHazard& h = boss.hz[i];
-        float *at = scene + SCENE_BOSS_HAZARDS_AT + i * SCENE_BOSS_HAZARDS_STRIDE;
+        float *at
+                = scene + SCENE_BOSS_HAZARDS_AT + i * SCENE_BOSS_HAZARDS_STRIDE;
         at[0] = h.active;
         at[1] = h.kind;
         at[2] = h.x;

@@ -1,0 +1,256 @@
+/* Focused screens: the header controls, the demo bar, settings (tabs, sliders, bindings,
+   theme) and help. Imported second by styles/shell.css. */
+/* Focused-screen layout. */
+.shell-header {
+    gap: 12px;
+}
+.shell-header #sound,
+.shell-header #music,
+.shell-header #fullscreen {
+    font-size: 12px;
+    padding: 6px 10px;
+}
+#runDevice {
+    margin-left: auto;
+}
+#demoControls {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    min-width: 0;
+}
+#demoControls strong {
+    font-size: 18px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+#stopDemo {
+    font-size: 12px;
+    padding: 6px 10px;
+}
+#demoHint {
+    font-size: 12px;
+    color: var(--muted);
+}
+#homeDemo {
+    object-fit: contain;
+    background: #060e18;
+}
+.home-menu h1 {
+    margin-bottom: 22px;
+}
+[data-view='settings'] {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+[data-view='settings'] > h1 {
+    margin-bottom: 12px;
+}
+#settingsDialog {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+.settings-intro {
+    margin: 0 0 12px;
+    font-size: 13px;
+}
+.profile-picker {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: none;
+    margin: 0;
+}
+#settingsProfileNote {
+    font-size: 12px;
+    margin: 10px 0;
+}
+.settings-tabs {
+    display: flex;
+    flex: none;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--edge);
+}
+.settings-tabs button {
+    flex: 1;
+    padding: 10px 12px;
+}
+.settings-tabs button[aria-pressed='true'] {
+    color: var(--accent);
+    background: #183c4c;
+    border-color: var(--accent);
+}
+[data-settings-panel] {
+    min-height: 0;
+    overflow: auto;
+    flex: 1;
+    padding: 20px 12px 20px 0;
+    scrollbar-color: var(--edge) var(--surface);
+}
+[data-settings-panel] > h2 {
+    margin: 0 0 18px;
+    font-size: 18px;
+    text-transform: none;
+    color: var(--ink);
+}
+.settings-footer {
+    position: static;
+    flex: none;
+    padding: 14px 0 0;
+    margin: 0;
+    border-top: 1px solid var(--edge);
+    gap: 12px;
+}
+.settings-sliders {
+    margin: 0;
+    gap: 22px 32px;
+}
+.settings-sliders label {
+    font-size: 14px;
+}
+.settings-help,
+.settings-bindings p,
+#calibration p {
+    font-size: 13px;
+    line-height: 1.7;
+}
+.settings-bindings h3 {
+    margin-top: 24px;
+    font-size: 16px;
+    color: var(--ink);
+}
+#keyBindings label,
+#padBindings label {
+    font-size: 13px;
+    min-height: 42px;
+}
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.menu-theme {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 0 0 24px;
+}
+.menu-theme p {
+    margin: 0;
+    font-size: 12px;
+}
+
+.help-layout {
+    display: grid;
+    grid-template-columns: minmax(240px, 0.9fr) minmax(0, 1.2fr);
+    gap: 48px;
+    max-width: 1150px;
+}
+.help-layout h2 {
+    font-size: 17px;
+    text-transform: none;
+    color: var(--ink);
+    margin: 24px 0 12px;
+}
+.help-layout h2:first-child {
+    margin-top: 0;
+}
+.help-layout p {
+    font-size: 14px;
+}
+.binding-list {
+    display: grid;
+    grid-template-columns: minmax(110px, 0.7fr) minmax(0, 1fr);
+    column-gap: 20px;
+    row-gap: 18px;
+    line-height: 1.6;
+}
+.binding-list dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+@media (max-width: 900px) {
+    .help-layout {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+}
+@media (max-width: 600px) {
+    .shell-header {
+        gap: 7px;
+    }
+    #profileLabel {
+        font-size: 11px;
+    }
+    .shell-header #sound,
+    .shell-header #music,
+    .shell-header #fullscreen {
+        padding: 5px;
+        font-size: 11px;
+    }
+    .utility-view {
+        padding: 16px;
+    }
+    .settings-tabs {
+        gap: 3px;
+    }
+    .settings-footer {
+        flex-wrap: wrap;
+    }
+    .settings-intro,
+    #settingsProfileNote {
+        font-size: 11px;
+    }
+}
+@media (max-height: 650px) {
+    .home-menu h1 {
+        margin-bottom: 12px;
+    }
+    [data-view='settings'] > h1 {
+        display: none;
+    }
+    #settingsProfileNote {
+        display: none;
+    }
+    .settings-intro {
+        margin-bottom: 6px;
+        font-size: 12px;
+    }
+    .settings-tabs {
+        padding-bottom: 8px;
+        margin-top: 8px;
+    }
+    [data-settings-panel] {
+        padding-top: 12px;
+    }
+    .settings-footer {
+        padding-top: 8px;
+    }
+}
+
+@media (max-width: 600px) {
+    body[data-demo='true'] .app-shell {
+        grid-template-rows: auto minmax(0, 1fr) 38px;
+    }
+    body[data-demo='true'] .shell-header {
+        flex-wrap: wrap;
+    }
+    body[data-demo='true'] #profileLabel {
+        display: none;
+    }
+    #demoControls {
+        gap: 8px;
+        margin-right: auto;
+    }
+    #demoControls strong {
+        font-size: 14px;
+    }
+    #demoHint {
+        font-size: 11px;
+    }
+}

@@ -113,7 +113,10 @@ async function idleStrip(count, gapTicks, label) {
     game.until((b) => !b.attack, 600);
     const out = [];
     for (let k = 0; k < count; k++) {
-        out.push({ label: `${label} · +${Math.round(k * gapTicks * 18)} ms`, canvas: await photo(game) });
+        out.push({
+            label: `${label} · +${Math.round(k * gapTicks * 18)} ms`,
+            canvas: await photo(game),
+        });
         game.tick(gapTicks);
     }
     return out;
@@ -128,7 +131,10 @@ async function death() {
         canvas.width = W;
         canvas.height = H;
         const renderer = new PixelRenderer(canvas, art);
-        await Promise.all([renderer.bossArt.load(KINDS[kind].region), renderer.bossArt.load('shots')]);
+        await Promise.all([
+            renderer.bossArt.load(KINDS[kind].region),
+            renderer.bossArt.load('shots'),
+        ]);
         const alive = new Float32Array(snapshot);
         alive[0] = 2;
         alive[37] = 0;
@@ -150,7 +156,10 @@ async function death() {
 }
 
 async function zodiarch() {
-    add('Idle and firing (every sign, the breath and the conjunction)', [await idle(), ...(await attackTiles())]);
+    add('Idle and firing (every sign, the breath and the conjunction)', [
+        await idle(),
+        ...(await attackTiles()),
+    ]);
     const hurt = [];
     status.textContent = 'Taking damage…';
     {
@@ -169,7 +178,10 @@ async function zodiarch() {
         hurt.push({ label: 'Creature live: key star twinkling', canvas: await photo(game) });
         for (let k = 0; k < 3; k++) game.set(9, live.index);
         game.tick(4);
-        hurt.push({ label: 'Key star shot: creature breaks, dragon hurt', canvas: await photo(game) });
+        hurt.push({
+            label: 'Key star shot: creature breaks, dragon hurt',
+            canvas: await photo(game),
+        });
     }
     hurt.push(await healthAt(0.62, 'Damaged · 62% (phase 2)', 2));
     hurt.push(await healthAt(0.3, 'Damaged · 30% (phase 3)', 3));
@@ -180,7 +192,10 @@ async function zodiarch() {
     {
         const game = await fight(1);
         game.until((b) => b.attack === ATTACK.aries && b.attackMs > 250 && b.attackMs < 500, 9000);
-        special.push({ label: 'Sign forming out of the ring (warning)', canvas: await photo(game) });
+        special.push({
+            label: 'Sign forming out of the ring (warning)',
+            canvas: await photo(game),
+        });
     }
     {
         const game = await fight(1);
@@ -216,7 +231,10 @@ async function ninefold() {
     {
         const game = await fight(1);
         game.until((b) => b.attack === ATTACK.illusion && b.attackMs >= 1300, 9000);
-        special.push({ label: 'Illusion: two decoys (real fox has lit eyes)', canvas: await photo(game) });
+        special.push({
+            label: 'Illusion: two decoys (real fox has lit eyes)',
+            canvas: await photo(game),
+        });
         for (const d of parts(game, PART.decoy)) for (let k = 0; k < 3; k++) game.set(9, d.index);
         game.tick(3);
         special.push({ label: 'Both decoys popped: forehead opens', canvas: await photo(game) });
@@ -288,7 +306,11 @@ window.exportSheet = async (url) => {
             ctx.fillRect(x, top + H, W, CAP);
             ctx.fillStyle = t.canvas ? '#eef2ff' : '#ff9a7a';
             ctx.font = '22px "Jersey 10"';
-            ctx.fillText((t.label + (t.canvas ? '' : ' (not reached)')).toUpperCase(), x + 8, top + H + 22);
+            ctx.fillText(
+                (t.label + (t.canvas ? '' : ' (not reached)')).toUpperCase(),
+                x + 8,
+                top + H + 22,
+            );
         });
         y += Math.ceil(s.tiles.length / COLS) * (H + CAP + GAP);
     }

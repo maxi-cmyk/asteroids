@@ -26,7 +26,8 @@ class Adafruit_SSD1306 {
     }
     void display() {
     }
-    // The browser has no paged panel buffer to compare, so frames are always "sent".
+    // The browser has no paged panel buffer to compare, so frames are always
+    // "sent".
     uint8_t *getBuffer() {
         return nullptr;
     }

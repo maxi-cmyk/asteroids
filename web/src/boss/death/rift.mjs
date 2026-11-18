@@ -1,8 +1,19 @@
 // Death sequences for the rift region's boss and mini-boss.
 import { ease } from '../../render/fx.mjs';
 import { PART, bossBody, bossParts, bossState } from '../scene.mjs';
-import { segmentKey } from '../zodiac.mjs';
-import { TAU, clamp01, VIOLET, shake, rays, ring, whiteFlash, dim, body, dissolved } from './fx.mjs';
+import { segmentKey } from '../zodiarch/dragon.mjs';
+import {
+    TAU,
+    clamp01,
+    VIOLET,
+    shake,
+    rays,
+    ring,
+    whiteFlash,
+    dim,
+    body,
+    dissolved,
+} from './fx.mjs';
 
 const STAR = ['#ffffff', '#ffe6a0', '#c8d2ff'];
 
@@ -14,7 +25,12 @@ function starBurst(ctx, x, y, age, count = 10, reach = 0.09, life = 700, seed = 
         const a = ((i + seed * 0.37) / count) * TAU,
             r = age * reach * (0.6 + ((i * 7 + seed) % 5) * 0.12);
         ctx.fillStyle = STAR[i % STAR.length];
-        ctx.fillRect(Math.round(x + Math.cos(a) * r), Math.round(y + Math.sin(a) * r), i % 3 ? 1 : 2, i % 3 ? 1 : 2);
+        ctx.fillRect(
+            Math.round(x + Math.cos(a) * r),
+            Math.round(y + Math.sin(a) * r),
+            i % 3 ? 1 : 2,
+            i % 3 ? 1 : 2,
+        );
     }
     ctx.globalAlpha = 1;
 }
@@ -52,7 +68,12 @@ export const SCRIPTS = {
             [180, '#ffe6a0', 0.21],
         ])
             ring(d, px, py, nova + delay, { colour, speed, life: 1000, max: 320, squash: 1 });
-        rays(d, px, py, nova, { count: 18, reach: 2.6, colours: ['#ffaad2', '#ffffff', '#ffe6a0'], life: 900 });
+        rays(d, px, py, nova, {
+            count: 18,
+            reach: 2.6,
+            colours: ['#ffaad2', '#ffffff', '#ffe6a0'],
+            life: 900,
+        });
         if (age > nova) starBurst(ctx, px, py, age - nova, 28, 0.2, 1100, 7);
     },
     // 11: Ninefold sheds its tails one by one, each in a puff of stars, then dissolves.
@@ -74,7 +95,14 @@ export const SCRIPTS = {
         if (age > from) starBurst(ctx, x - 20 * s, y, age - from, 20, 0.1, 900, 2);
         const mx = x - 33 * s,
             my = y - 54 * s;
-        ring(d, mx, my, from + 200, { colour: '#ffaad2', speed: 0.2, life: 700, max: 140, squash: 1 });
-        if (age > from + 200) rays(d, mx, my, from + 200, { count: 10, reach: 1.2, colours: VIOLET, life: 600 });
+        ring(d, mx, my, from + 200, {
+            colour: '#ffaad2',
+            speed: 0.2,
+            life: 700,
+            max: 140,
+            squash: 1,
+        });
+        if (age > from + 200)
+            rays(d, mx, my, from + 200, { count: 10, reach: 1.2, colours: VIOLET, life: 600 });
     },
 };

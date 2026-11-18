@@ -14,7 +14,8 @@ const bytes = await (await fetch('./test.wasm')).arrayBuffer();
 const W = 480,
     H = 270,
     ENTRANCE = 80;
-const MOMENTS = { sign: [500, 1300, 2000, 2900, 3900], own: [300, 800, 1100, 1600, 2400] };
+// Signs: wake, flight, formed, acting, later. Its own attacks first settle (up to 1.6 s).
+const MOMENTS = { sign: [250, 650, 1300, 2300, 3700], own: [600, 1400, 2200, 2800, 3600] };
 
 async function photo(game) {
     const canvas = document.createElement('canvas');
@@ -30,7 +31,9 @@ const rows = [];
 for (const entry of GUIDE.find((b) => b.kind === 5).attacks) {
     status.textContent = `Firing · ${entry.name}…`;
     let state = 4242 + entry.id;
-    const game = await createRuntime(bytes, { random: () => (state = (Math.imul(state, 1664525) + 1013904223) >>> 0) });
+    const game = await createRuntime(bytes, {
+        random: () => (state = (Math.imul(state, 1664525) + 1013904223) >>> 0),
+    });
     game.start(true);
     game.bossPractice(5, entry.phase > 3 ? 2 : 0, Math.min(3, entry.phase));
     const set = (f, v) => game.api.web_test_boss_set(f, v);
@@ -78,8 +81,21 @@ window.exportSheet = async (url, name = 'zodiarch-attacks') => {
         const n = Math.min(4, rows.length - i);
         part.width = W * 5;
         part.height = (H + 22) * n;
-        part.getContext('2d').drawImage(sheet, 0, i * (H + 22), part.width, part.height, 0, 0, part.width, part.height);
-        await fetch(`${url}/save?name=${name}-${i / 4}`, { method: 'POST', body: await new Promise((r) => part.toBlob(r)) });
+        part.getContext('2d').drawImage(
+            sheet,
+            0,
+            i * (H + 22),
+            part.width,
+            part.height,
+            0,
+            0,
+            part.width,
+            part.height,
+        );
+        await fetch(`${url}/save?name=${name}-${i / 4}`, {
+            method: 'POST',
+            body: await new Promise((r) => part.toBlob(r)),
+        });
     }
     return rows.length;
 };

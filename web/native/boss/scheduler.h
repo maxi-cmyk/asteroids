@@ -13,47 +13,78 @@ static int bs_seq_pick(const BossRow *rows, unsigned count) {
     if (boss.tier >= 1) {
         const uint8_t *next = rows[idx + 1 < count ? idx + 1 : idx];
         extra = next[0] ? next[next[0]] : 0;
-        if (extra) total++;
+        if (extra) {
+            total++;
+        }
     }
-    if (!total) return 0;
+    if (!total) {
+        return 0;
+    }
     unsigned k = (boss.seq ? boss.seq - 1 : 0) % total;
     return k < row[0] ? row[1 + k] : extra;
 }
 static unsigned long bs_rest_scaled(unsigned long base) {
     float scale = boss.tier >= 1 ? .85f : 1.0f;
-    if (boss.tier >= 2 && bs_frenzy()) scale = .7f;
+    if (boss.tier >= 2 && bs_frenzy()) {
+        scale = .7f;
+    }
     return (unsigned long)(base * scale);
 }
-// Ringwarden is the second boss and by far the hardest to learn, so unlike the other fights
-// (one shield and one multishot, by phase) it drops a fresh shield every 7 s from its entrance.
-// A shield still drifting on screen is replaced; a multishot is left to be collected first.
+// Ringwarden is the second boss and by far the hardest to learn, so unlike the
+// other fights (one shield and one multishot, by phase) it drops a fresh shield
+// every 7 s from its entrance. A shield still drifting on screen is replaced; a
+// multishot is left to be collected first.
 static const unsigned long RINGWARDEN_SHIELD_MS = 7000;
 static void bs_timed_shield() {
-    if (!boss.shield_at) boss.shield_at = game_ms + RINGWARDEN_SHIELD_MS;
-    if (game_ms < boss.shield_at) return;
-    if (pickup.active && pickup.kind != PICKUP_SHIELD) return;
+    if (!boss.shield_at) {
+        boss.shield_at = game_ms + RINGWARDEN_SHIELD_MS;
+    }
+    if (game_ms < boss.shield_at) {
+        return;
+    }
+    if (pickup.active && pickup.kind != PICKUP_SHIELD) {
+        return;
+    }
     pickup = {float(SCREEN_W - 24), bs_rand(70, 200), PICKUP_SHIELD, true};
     boss.shield_at = game_ms + RINGWARDEN_SHIELD_MS;
 }
 static void bs_pickups() {
-    if (boss.mini) return;
+    if (boss.mini) {
+        return;
+    }
     bool timed = boss.kind == BK_RINGWARDEN;
-    if (timed) bs_timed_shield();
-    if (pickup.active) return;
+    if (timed) {
+        bs_timed_shield();
+    }
+    if (pickup.active) {
+        return;
+    }
     uint8_t want = boss.phase >= 3 ? 2 : boss.phase >= 2 ? 1 : 0;
     for (uint8_t bit = 0; bit < want; bit++) {
-        if (boss.drops & (1u << bit)) continue;
-        if (timed && bit == 0) continue; // its shields come from the timer
-        pickup = {float(SCREEN_W - 24), bs_rand(70, 200), bit == 0 ? PICKUP_SHIELD : PICKUP_MULTISHOT, true};
+        if (boss.drops & (1u << bit)) {
+            continue;
+        }
+        if (timed && bit == 0) {
+            continue; // its shields come from the timer
+        }
+        pickup = {float(SCREEN_W - 24),
+                  bs_rand(70, 200),
+                  bit == 0 ? PICKUP_SHIELD : PICKUP_MULTISHOT,
+                  true};
         boss.drops |= 1u << bit;
         return;
     }
 }
 static void bs_scheduler() {
     if (!boss.atk) {
-        if (game_ms < boss.rest_until) return;
+        if (game_ms < boss.rest_until) {
+            return;
+        }
         int id = bs_kind_pick();
-        if (!id) { boss.rest_until = game_ms + 500; return; }
+        if (!id) {
+            boss.rest_until = game_ms + 500;
+            return;
+        }
         boss.atk = id;
         boss.atk_t0 = game_ms;
         boss.seq++;

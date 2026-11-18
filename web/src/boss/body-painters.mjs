@@ -1,7 +1,15 @@
 import { pixelGlow as glow } from '../render/fx.mjs';
-import { ATTACK, NINEFOLD, PART, bossHazards, bossPart, bossShots, foxBend, zodiarchPath } from './scene.mjs';
-import { creatures, drawCreature, drawDragonBody, drawRing, partners } from './zodiac.mjs';
-import { drawZodiacFx } from './zodiac-fx.mjs';
+import {
+    ATTACK,
+    NINEFOLD,
+    PART,
+    bossHazards,
+    bossPart,
+    bossShots,
+    foxBend,
+    zodiarchPath,
+} from './scene.mjs';
+import { warden } from './zodiarch/painter.mjs';
 import { TAU, dottedRing } from './draw-kit.mjs';
 
 // One painter per boss kind (the index is the engine's BossKind). Each receives `b`:
@@ -138,38 +146,6 @@ const tidecaller = (b) => {
     }
 };
 
-// The Zodiarch: its ring behind, the path its head will take next as faint dots, the body
-// from the tail up, the head (jaw open while it throws or breathes), the pearl (bright while
-// it can be shot) and every creature it has thrown.
-const warden = (b) => {
-    const { ctx, art, scene, x, y, time, aux, parts, alpha, flash, state, A } = b;
-    const clock = aux[A.clock];
-    drawRing(ctx, clock, aux[A.out], time, alpha);
-    if (state.stage > 0 && aux[A.breath] < 0.5 && aux[A.hold] < 0.5) {
-        ctx.fillStyle = '#ffd890';
-        for (let k = 1; k <= 6; k++) {
-            const [px, py] = zodiarchPath(clock + k * 0.1);
-            ctx.globalAlpha = 0.5 - k * 0.06;
-            ctx.fillRect(Math.round(px - 24), Math.round(py), 2, 2);
-        }
-        ctx.globalAlpha = 1;
-    }
-    drawDragonBody(ctx, art, scene, { alpha, flash, damage: state.damage, time });
-    const open = aux[A.coreOpen] > 0.5;
-    const head = aux[A.mouth] > 0.5 ? 'zod-head-1' : 'zod-head-0';
-    art.draw(ctx, 'rift', head, x - 24, y, { alpha, flash });
-    if (state.damage > 0) art.draw(ctx, 'rift', `zod-head-d${state.damage}`, x - 24, y, { alpha });
-    if (aux[A.breath] > 0.5) glow(ctx, x - 70, y + 4, 26, '255,210,140', 0.5 + 0.2 * Math.sin(time / 60));
-    const px = aux[A.pearlX],
-        py = aux[A.pearlY];
-    if (open) glow(ctx, px, py, 24, '255,150,210', 0.45 + 0.15 * Math.sin(time / 90));
-    art.draw(ctx, 'rift', open ? 'zod-pearl-1' : 'zod-pearl-0', px, py, { alpha });
-    const thrown = creatures(parts),
-        second = partners(thrown);
-    thrown.forEach((part, i) => drawCreature(ctx, art, part, clock, time, alpha, second[i]));
-    drawZodiacFx(ctx, { hazards: bossHazards(scene), shots: bossShots(scene), creatures: thrown, time });
-};
-
 const picket = (b) => {
     const { ctx, x, y, aux, A } = b;
     b.frame(`picket-${Math.round(aux[A.open] * 2)}`);
@@ -270,7 +246,11 @@ const lensimp = (b) => {
     }
     const tailFrame = (slot) => flick.get(slot) ?? foxBend(slot, clock);
     const drawFox = (fx, fy, prefix, bodyKey, a, f) => {
-        for (const tail of tails) art.draw(ctx, 'rift', `${prefix}-tail-${tail.slot}-${tailFrame(tail.slot)}`, fx, fy, { alpha: a, flash: f });
+        for (const tail of tails)
+            art.draw(ctx, 'rift', `${prefix}-tail-${tail.slot}-${tailFrame(tail.slot)}`, fx, fy, {
+                alpha: a,
+                flash: f,
+            });
         const bob = Math.round(Math.sin((clock * FOX_TAU) / 2.2));
         art.draw(ctx, 'rift', `${prefix}-${bodyKey}`, fx, fy + bob, { alpha: a, flash: f });
         return bob;
@@ -311,7 +291,14 @@ const lensimp = (b) => {
     if (state.damage > 0) art.draw(ctx, 'rift', `${p}-d${state.damage}`, x, y + bob, { alpha: a });
     foxMotes(ctx, x, y, s, spread, motes);
     if (open && a > 0.3)
-        glow(ctx, x + NINEFOLD.mark[0] * s, y + NINEFOLD.mark[1] * s + bob, 16 * s, '255,120,170', 0.5 + 0.2 * Math.sin(time / 80));
+        glow(
+            ctx,
+            x + NINEFOLD.mark[0] * s,
+            y + NINEFOLD.mark[1] * s + bob,
+            16 * s,
+            '255,120,170',
+            0.5 + 0.2 * Math.sin(time / 80),
+        );
 };
 
 // Indexed by BossKind: six bosses, then their six minis.

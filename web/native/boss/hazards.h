@@ -1,5 +1,6 @@
 #pragma once
-// Hazards: lethal geometry, the corridor fairness metric, and the per-tick update.
+// Hazards: lethal geometry, the corridor fairness metric, and the per-tick
+// update.
 
 // ---------------------------------------------------------------- hazards
 static bool bs_hazard_hits(const BossHazard& h, float px, float py, float r) {
@@ -11,14 +12,18 @@ static bool bs_hazard_hits(const BossHazard& h, float px, float py, float r) {
         float ca = cosf(h.a), sa = sinf(h.a);
         float along = dx * ca + dy * sa, across = -dx * sa + dy * ca;
         float len = h.kind == HK_BEAM ? 520.0f : h.b;
-        float half = h.kind == HK_LANE ? h.c : h.kind == HK_BEAM ? 5.0f : 5.0f + r * .3f;
+        float half = h.kind == HK_LANE   ? h.c
+                     : h.kind == HK_BEAM ? 5.0f
+                                         : 5.0f + r * .3f;
         return along >= 0 && along <= len && fabsf(across) < half + r;
     }
     case HK_POOL:
         return dx * dx + dy * dy < (h.c + r) * (h.c + r);
     case HK_RING: {
         float dist = sqrtf(dx * dx + dy * dy);
-        if (fabsf(dist - h.b) >= 4 + r * .6f) return false;
+        if (fabsf(dist - h.b) >= 4 + r * .6f) {
+            return false;
+        }
         float delta = bs_wrap(bs_atan2(dy, dx) - h.a);
         return fabsf(delta) >= h.c; // inside the gap is safe
     }
@@ -26,7 +31,8 @@ static bool bs_hazard_hits(const BossHazard& h, float px, float py, float r) {
     return false;
 }
 // Widest channel between warned or live hazards: a free vertical run in some
-// column or a free horizontal run in some row (a vertical lane leaves rows open).
+// column or a free horizontal run in some row (a vertical lane leaves rows
+// open).
 static unsigned bs_corridor() {
     static const float lines[] = {40, 100, 160, 220};
     static const float rows[] = {45, 90, 135, 180, 225};
@@ -39,87 +45,143 @@ static unsigned bs_corridor() {
                 bool blocked = false;
                 float px = pass ? v : fixed, py = pass ? fixed : v;
                 for (const BossHazard& h : boss.hz) {
-                    if (!h.active || !bs_lethal_kind(h.kind) || h.warn_left > 1000) continue;
-                    if (bs_hazard_hits(h, px, py, SHIP_RADIUS)) { blocked = true; break; }
+                    if (!h.active || !bs_lethal_kind(h.kind)
+                        || h.warn_left > 1000) {
+                        continue;
+                    }
+                    if (bs_hazard_hits(h, px, py, SHIP_RADIUS)) {
+                        blocked = true;
+                        break;
+                    }
                 }
                 run = blocked ? 0 : run + 2;
-                if (run > best) best = run;
+                if (run > best) {
+                    best = run;
+                }
             }
-            if (best + 2 * SHIP_RADIUS > widest) widest = best + 2 * SHIP_RADIUS;
+            if (best + 2 * SHIP_RADIUS > widest) {
+                widest = best + 2 * SHIP_RADIUS;
+            }
         }
     }
     return widest;
 }
-// Scorched ground: what a lava pool leaves when it dies down (and a small, marked patch where a
-// shot-down lob would have landed). It burns each pilot standing in it every 800 ms; the first
-// burn comes 500 ms after stepping in. At most three smoulder at once: a new one replaces the
-// one closest to going out, so burns never crowd out the warnings.
-static void bs_scorch(float x, float y, float r, unsigned long live, unsigned long warn = 0) {
+// Scorched ground: what a lava pool leaves when it dies down (and a small,
+// marked patch where a shot-down lob would have landed). It burns each pilot
+// standing in it every 800 ms; the first burn comes 500 ms after stepping in.
+// At most three smoulder at once: a new one replaces the one closest to going
+// out, so burns never crowd out the warnings.
+static void bs_scorch(
+        float x, float y, float r, unsigned long live, unsigned long warn = 0) {
     BossHazard *oldest = nullptr;
     unsigned n = 0;
-    for (BossHazard& h : boss.hz)
+    for (BossHazard& h : boss.hz) {
         if (h.active && h.kind == HK_BURN) {
             n++;
-            if (!oldest || h.live_left < oldest->live_left) oldest = &h;
+            if (!oldest || h.live_left < oldest->live_left) {
+                oldest = &h;
+            }
         }
-    if (n >= 3 && oldest) oldest->active = false;
+    }
+    if (n >= 3 && oldest) {
+        oldest->active = false;
+    }
     BossHazard *h = bs_hazard(HK_BURN, x, y, 0, 0, r, warn, live);
-    if (h) h->d = h->e = 500;
+    if (h) {
+        h->d = h->e = 500;
+    }
 }
 static void bs_hazards_update() {
     for (unsigned i = 0; i < BOSS_HAZARDS; i++) {
         BossHazard& h = boss.hz[i];
-        if (!h.active) continue;
+        if (!h.active) {
+            continue;
+        }
         if (h.warn_left) {
-            h.warn_left = h.warn_left > FRAME_TIME_MS ? h.warn_left - FRAME_TIME_MS : 0;
-            if (!h.warn_left && bs_lethal_kind(h.kind) && h.warn_total < bs_warn_min(h.kind))
+            h.warn_left = h.warn_left > FRAME_TIME_MS
+                                  ? h.warn_left - FRAME_TIME_MS
+                                  : 0;
+            if (!h.warn_left && bs_lethal_kind(h.kind)
+                && h.warn_total < bs_warn_min(h.kind)) {
                 boss.violations++;
-            if (!h.live_left && !h.warn_left) h.active = false;
+            }
+            if (!h.live_left && !h.warn_left) {
+                h.active = false;
+            }
             continue;
         }
         if (h.live_left <= FRAME_TIME_MS) {
             float x = h.x, y = h.y, r = h.c;
-            bool pool = h.kind == HK_POOL && h.e != 1;   // a black hole's core leaves nothing behind
+            bool pool
+                    = h.kind == HK_POOL
+                      && h.e != 1; // a black hole's core leaves nothing behind
             h.active = false;
-            if (pool) bs_scorch(x, y, r * .85f, 6000);
+            if (pool) {
+                bs_scorch(x, y, r * .85f, 6000);
+            }
             continue;
         }
         h.live_left -= FRAME_TIME_MS;
-        if (h.kind == HK_BEAM || h.kind == HK_ARM) h.a += h.d;
+        if (h.kind == HK_BEAM || h.kind == HK_ARM) {
+            h.a += h.d;
+        }
         if (h.kind == HK_RING) {
-            h.b += h.d;     // radius moves by d; the gap spins by e
+            h.b += h.d; // radius moves by d; the gap spins by e
             h.a += h.e;
-            if (h.d < 0 && h.b < 32) { h.b = 32; h.d = 0; }
+            if (h.d < 0 && h.b < 32) {
+                h.b = 32;
+                h.d = 0;
+            }
         }
         if (h.kind == HK_PULL && !boss_assist_calm) {
             for (unsigned p = 0; p < boss_hull_n; p++) {
-                if (!bs_alive(p)) continue;
+                if (!bs_alive(p)) {
+                    continue;
+                }
                 Ship& s = *boss_hulls[p];
                 float dx = h.x - s.position_x, dy = h.y - s.position_y;
                 float len = bs_max(1.0f, sqrtf(dx * dx + dy * dy));
-                s.position_x = bs_clamp(s.position_x + dx / len * h.b, SHIP_MIN_X, SHIP_MAX_X);
-                s.position_y = bs_clamp(s.position_y + dy / len * h.b, SHIP_MIN_Y, SHIP_MAX_Y);
+                s.position_x = bs_clamp(
+                        s.position_x + dx / len * h.b, SHIP_MIN_X, SHIP_MAX_X);
+                s.position_y = bs_clamp(
+                        s.position_y + dy / len * h.b, SHIP_MIN_Y, SHIP_MAX_Y);
             }
         }
         if (h.kind == HK_BURN) {
             for (unsigned p = 0; p < boss_hull_n; p++) {
-                if (!bs_alive(p)) continue;
+                if (!bs_alive(p)) {
+                    continue;
+                }
                 float& timer = p ? h.e : h.d;
                 float reach = h.c + SHIP_RADIUS * .6f;
-                float dx = boss_hulls[p]->position_x - h.x, dy = boss_hulls[p]->position_y - h.y;
-                if (dx * dx + dy * dy >= reach * reach) { timer = 500; continue; }
+                float dx = boss_hulls[p]->position_x - h.x,
+                      dy = boss_hulls[p]->position_y - h.y;
+                if (dx * dx + dy * dy >= reach * reach) {
+                    timer = 500;
+                    continue;
+                }
                 timer -= FRAME_TIME_MS;
-                if (timer <= 0) { timer = 800; bs_hit_pilot(p); }
+                if (timer <= 0) {
+                    timer = 800;
+                    bs_hit_pilot(p);
+                }
             }
             continue;
         }
-        if (!bs_lethal_kind(h.kind)) continue;
+        if (!bs_lethal_kind(h.kind)) {
+            continue;
+        }
         for (unsigned p = 0; p < boss_hull_n; p++) {
-            if (!bs_alive(p)) continue;
+            if (!bs_alive(p)) {
+                continue;
+            }
             for (int c = 0; c < SHIP_HULL_COUNT; c++) {
                 float hx, hy, hr;
                 ship_hull_circle(*boss_hulls[p], c, hx, hy, hr);
-                if (bs_hazard_hits(h, hx, hy, hr)) { bs_hit_pilot(p); break; }
+                if (bs_hazard_hits(h, hx, hy, hr)) {
+                    bs_hit_pilot(p);
+                    break;
+                }
             }
         }
     }

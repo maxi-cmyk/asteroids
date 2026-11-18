@@ -258,4 +258,3 @@ static void test_unlimited_primary_fire() {
     ship_draw(ship, drawing);
     assert(drawing.outline_calls == 0 && drawing.fill_calls == 0);
 }
-

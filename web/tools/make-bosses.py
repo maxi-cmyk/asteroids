@@ -263,6 +263,18 @@ def rift():
     for name, im in dragon.items():
         sh.add(name, im)
     with_star_damage(sh, 'zod-head', [dragon['zod-head-0'], dragon['zod-head-1']], (120, 84), 110)
+    # The head turned (nextSteps.md P3.1): pre-rotated nearest-neighbour in 22.5-degree steps
+    # from -90 to +90 off facing left, about the head's point on the trail (24 px behind the
+    # frame centre), so the pixels stay crisp; facing right the renderer mirrors these. Frames
+    # are 200 x 200 with that point at the centre. Damage overlays turn with them.
+    heads = {'zod-head-0': dragon['zod-head-0'], 'zod-head-1': dragon['zod-head-1'],
+             'zod-head-d1': star_overlay((120, 84), [dragon['zod-head-0'], dragon['zod-head-1']], 1, 111),
+             'zod-head-d2': star_overlay((120, 84), [dragon['zod-head-0'], dragon['zod-head-1']], 2, 112)}
+    for stem, im in heads.items():
+        for k in range(-4, 5):
+            frame = Image.new('RGBA', (200, 200), (0, 0, 0, 0))
+            frame.paste(im, (100 - 84, 100 - 42), im)
+            sh.add(f'{stem}-r{k}', frame.rotate(-22.5 * k, resample=Image.NEAREST, center=(100, 100)))
     for r in zod.SEGMENT_RADII:   # the body tears too, a segment at a time
         with_star_damage(sh, f'zod-seg-{r}', [dragon[f'zod-seg-{r}-0'], dragon[f'zod-seg-{r}-1']], (56, 56), 130 + r)
     # The twelve creatures after the classical star-atlas figures (P2.2): hold and strike

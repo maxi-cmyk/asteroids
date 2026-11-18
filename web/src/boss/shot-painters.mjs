@@ -37,15 +37,27 @@ export const SHOT_PAINTERS = {
         ),
     [SHOT.spore]: (ctx, art, s, time, flicker) =>
         art.draw(ctx, 'shots', `spore-${flicker}`, s.x, s.y, { alpha: 0.92 }),
-    // The Zodiarch's (P2.3). A fireball: a hot ball with a flickering corona.
+    // The Zodiarch's coil-spit (P3.5): a glob of fire, a hot core trailing flickering flame;
+    // the last 200 ms of its 900 it swells and flashes, then bursts into two embers.
     [SHOT.fireball](ctx, art, s, time, flicker) {
-        glow(ctx, s.x, s.y, 18, '255,140,40', 0.55);
+        const back = s.angle + Math.PI;
+        for (let k = 1; k <= 4; k++) {
+            ctx.globalAlpha = 0.6 - k * 0.12;
+            ctx.fillStyle = k % 2 ? '#ff7a20' : '#ffc060';
+            ctx.fillRect(
+                Math.round(s.x + Math.cos(back) * k * 3 + Math.sin(time / 30 + k)),
+                Math.round(s.y + Math.sin(back) * k * 3),
+                2,
+                2,
+            );
+        }
+        ctx.globalAlpha = 1;
+        glow(ctx, s.x, s.y, 12, '255,140,40', 0.5);
         ctx.fillStyle = flicker ? '#ff7a20' : '#ff6010';
-        ball(ctx, s.x, s.y, 6);
-        ctx.fillStyle = '#ffd890';
-        ball(ctx, s.x - 1, s.y - 1, 3);
-        // It splits at 1.2 s: the last 300 ms it swells and flashes.
-        if (s.age > 900 && Math.floor(time / 60) % 2) {
+        ball(ctx, s.x, s.y, 4);
+        ctx.fillStyle = '#fff0b0';
+        ball(ctx, s.x - 1, s.y - 1, 1.5);
+        if (s.age > 700 && Math.floor(time / 60) % 2) {
             ctx.fillStyle = '#ffffff';
             ball(ctx, s.x, s.y, 2);
         }
@@ -67,11 +79,18 @@ export const SHOT_PAINTERS = {
             ctx.globalAlpha = 0.6 - f * 0.09;
             ctx.fillStyle = f < 3 ? '#ffd25a' : '#ff7a30';
             const wob = Math.sin(time / 40 + f) * f * 0.5;
-            px(ctx, s.x - Math.cos(s.angle) * f * 3 - Math.sin(s.angle) * wob - 1, s.y - Math.sin(s.angle) * f * 3 + Math.cos(s.angle) * wob - 1, 3, 3);
+            px(
+                ctx,
+                s.x - Math.cos(s.angle) * f * 3 - Math.sin(s.angle) * wob - 1,
+                s.y - Math.sin(s.angle) * f * 3 + Math.cos(s.angle) * wob - 1,
+                3,
+                3,
+            );
         }
         ctx.globalAlpha = 1;
         glow(ctx, s.x, s.y, 14, '255,190,80', 0.6);
-        for (let k = 0; k < 4; k++) band(ctx, s.x, s.y, time / 90 + (k * Math.PI) / 2, 7, 1, '#ffb040');
+        for (let k = 0; k < 4; k++)
+            band(ctx, s.x, s.y, time / 90 + (k * Math.PI) / 2, 7, 1, '#ffb040');
         ctx.fillStyle = '#ff9a30';
         px(ctx, s.x - 3, s.y - 3, 7, 7);
         ctx.fillStyle = '#fff6c0';
@@ -82,7 +101,13 @@ export const SHOT_PAINTERS = {
         for (let f = 1; f <= 8; f++) {
             ctx.globalAlpha = 0.7 - f * 0.08;
             ctx.fillStyle = f < 3 ? '#fff0b0' : f < 6 ? '#ff9a40' : '#c04a20';
-            px(ctx, s.x - Math.cos(s.angle) * f * 3 - 1, s.y - Math.sin(s.angle) * f * 3 - 1, f < 5 ? 3 : 2, f < 5 ? 3 : 2);
+            px(
+                ctx,
+                s.x - Math.cos(s.angle) * f * 3 - 1,
+                s.y - Math.sin(s.angle) * f * 3 - 1,
+                f < 5 ? 3 : 2,
+                f < 5 ? 3 : 2,
+            );
         }
         ctx.globalAlpha = 1;
         glow(ctx, s.x, s.y, 12, '255,150,60', 0.5);
@@ -129,17 +154,29 @@ function droplet(ctx, s, time) {
         return star(ctx, s.x, s.y, '#bfe8ff', 2);
     }
     const fuse = Math.min(1, (s.age - 650) / 1100);
-    const col = fuse < 0.5 ? mix([110, 200, 255], [255, 255, 255], fuse * 2) : mix([255, 255, 255], [255, 200, 90], fuse * 2 - 1);
+    const col =
+        fuse < 0.5
+            ? mix([110, 200, 255], [255, 255, 255], fuse * 2)
+            : mix([255, 255, 255], [255, 200, 90], fuse * 2 - 1);
     const flick = Math.floor(time / (fuse > 0.7 ? 45 : 110)) % 2;
     glow(ctx, s.x, s.y, 6 + 10 * fuse, col, 0.35 + 0.35 * fuse + 0.15 * flick);
     const orb = 6 * (1 - fuse) + 0.5,
         spin = time / (120 - 80 * fuse) + s.x;
     ctx.fillStyle = `rgb(${col})`;
-    for (const side of [0, Math.PI]) px(ctx, s.x + Math.cos(spin + side) * orb - 1, s.y + Math.sin(spin + side) * orb - 1, 2, 2);
+    for (const side of [0, Math.PI])
+        px(ctx, s.x + Math.cos(spin + side) * orb - 1, s.y + Math.sin(spin + side) * orb - 1, 2, 2);
     const r = Math.round(1 + 2 * fuse);
     ctx.fillStyle = flick ? '#ffffff' : `rgb(${col})`;
     px(ctx, s.x - r + 1, s.y - r + 1, r * 2 - 1, r * 2 - 1);
     ctx.globalAlpha = 0.6;
-    dottedRing(ctx, s.x, s.y, 16 * (1 - fuse) + 5, fuse > 0.7 && flick ? '#ffffff' : '#ffb070', 12, time / 400);
+    dottedRing(
+        ctx,
+        s.x,
+        s.y,
+        16 * (1 - fuse) + 5,
+        fuse > 0.7 && flick ? '#ffffff' : '#ffb070',
+        12,
+        time / 400,
+    );
     ctx.globalAlpha = 1;
 }

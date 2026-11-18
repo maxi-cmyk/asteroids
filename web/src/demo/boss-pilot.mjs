@@ -198,7 +198,9 @@ export class BossPilot {
             sy = scene[S.SHIP_Y];
         const here = this.danger(sx, sy, scene, boss, shots, hazards, body, 0);
         // A sweeping wedge can take more than 22 ticks to leave from a corner: look further.
-        const wedge = hazards.some((h) => (h.kind === HAZARD.beam || h.kind === HAZARD.arm) && h.e !== h.c && h.e !== 0);
+        const wedge = hazards.some(
+            (h) => (h.kind === HAZARD.beam || h.kind === HAZARD.arm) && h.e !== h.c && h.e !== 0,
+        );
         const horizon = wedge ? [1, 3, 6, 10, 15, 22, 30, 40] : [1, 3, 6, 10, 15, 22];
         let best = null;
         for (let dy = -1; dy <= 1; dy++)

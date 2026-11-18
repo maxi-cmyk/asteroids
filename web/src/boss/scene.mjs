@@ -101,18 +101,56 @@ export const SIGN_EMIT = Object.freeze([
 ]);
 // The colour each sign's charge and muzzle flash burn with (r,g,b).
 export const SIGN_CHARGE = Object.freeze([
-    '255,200,110', '255,90,70', '140,220,255', '180,232,210', '255,210,90', '200,240,140',
-    '230,230,255', '255,96,90', '255,170,210', '160,200,255', '110,200,255', '170,160,255',
+    '255,200,110',
+    '255,90,70',
+    '140,220,255',
+    '180,232,210',
+    '255,210,90',
+    '200,240,140',
+    '230,230,255',
+    '255,96,90',
+    '255,170,210',
+    '160,200,255',
+    '110,200,255',
+    '170,160,255',
 ]);
 // Hazard styles the Zodiarch writes into `e` (mirrors ZS_* in warden.h).
-export const ZOD_STYLE = Object.freeze({ plain: 0, net: 1, tether: 2, cord: 3, seed: 5, swirl: 8, splash: 9, fish: 11 });
-// The Zodiarch's swim (mirrors bs_zod_path): the head's point at a given clock, for the
-// telegraphed path ahead and the ring.
-export const ZODIARCH = Object.freeze({ cx: 372, cy: 135, ax: 92, ay: 80, period: 16, rx: 118, ry: 100 });
+export const ZOD_STYLE = Object.freeze({
+    plain: 0,
+    tether: 2,
+    cord: 3,
+    seed: 5,
+    swirl: 8,
+    splash: 9,
+    fish: 11,
+});
+// The Zodiarch's ring (centre and radii) and, for the storyboards' before-and-after, the old
+// figure-of-eight swim it had before it steered itself (nextSteps.md P3.1).
+export const ZODIARCH = Object.freeze({
+    cx: 372,
+    cy: 135,
+    ax: 92,
+    ay: 80,
+    period: 16,
+    rx: 118,
+    ry: 100,
+});
 export const zodiarchPath = (clock) => {
     const w = (2 * Math.PI) / ZODIARCH.period;
-    return [ZODIARCH.cx + ZODIARCH.ax * Math.sin(w * clock), ZODIARCH.cy + ZODIARCH.ay * Math.sin(2 * w * clock)];
+    return [
+        ZODIARCH.cx + ZODIARCH.ax * Math.sin(w * clock),
+        ZODIARCH.cy + ZODIARCH.ay * Math.sin(2 * w * clock),
+    ];
 };
+// Points on the Zodiarch's head in its left-facing frame, from its point on the trail (mirrors
+// ZOD_EYE / ZOD_JAW / ZOD_BROW in zodiarch/data.h); the frame turns with `aux.heading`.
+export const ZOD_HEAD = Object.freeze({ eye: [-38, -12], jaw: [-72, 3], brow: [-27, -17] });
+export function zodLocal(x, y, heading, [dx, dy]) {
+    const right = Math.cos(heading) > 0,
+        r = right ? heading : heading - Math.PI,
+        lx = right ? -dx : dx;
+    return [x + lx * Math.cos(r) - dy * Math.sin(r), y + lx * Math.sin(r) + dy * Math.cos(r)];
+}
 // Ninefold's geometry from its frame centre (mirrors FOX_* in warden.h).
 export const NINEFOLD = Object.freeze({
     mark: [-33, -54],
@@ -181,18 +219,18 @@ export const ATTACK = Object.freeze({
     pisces: 81,
     conjunction: 82,
     breath: 83,
-    // The Zodiarch's own (P2.3)
+    // The Zodiarch's own (P2.3, P3)
     eyes: 84,
-    fireball: 85,
+    coilSpit: 85,
     novaStars: 86,
     blackHole: 87,
     meteors: 88,
-    net: 89,
     // Ninefold
     comets: 90,
     foxfire: 91,
     illusion: 92,
     foxBlink: 93,
+    lunge: 94,
 });
 
 // kind order matches BossKind in native/boss/core.h: six region bosses, then their six minis.
@@ -258,7 +296,21 @@ export const KINDS = Object.freeze([
         size: [120, 84],
         phases: [0.7, 0.35],
         hull: null,
-        aux: { clock: 0, coreOpen: 1, busy: 2, out: 3, pearlX: 4, pearlY: 5, mouth: 6, breath: 7, hold: 8 },
+        aux: {
+            clock: 0,
+            coreOpen: 1,
+            section: 2,
+            out: 3,
+            pearlX: 4,
+            pearlY: 5,
+            mouth: 6,
+            breath: 7,
+            hold: 8,
+            heading: 12,
+            speed: 13,
+            pearl: 14,
+            mode: 15,
+        },
     },
     {
         id: 'picket',
@@ -402,6 +454,22 @@ export function bossPart(scene, index) {
         state: scene[at + 6],
         slot: scene[at + 7],
     };
+}
+// Shots stopped by a hard surface in the last second: { x, y, angle, age } (P3.3).
+export function bossBlocks(scene) {
+    const at = BOSS_AT + BOSS.BLOCKS.at,
+        out = [];
+    for (let i = 0; i < BOSS.BLOCKS.count; i++) {
+        const age = scene[at + i * 4 + 3];
+        if (age >= 0)
+            out.push({
+                x: scene[at + i * 4],
+                y: scene[at + i * 4 + 1],
+                angle: scene[at + i * 4 + 2],
+                age,
+            });
+    }
+    return out;
 }
 // The Zodiarch's body segments (x, y, r), neck first; empty for every other boss.
 export function bossBody(scene) {

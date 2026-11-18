@@ -25,7 +25,9 @@ void web_step(int raw_x, int raw_y, int fire, int click, int pause) {
         } else if (pause && state == STATE_PAUSED) {
             web_coop_pause(0);
         } else {
-            if (state == STATE_PLAYING) visual_ms += FRAME_TIME_MS;
+            if (state == STATE_PLAYING) {
+                visual_ms += FRAME_TIME_MS;
+            }
             coop_update();
         }
         sound_update();
@@ -33,7 +35,9 @@ void web_step(int raw_x, int raw_y, int fire, int click, int pause) {
     }
 #endif
     // Browser demos start only through the explicit Home action.
-    if (state == STATE_MENU) state_entered_ms = browser_ms;
+    if (state == STATE_MENU) {
+        state_entered_ms = browser_ms;
+    }
     browser_x = constrain(raw_x, 0, 4095);
     browser_y = constrain(raw_y, 0, 4095);
     browser_fire = fire;
@@ -102,7 +106,8 @@ void web_demo() {
     demo_running = true;
     set_state(STATE_DEMO);
 }
-// The Home demo has no run to lose: its engine hands the pilot lives back when they run out.
+// The Home demo has no run to lose: its engine hands the pilot lives back when
+// they run out.
 void web_demo_lives(int lives) {
     ship.lives = lives;
 }
