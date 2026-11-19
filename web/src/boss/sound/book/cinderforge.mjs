@@ -20,20 +20,18 @@ export const cinderforge = {
             });
             v.tone({ f: 70, to: 150, type: 'sawtooth', dur: d, vol: 0.06, env: 'swell' });
         },
-        [ATTACK.jets]: (v, d) => {
-            v.noise({ dur: d, vol: 0.16, f: 800, to: 4500, type: 'highpass', env: 'swell' });
-            v.tone({ f: 55, to: 110, type: 'sawtooth', dur: d, vol: 0.08, env: 'swell' });
-        },
+        // The bellows blast: a long breath in, air rushing into the furnace.
         [ATTACK.ember]: (v, d) => {
-            for (let i = 0; i < 6; i++)
-                v.noise({
-                    at: (i * d) / 6,
-                    dur: 0.05,
-                    vol: 0.08,
-                    f: 4000,
-                    type: 'bandpass',
-                    q: 3,
-                });
+            v.noise({
+                dur: d,
+                vol: 0.14,
+                f: 300,
+                to: 2400,
+                type: 'bandpass',
+                q: 0.8,
+                env: 'swell',
+            });
+            v.tone({ f: 60, to: 95, type: 'sawtooth', dur: d, vol: 0.06, env: 'swell' });
         },
         [ATTACK.hammer]: (v, d) => {
             // anvil strikes: a rising clank-and-heat
@@ -58,14 +56,11 @@ export const cinderforge = {
                 });
             v.tone({ f: 70, to: 160, type: 'sawtooth', dur: d, vol: 0.07, env: 'swell' });
         },
+        // The vent: the core swells, steam hisses, the doors bang open.
         [ATTACK.vent]: (v, d) => {
-            v.noise({ dur: d, vol: 0.12, f: 1200, to: 5000, type: 'highpass', env: 'swell' });
-            for (let i = 0; i < 4; i++)
-                v.noise({ at: (i * d) / 4, dur: 0.05, vol: 0.07, f: 4500, type: 'bandpass', q: 3 });
-        },
-        [ATTACK.nova]: (v, d) => {
             v.tone({ f: 40, to: 160, type: 'sine', dur: d, vol: 0.22, env: 'swell' });
             v.noise({ dur: d, vol: 0.16, f: 100, to: 2000, type: 'lowpass', env: 'swell' });
+            v.noise({ dur: d, vol: 0.08, f: 3000, to: 7000, type: 'highpass', env: 'swell' });
         },
     },
     live: {

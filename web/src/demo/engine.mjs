@@ -9,9 +9,10 @@ const LIVES = 3;
 // (rocks, power-ups, the laser, every boss) from wave 1, and a new run begins whenever one ends,
 // so the demo keeps playing until the shell stops it. Running out of lives is not the end: the
 // pilot gets them back, so one demo flies through every region and boss without starting over.
-// Callers own the clock and must stop it whenever Home is hidden.
-export async function createDemo(bytes, renderer) {
-    const runtime = await createRuntime(bytes);
+// Callers own the clock and must stop it whenever Home is hidden. `random` (optional) seeds the
+// engine, so a test can replay one run exactly.
+export async function createDemo(bytes, renderer, { random } = {}) {
+    const runtime = await createRuntime(bytes, { random });
     const { api } = runtime;
     let active = false,
         pilot = null;

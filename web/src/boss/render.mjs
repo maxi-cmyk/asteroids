@@ -15,6 +15,7 @@ import { glance } from './feedback.mjs';
 import { BODY_PAINTERS } from './body-painters.mjs';
 import { BELOW_BODY, HAZARD_PAINTERS } from './hazard-painters.mjs';
 import { SHOT_PAINTERS } from './shot-painters.mjs';
+import { missileTrails } from './missile-fx.mjs';
 import { disc } from './draw-kit.mjs';
 
 export class BossLayer {
@@ -85,8 +86,9 @@ export class BossLayer {
         }
     }
     shots(ctx, scene, time) {
-        const flicker = Math.floor(time / 110) % 2;
-        for (const s of bossShots(scene))
-            SHOT_PAINTERS[s.family]?.(ctx, this.art, s, time, flicker);
+        const flicker = Math.floor(time / 110) % 2,
+            shots = bossShots(scene);
+        missileTrails(ctx, shots, time);
+        for (const s of shots) SHOT_PAINTERS[s.family]?.(ctx, this.art, s, time, flicker);
     }
 }

@@ -89,6 +89,40 @@ def _sentinel_plates(c, cx, cy, open_amt, only):
     return c.finish() if only is not None else None
 
 
+def sentinel_parts(size=220):
+    """The Sentinel in parts (nextSteps.md P4.1), so the eye can roll in its socket and the
+    plates can be thrown: the shell (spikes, ring, socket), the eye in three moods (narrow:
+    the tell; calm: opening; wide: the window), the brows, and a plate turned through eight
+    steps for the throw and the shedding. Same geometry as sentinel()."""
+    cx = cy = size / 2
+    out = {}
+    c = Canvas(size, size, seed=11)
+    spike_facets(c, cx, cy, 8, 74, 106, .17, STEEL, rot=math.radians(22.5))
+    ring_facets(c, cx, cy, 50, 73, 16, STEEL, rot=.2, bias=-.1)
+    fan_facets(c, cx, cy, 46, 46, 14, STEEL, bias=-1.6, speckle=.05)
+    out['shell'] = c.finish()
+    for mood, (glow, slit, tall) in {'narrow': (0.0, 2, 30), 'calm': (0.4, 4, 28), 'wide': (1.0, 9, 18)}.items():
+        c = Canvas(size, size, seed=12)
+        fan_facets(c, cx, cy, 33, 33, 12, FIRE, bias=.2 + .9 * glow, speckle=.05)
+        c.facet([(cx - slit, cy - tall), (cx, cy - tall - 6), (cx + slit, cy - tall),
+                 (cx + slit, cy + tall), (cx, cy + tall + 6), (cx - slit, cy + tall)], [INK], 0, 0)
+        c.px_block(cx - 14, cy - 18, CREAM, 2, 2)
+        out[f'eye-{mood}'] = c.finish(rim=False)
+    c = Canvas(size, size, seed=13)
+    for sgn in (-1, 1):
+        c.facet([(cx + sgn * 6, cy - 42), (cx + sgn * 42, cy - 26), (cx + sgn * 38, cy - 10),
+                 (cx + sgn * 8, cy - 28)], STEEL, 0 if sgn > 0 else 1, .06)
+    out['brows'] = c.finish()
+    plate = sentinel(0, 0, only=0)
+    piece = plate.crop(plate.getchannel('A').getbbox())
+    pad = int(math.hypot(*piece.size)) + 4
+    centred = Image.new('RGBA', (pad, pad))
+    centred.paste(piece, ((pad - piece.width) // 2, (pad - piece.height) // 2))
+    for k in range(8):
+        out[f'spin-{k}'] = centred.rotate(-45 * k, resample=Image.NEAREST)
+    return out
+
+
 def picket_gate(open_amt=0.0, glow=0.0, size=150):
     c = Canvas(size, size, seed=21)
     cx = cy = size / 2
@@ -195,39 +229,119 @@ def _sphere(c, cx, cy, R, lat_n, lon_n, heat, seed, windows=(0, 5, 2), open_cell
             c.line([quad[1], quad[2]], (60, 36, 40))
 
 
-def cinderforge(core=0.5, size=300, **_):
-    c = Canvas(size, size, seed=61)
-    _sphere(c, size / 2, size / 2, 118, 6, 8, core, 61)
+# The Cinderforge as a furnace golem (nextSteps.md P4.3), in parts so it can move: the torso
+# (a kiln with a head and chimney, the furnace mouth dark), the two chest doors, the core at
+# three heats, the bellows at four fills, and two arms hanging from their shoulder (the pivot
+# is the frame centre) with a hammer and a ladle.
+RUST_P = [(42, 18, 8), (90, 40, 20), (140, 70, 36), (196, 120, 70), (236, 180, 120)]
+GOLEM = 300       # the golem's frame
+GOLEM_ARM = 240   # an arm's frame; its shoulder is the centre
+
+
+def _rivets(c, pts):
+    for x, y in pts:
+        c.px_block(x, y, CREAM)
+
+
+def _kiln(c, cx, cy):
+    """The torso: a kiln wider at the shoulders, banded, its furnace mouth left dark."""
+    body = [(cx - 62, cy - 52), (cx + 62, cy - 52), (cx + 50, cy + 62), (cx - 50, cy + 62)]
+    c.facet(body[:2] + [(cx, cy + 4)], CHAR, 3, .08)
+    c.facet([body[1], body[2], (cx, cy + 4)], CHAR, 1, .08)
+    c.facet([body[2], body[3], (cx, cy + 4)], CHAR, 0, .08)
+    c.facet([body[3], body[0], (cx, cy + 4)], CHAR, 2, .08)
+    for y in (cy - 40, cy + 50):                                    # iron bands
+        w = 62 - (y - (cy - 52)) * 12 / 114
+        c.facet([(cx - w, y - 4), (cx + w, y - 4), (cx + w, y + 4), (cx - w, y + 4)], CHAR, 4, .05)
+        _rivets(c, [(cx + k * 16, y - 2) for k in range(-3, 4)])
+    for sx in (-1, 1):                                              # pauldrons
+        fan_facets(c, cx + sx * 64, cy - 46, 22, 18, 10, CHAR, bias=.3, speckle=.06)
+        c.facet([(cx + sx * 52, cy - 62), (cx + sx * 80, cy - 56), (cx + sx * 70, cy - 40)], CHAR, 4, .05)
+    # the head: a cowl with a chimney
+    fan_facets(c, cx, cy - 70, 24, 18, 10, CHAR, bias=.2, speckle=.06)
+    c.facet([(cx - 10, cy - 86), (cx + 10, cy - 86), (cx + 8, cy - 118), (cx - 8, cy - 118)], CHAR, 2, .06)
+    c.facet([(cx - 13, cy - 118), (cx + 13, cy - 118), (cx + 13, cy - 126), (cx - 13, cy - 126)], CHAR, 4, .04)
+    c.facet([(cx - 18, cy - 72), (cx - 4, cy - 68), (cx - 4, cy - 64), (cx - 18, cy - 66)], [INK], 0, 0)
+    c.facet([(cx + 4, cy - 68), (cx + 18, cy - 72), (cx + 18, cy - 66), (cx + 4, cy - 64)], [INK], 0, 0)
+    # the furnace mouth (the core sits here)
+    fan_facets(c, cx, cy + 2, 34, 30, 12, CHAR, bias=-1.8, speckle=.04)
+
+
+def _door(c, cx, cy, side):
+    x0 = cx if side > 0 else cx - 32
+    pts = [(x0, cy - 28), (x0 + 32, cy - 28), (x0 + 32, cy + 32), (x0, cy + 32)]
+    c.facet(pts, CHAR, 3 if side < 0 else 1, .06)
+    for y in range(int(cy - 20), int(cy + 28), 8):                  # the grate
+        c.line([(x0 + 6, y), (x0 + 26, y)], INK)
+    _rivets(c, [(x0 + 4, cy - 24), (x0 + 26, cy - 24), (x0 + 4, cy + 26), (x0 + 26, cy + 26)])
+
+
+def _bellows(c, cx, top, fill):
+    """Pleated leather under the kiln: more open (taller, rounder) as `fill` goes 0..1."""
+    folds = 4
+    h = 18 + 22 * fill
+    for k in range(folds):
+        y0 = top + k * h / folds
+        y1 = top + (k + 1) * h / folds
+        w0 = 40 + 10 * fill * math.sin(math.pi * (k + .5) / folds) - k * 3
+        w1 = w0 - 3
+        c.facet([(cx - w0, y0), (cx + w0, y0), (cx + w1, y1), (cx - w1, y1)], RUST_P, 3 - (k % 2) * 2, .08)
+    c.facet([(cx - 8, top + h), (cx + 8, top + h), (cx + 5, top + h + 10), (cx - 5, top + h + 10)], CHAR, 2, .04)
+
+
+def _arm(c, tool):
+    cx = cy = GOLEM_ARM / 2
+    fan_facets(c, cx, cy, 12, 12, 8, CHAR, bias=.2, speckle=.05)          # shoulder joint
+    c.facet([(cx - 9, cy), (cx + 9, cy), (cx + 7, cy + 46), (cx - 7, cy + 46)], CHAR, 2, .06)
+    fan_facets(c, cx, cy + 48, 9, 9, 8, CHAR, bias=.3, speckle=.05)       # elbow
+    c.facet([(cx - 8, cy + 48), (cx + 8, cy + 48), (cx + 6, cy + 84), (cx - 6, cy + 84)], CHAR, 3, .06)
+    if tool == 'hammer':
+        c.facet([(cx - 30, cy + 82), (cx + 30, cy + 82), (cx + 30, cy + 110), (cx - 30, cy + 110)], CHAR, 3, .06)
+        c.facet([(cx - 30, cy + 98), (cx + 30, cy + 98), (cx + 30, cy + 110), (cx - 30, cy + 110)], CHAR, 1, .06)
+        c.facet([(cx - 34, cy + 80), (cx - 26, cy + 80), (cx - 26, cy + 112), (cx - 34, cy + 112)], CHAR, 4, .04)
+        c.facet([(cx + 26, cy + 80), (cx + 34, cy + 80), (cx + 34, cy + 112), (cx + 26, cy + 112)], CHAR, 4, .04)
+    else:
+        fan_facets(c, cx, cy + 96, 24, 16, 10, CHAR, bias=-.2, speckle=.05)
+        c.facet([(cx - 18, cy + 90), (cx + 18, cy + 90), (cx + 12, cy + 96), (cx - 12, cy + 96)], FIRE, 4, .1)
     return c.finish()
+
+
+def golem_parts():
+    """Every part of the furnace golem, by name."""
+    out = {}
+    cx = cy = GOLEM / 2
+    c = Canvas(GOLEM, GOLEM, seed=61)
+    _kiln(c, cx, cy)
+    out['torso'] = c.finish()
+    for side, name in ((-1, 'l'), (1, 'r')):
+        c = Canvas(GOLEM, GOLEM, seed=62 + side)
+        _door(c, cx, cy, side)
+        out[f'door-{name}'] = c.finish()
+    for k, heat in enumerate((0.0, .6, 1.4)):
+        c = Canvas(GOLEM, GOLEM, seed=64)
+        fan_facets(c, cx, cy + 2, 26, 24, 12, FIRE if k < 2 else HALO, bias=-.2 + heat, speckle=.08)
+        out[f'core-{k}'] = c.finish(rim=False)
+    for k in range(4):
+        c = Canvas(GOLEM, GOLEM, seed=65)
+        _bellows(c, cx, cy + 62, k / 3)
+        out[f'bellows-{k}'] = c.finish()
+    out['hammer'] = _arm(Canvas(GOLEM_ARM, GOLEM_ARM, seed=66), 'hammer')
+    out['ladle'] = _arm(Canvas(GOLEM_ARM, GOLEM_ARM, seed=67), 'ladle')
+    return out
+
+
+def golem_whole():
+    """The golem shut, arms at rest: the frame its damage overlays and rubble are cut from."""
+    parts = golem_parts()
+    im = Image.new('RGBA', (GOLEM, GOLEM))
+    for key in ('bellows-1', 'torso', 'core-0', 'door-l', 'door-r'):
+        im.alpha_composite(parts[key])
+    return im
 
 
 def cinderling(core=0.4, open_cells=(), size=150):
     c = Canvas(size, size, seed=71)
     _sphere(c, size / 2, size / 2, 52, 4, 4, core, 71, windows=(1, 4, 1), open_cells=open_cells, prongs=9)
-    return c.finish()
-
-
-def forge_panel(state, frame=0, size=44):
-    c = Canvas(size, size, seed=81 + frame + state * 3)
-    cx = cy = size / 2
-    rng = np.random.default_rng(5 + frame)
-    if state == 0:
-        fan_facets(c, cx, cy, 18, 18, 8, STEEL, bias=.4, speckle=.05)
-        fan_facets(c, cx, cy, 12, 12, 8, STEEL, bias=-.4, speckle=0)
-        c.line([(cx - 12, cy), (cx + 12, cy)], INK)
-        c.line([(cx, cy - 12), (cx, cy + 12)], INK)
-        blocks(c, [(cx - 14, cy - 14), (cx + 12, cy - 14), (cx - 14, cy + 12), (cx + 12, cy + 12)], CREAM)
-    else:
-        broken = state == 2
-        n = 9 if broken else 8
-        rim = [(cx + math.cos(i * math.tau / n) * (18 + (rng.random() * 5 if broken else 0)),
-                cy + math.sin(i * math.tau / n) * (18 + (rng.random() * 5 if broken else 0))) for i in range(n)]
-        for i in range(n):
-            c.facet([(cx, cy), rim[i], rim[(i + 1) % n]], CHAR, lit(rim[i][0] - cx, rim[i][1] - cy, -.3 if broken else .2), .1)
-        bias = 1 if frame else 0
-        fan_facets(c, cx, cy, 11, 11, 8, FIRE, bias=(.2 if broken else .8) + bias * .7, speckle=.2)
-        if not broken:
-            c.facet([(cx - 1, cy - 9), (cx + 1, cy - 9), (cx + 1, cy + 9), (cx - 1, cy + 9)], [CREAM], 0, 0)
     return c.finish()
 
 
@@ -341,6 +455,29 @@ def bastion_layers(size=(340, 196)):
     layers['pods_dead'] = wreck([(98, 138, 134, 162), (150, 148, 186, 172)], 4)
     layers['mine_dead'] = wreck([(196, 140, 244, 168)], 5)
     return layers
+
+
+def bastion_engine(dead):
+    """The Bastion's weak point (nextSteps.md P4.4): an engine nacelle on an outrigger, intake to
+    the bow (lit while it runs), nozzle to the stern. Drawn for the top flank; the bottom one
+    is the same flipped."""
+    W, H = 110, 50
+    c = Canvas(W, H, seed=91 + dead)
+    cx, cy = W / 2, H / 2
+    pal = SHIP
+    c.facet([(cx - 34, cy - 10), (cx + 22, cy - 12), (cx + 22, cy), (cx - 38, cy)], pal, 3, .06)
+    c.facet([(cx - 38, cy), (cx + 22, cy), (cx + 22, cy + 11), (cx - 34, cy + 10)], pal, 1, .06)
+    c.facet([(cx + 22, cy - 12), (cx + 40, cy - 16), (cx + 40, cy + 16), (cx + 22, cy + 11)], pal, 2, .05)   # nozzle bell
+    c.facet([(cx + 36, cy - 12), (cx + 40, cy - 12), (cx + 40, cy + 12), (cx + 36, cy + 12)], [INK], 0, 0)
+    fan_facets(c, cx - 36, cy, 7, 10, 8, FIRE if not dead else CHAR,
+                  bias=.6 if not dead else -1.2, speckle=.1)                                                  # the intake
+    for k in range(3):
+        c.line([(cx - 20 + k * 12, cy - 10), (cx - 20 + k * 12, cy + 9)], INK)
+    c.facet([(cx - 6, cy + 10), (cx + 8, cy + 10), (cx + 4, cy + 22), (cx - 2, cy + 22)], pal, 0, .04)       # pylon
+    if dead:
+        for x, y in ((cx - 20, cy - 4), (cx + 4, cy + 2), (cx + 14, cy - 6)):
+            c.px_block(x, y, INK, 2, 2)
+    return c.finish()
 
 
 def gunnery_hull(charge=0.0, size=(200, 108)):

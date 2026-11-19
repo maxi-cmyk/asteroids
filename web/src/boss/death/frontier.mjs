@@ -14,35 +14,32 @@ import {
 } from './fx.mjs';
 
 export const SCRIPTS = {
-    // 0: the plates blast off and the bare eye overloads.
+    // 0: the plates are already shed (phase 3), so the bare eye strains and overloads.
     0(d) {
         const { x, y, age } = d,
-            [sx, sy] = shake(d, 8, 0, 1500);
-        if (age < 700) {
-            body(d, Math.floor(age / 160) % 2 ? 'sentinel-glow' : 'sentinel-3', {
-                dx: sx,
-                dy: sy,
-                flash: flicker(d, 120, 300),
-            });
-            pixelGlow(d.ctx, x, y, 110, '255,170,90', 0.1 + (age / 700) * 0.3);
-        } else if (age < 1800) {
-            body(d, 'sentinel-bare', { dx: sx, dy: sy, flash: flicker(d, 90, 900) });
-            for (let k = 0; k < 4; k++) {
-                const a = Math.PI / 4 + (k * Math.PI) / 2,
-                    run = Math.min(180, (age - 700) * 0.22);
-                body(d, `sentinel-plate-${k}`, {
-                    dx: Math.cos(a) * run,
-                    dy: Math.sin(a) * run + (age - 700) * (age - 700) * 0.00006,
-                    rot: (k % 2 ? 1 : -1) * (age - 700) * 0.0007,
-                    alpha: 1 - clamp01((age - 1300) / 500),
-                });
-            }
+            [sx, sy] = shake(d, age < 700 ? 6 : 10, 0, 1600);
+        if (age < 1650) {
+            const flash = age < 700 ? flicker(d, 120, 300) : flicker(d, 70, 700),
+                o = { dx: sx, dy: sy, flash };
+            body(d, 'sentinel-shell', o);
+            // The eye flickers between wide and straining narrow, then stays wide as it burns.
+            body(
+                d,
+                age < 700 && Math.floor(age / 160) % 2
+                    ? 'sentinel-eye-narrow'
+                    : 'sentinel-eye-wide',
+                o,
+            );
+            body(d, 'sentinel-brows', { ...o, dy: sy + (age < 700 ? 0 : 3) });
+            pixelGlow(d.ctx, x, y, 110, '255,170,90', 0.1 + clamp01(age / 1600) * 0.4);
+        }
+        if (age >= 700 && age < 1800) {
             for (let k = 0; k < 4; k++)
                 fireball(
                     d,
                     x + Math.cos(Math.PI / 4 + (k * Math.PI) / 2) * 50,
                     y + Math.sin(Math.PI / 4 + (k * Math.PI) / 2) * 50,
-                    700,
+                    700 + k * 120,
                     0.32,
                     FIRE,
                     500,

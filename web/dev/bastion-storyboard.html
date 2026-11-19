@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bastion storyboard</title>
+  <style>
+    @font-face { font-family:'Jersey 10'; src:url('./assets/fonts/Jersey10-Regular.woff2') format('woff2'); }
+    :root { color-scheme:dark; }
+    body { margin:0; background:#080d1c; color:#eef2ff; font:15px/1.45 ui-sans-serif, system-ui, sans-serif; }
+    main { max-width:1560px; margin:0 auto; padding:20px; }
+    h1 { font:400 40px 'Jersey 10'; letter-spacing:.08em; color:#ffc88a; margin:0 0 4px; }
+    h2 { font:400 30px 'Jersey 10'; letter-spacing:.08em; color:#ffe9c4; border-top:2px solid #33447f; padding-top:10px; }
+    .note { color:#aab6dc; max-width:86ch; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(460px, 1fr)); gap:16px; }
+    figure { margin:0; background:#0f1830; border:2px solid #33447f; }
+    canvas { display:block; width:100%; height:auto; image-rendering:pixelated; }
+    figcaption { padding:8px 12px 12px; }
+    figcaption b { font:400 24px 'Jersey 10'; letter-spacing:.06em; color:#ffe9c4; }
+    figcaption p { margin:4px 0 0; color:#c8d2f0; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Bastion: the battleship</h1>
+  <p class="note">A mock-up for approval (nextSteps.md P4.4), drawn with the game's own hull and guns; the engines are draft art (tools/make-p4-drafts.py, sheet draft-p4-bastion). Its core stays: a warship whose guns you take apart. What changes: its engines are the weak point, it sails and banks, a ramming run replaces the mines, the missiles are redrawn, and you can see the damage. The cannon and the broadside stay. The ship on the left stands in for you.</p>
+  <div id="tiles"></div>
+</main>
+<script type="module" src="./dev/bastion-storyboard.mjs"></script>
+</body>
+</html>

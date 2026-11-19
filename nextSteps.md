@@ -1,791 +1,180 @@
 # Next steps
 
-Rewritten 2026-11-18, with every finished task removed. The full previous plan (P0 to P2 as
-built, with their notes and deviations) is in `docs/nextSteps-2026-11-18.archive.md`, and the
-one before that in `docs/nextSteps-2026-10-26.archive.md`. The rules as built live in
-`web/COMBAT.md` (engine internals in `web/combat/`), art in `web/assets/ART.md`, code layout in
-`web/ARCHITECTURE.md`, design reasons in `DESIGN-DECISIONS.md`, and network and security in
+Rewritten 2026-11-19 to hold only what is left to do. Everything finished (M1 and M4, P3,
+P2.1, the whole of P4, with their build notes and deviations) is in
+`docs/nextSteps-2026-11-19.archive.md`; older plans are in the other `docs/nextSteps-*.archive.md`
+files. The rules as built live in `web/COMBAT.md`, art in `web/assets/ART.md`, code layout in
+`web/ARCHITECTURE.md`, design reasons in `DESIGN-DECISIONS.md`, network and security in
 `docs/NETWORK-AND-SECURITY.md`.
 
-**Focus now: P3, the Zodiarch as a living dragon, then P2.1, the same for Ninefold.** After that, the order is the
-same as before: the open boss polish (P2), then close-out, combo, network, versus,
-modifiers, and last the handheld.
+**Where things stand:** every boss and mini has had its upgrade (P3, P2.1, P4) and is waiting for
+a playtest. That build is **v0.3**. Next comes the v0.3 release (playtest, tune and the
+release checks in R1 to R8), then **v0.4 LAN** and **v0.5 web**.
 
-**Contents:** Roadmap · M Modularise · P3 Zodiarch, a living dragon · P4 Other boss upgrades (brainstorm) · P2 Open boss polish ·
-S0 Boss close-out · S2 Combo bonuses · The three ways to play together · S3 Net foundation ·
-S4 LAN · S5 Hosted · S6 Versus · S7 Modifiers · S8 ESP32 handheld · Standing rules ·
-Open decisions · Tools
+**Contents:** Roadmap · v0.3 release (R1–R8) · S2 Combo bonuses · The three ways to play together ·
+v0.4 LAN (S3, S4) · v0.5 Web (W1 static site, W2 online rooms, W3 accounts) · S6 Versus ·
+S7 Modifiers · S8 ESP32 handheld · Standing rules · Open decisions · Tools
 
 ---
 
 ## Roadmap
 
-| Stage | Goal | Depends on | Size |
-| --- | --- | --- | --- |
-| M | Modularise: split oversized files by concern (M1 done with P3) | none; one split per commit | M |
-| **P3** | **Built 2026-11-18** (boss-bar icon, whiskers, hit-circle overlay open). Zodiarch as a living dragon: purposeful serpent movement, summons you can follow, coil-spit, a lunge, a bigger black hole, the pearl and readable weak points; revised: the pearl surfaces where each attack comes from, two signs at most** | none (do first) | XL |
-| P4 | **Brainstorm.** Upgrades for the five region bosses (and a touch for the minis), using the Zodiarch toolkit: bodies that move with intent, attacks you can read, weak points that follow the attack | P3; pick and storyboard first | L to XL |
-| P2 | Open boss polish: Ninefold moves naturally (walks, runs, contorts, splits); Zodiarch creatures' idle, tell and recoil motion | P3 for the Zodiarch part | L |
-| S0 | Boss close-out: playtest sessions, tuning, design questions | P3, P2 | M |
-| S2 | Maximum-combo bonuses (task 7) | co-op, scoring | M |
-| S3 | Network foundation: headless engine, snapshot format, protocol | S2 recommended | L |
-| S4 | LAN co-op (task 8) | S3 | XL |
-| S5 | Hosted rooms (task 9) | S4 | L |
-| S6 | Versus (task 10) | S4 (S5 for online) | M |
-| S7 | Run modifiers (task 11) | S2; S4/S5 for networked consistency | M |
-| S8 | Barebones single-player ESP32 build | S0 to S2 at least | L |
-
-S3 to S6 never touch firmware, so S8 can start once S2 is done. S7.1 to S7.4 need no
-network and can slot in after S2.
-
----
-
-## M. Modularise: files you can read and vet in one sitting (2026-11-18)
-
-The project has grown files that do too much: the biggest mix several bosses, data tables and
-logic, or every test of a whole system. Measured (lines / top-level functions):
-
-| File | Lines | Functions | What it mixes |
-| --- | --- | --- | --- |
-| `web/native/boss/fights/warden.h` | 1049 | 58 | two bosses (Zodiarch and Ninefold); the Zodiarch's data, swim, twelve creatures (one 250-line switch), its own attacks and its scheduler |
-| `web/tests/boss.test.mjs` | 1024 | 59 | every boss's tests plus the shared fairness checks |
-| `web/dev/zodiarch-storyboard.mjs` | 1560 | 40 | drawing kit, twelve signs, the dragon's attacks, the creature states, the page |
-| `web/dev/zodiarch-living.mjs` | 1343 | 51 | steering kit, dragon drawing, nine tiles, the page |
-| `web/tools/zodiac_myth.py` | 945 | 29 | twelve figure drawings, emitter points, sheet export |
-| `web/tools/boss_art.py` | 494 | 40 | the drawing library and several bosses' sprites |
-| `web/src/boss/guide.mjs` | 676 | 0 | one data table for every boss |
-| `web/src/boss/zodiac.mjs` | 431 | 12 | the ring, the creatures (with hurt and break) and the dragon's body |
-| `web/src/boss/body-painters.mjs` | 331 | 14 | every boss's body painter in one file |
-| `src/asteroid.cpp`, `src/game.cpp` | 529, 414 | 19, 17 | shared with the ESP32 build, so last and carefully |
-
-**Rules (every file, from now on)**
-- **One concern per file**, with a header comment of 1 to 3 lines saying what it owns and where
-  its design lives (the nextSteps section or the COMBAT.md heading).
-- **Soft limits:** about 300 lines and about 15 functions. Over that, split by concern, not
-  alphabetically. Pure data tables (sprite geometry, guide text, emitter points) live in their
-  own files and do not count toward the limit.
-- **One folder per boss** once it needs more than one file: `web/native/boss/fights/<boss>/`,
-  `web/src/boss/<boss>/` (painter, fx, art geometry), `web/tools/<boss>/` for its art. The
-  sound books already work this way (`src/boss/sound/book/<boss>.mjs`).
-- **No behaviour changes in a split commit.** A split only moves code; goldens and the bot
-  numbers must not move, so the check is `npm run check`, `tests/run_host.sh` and the OLED build
-  with no golden updates. Behaviour changes come in their own commits.
-- **Tests mirror the source:** `web/tests/boss/<boss>.test.mjs` next to a shared
-  `web/tests/boss/fairness.test.mjs`. The test script globs `tests/**/*.test.mjs`.
-
-- **Formatting:** C and C++ follow the repo's `.clang-format` (80 columns, braces on every
-  block; run `clang-format -i` on a file you touch), JS and CSS follow `web/.prettierrc.json`
-  (`npx prettier --write`). Every file passed both on 2026-11-18.
-
-**The splits, in order**
-- [x] **M1 Zodiarch and Ninefold** (done with P3, since P3 rewrites most of it):
-  - `fights/warden.h` becomes a short include list plus the two `BossOps` rows.
-  - `fights/zodiarch/`: `data.h` (ids, constants, emitter and key-star tables), `swim.h`
-    (steering, trail, body, head frame, emitters), `creatures.h` (spawn, launch, dissolve,
-    break), `signs-spring.h` / `signs-summer.h` / `signs-autumn.h` / `signs-winter.h` (one
-    function per sign instead of the switch), `signs.h` (dispatch and the per-tick update),
-    `own.h` (its own attacks), `fight.h` (scheduling, hit circles, the update).
-  - `fights/ninefold.h`.
-  - `src/boss/zodiarch/`: `ring.mjs`, `creatures.mjs`, `dragon.mjs` (body and head),
-    `fx.mjs` (was `zodiac-fx.mjs`), `painter.mjs` (its body painter).
-- [ ] **M2 Boss tests:** `boss.test.mjs` into `tests/boss/` (fairness, framework, one file per
-  boss); shared helpers in `tests/boss/helpers.mjs`. Change the test glob.
-- [ ] **M3 Body painters:** `body-painters.mjs` becomes an index that imports one painter per
-  boss from `src/boss/<boss>/painter.mjs`; the same for the larger hazard and shot painters.
-- [x] **M4 Storyboards and stylesheets** (2026-11-18). Each storyboard page is now a short page
-  script plus a folder of modules under 310 lines: `dev/zodiarch-storyboard/` (kit, one file per
-  season of signs, the dragon's own, four creature-state files) and `dev/zodiarch-living/` (kit,
-  body, one file per tile). Whole statements were moved with a parser, so no code changed
-  except `dragonDraw` becoming a shared `view.dragon` object. Every tile hashed the same,
-  pixel for pixel, before and after. The two pages keep their own kits rather than sharing one:
-  their backdrops and pilots differ, and merging them would change pixels. `styles/shell.css`
-  (723 lines) and `styles/theme/guide.css` (416) became ordered `@import` lists over
-  `styles/shell/` and `styles/theme/guide/`, with the rules unchanged. Still a little over:
-  `dev/boss-attacks.mjs` (368), `dev/boss-states.mjs` (320) and `settings.css`, `screens.css`,
-  `base.css` (343 to 359).
-- [ ] **M5 Art tools:** `zodiac_myth.py` into `tools/zodiac/` (one module per season of
-  figures, plus `emitters.py` and `export.py`); `boss_art.py` into a drawing library and one
-  module per boss sheet. Regenerated sheets must be byte-identical.
-- [ ] **M6 Guide data:** `guide.mjs` into `src/boss/guide/<boss>.mjs` data files and a small
-  index; the guide test checks the same keys.
-- [ ] **M7 Scene mirror:** `scene.mjs` keeps the layout and decoders; per-boss constants
-  (`SIGN_EMIT`, `NINEFOLD`, `ZODIARCH`...) move beside their boss in `src/boss/<boss>/`.
-- [ ] **M8 Shared C++ (last):** `src/asteroid.cpp` and `src/game.cpp` split by concern (rocks,
-  ship, scoring glue, state machine), keeping the ESP32 build green at every step.
-
----
-
-## P3. Zodiarch: a living dragon (2026-11-18)
-
-**Built 2026-11-18.** Everything below is in the game except the five items left unticked.
-Deviations from the plan, found while building and measuring:
-- **The swim box** is x 305 to 445 (head point), y 45 to 225. A soft wall turns it back 35 to
-  55 px from each edge and picks the way round that swings away from the edge; past the edge
-  an emergency turn of 22 px takes over. A hard position clamp was tried and dropped: it
-  folded the neck against the edge.
-- **Turning** is no tighter than 48 px at speed but 26 px when slow (setting off from a stop
-  near an edge needs it). The sharpest bend between neighbouring segments measured is 35°; the
-  test allows 40° (the old loop folded the neck by 110° to 180°). A goal nearly behind keeps
-  the turn going the same way (it used to flip and drift straight on).
-- **Stalk and rear stop** at their goal (still breathing) instead of slowing to a crawl: a
-  crawl circled the goal, which looked like the old loop.
-- **Settling** before its own attacks (face the pilot, stop) takes up to 1.6 s; the attack
-  clock starts once it has. The coil-spit does not settle (the coil is its approach).
-- **Balance:** the forehead pearl is partly hidden by the head, so the window is now 3 s every
-  6.5 s (was 2.5 every 7), its circle 13 px, the snout's blocking circle smaller and lower, and
-  the dragon comes round to stalk forehead first when the window opens. Health is 3 sub-hits
-  per design hit (was 4) and a break costs it 3 (was 2). From phase 3 it throws three signs in a
-  row. Bot: 54 / 61 / 61 s, 0.8 to 1.2 hits (was 47 / 54 / 54).
-- **Summon length** is 900 ms (decision 21); the dragon rears and its eye beam runs during the
-  wake, not before it (the engine does not know a throw in advance).
-- **Path dots** ahead of the head are gone for now: the steering has no cheap look-ahead to
-  send. **Boss-bar pearl icon**, **whiskers** and the **hit-circle overlay** are not built.
-- **Blocked-shot sparks** are drawn for every boss (`src/boss/feedback.mjs`), not only the
-  Zodiarch.
-- **Still to watch in play:** in its small box the 338 px body still curls into a loose
-  ring after some attacks; it no longer circles a point, but a playtest should say whether
-  that reads as natural.
-
-**Revised 2026-11-18 after a playtest (the boss was too hard; the timed forehead window felt
-arbitrary):**
-- [x] **The pearl moves to the attack.** It rests shut in the forehead. Each attack brings it
-  up on the part of the body that attack comes from (`ZOD_WEAK` in `zodiarch/data.h`), after
-  the 600 ms twitch, for 2.2 to 3 s; then it sinks back.
-  While its section is off the screen (the tail past the right edge) it shows on the nearest
-  segment toward the head that is on it, so it can always be reached.
-
-  | Attack | Where it surfaces | Opens (ms into the attack) | Open for |
-  |---|---|---|---|
-  | Eye laser, black hole | forehead | 600 | 2.6 s, 3 s |
-  | Coil-spit | throat (segment 3) | 1400 | 2.2 s |
-  | Breath | throat (segment 2) | 600 | 2.8 s |
-  | Lunge | stretched neck (8) | 900 | 3 s |
-  | Nova stars | hind claw (15) | 600 | 3 s |
-  | Meteor fall | tail fan (23) | 600 | 3 s |
-  | Any summon | chest (5) | 600 | 2.4 s |
-
-  The timed window, the lunge's forced window, the stalk toward the pilot when it opened, and
-  "breaking a creature brings the window sooner" are gone. A break still costs the dragon 3
-  sub-hits. The brow scales always stop shots unless the pearl is open under them.
-- [x] **The constellation net is removed** (attack id 89 stays retired).
-- [x] **The starfire breath is head on only.** It settles facing the pilot within 0.3 rad (no
-  early stop at an edge of the box) and breathes along the head's heading, straight out of its
-  mouth; if it could not come round in 1.6 s it skips the breath.
-- [x] **At most two signs out** (one in phase 1, two from phase 2, the frenzy too); the Great
-  Conjunction throws two. Phase 3 throws both in a row, then attacks itself.
-- [x] **Health 2 sub-hits per design hit** (was 3): with the pearl on a moving body the bot hit
-  it less often (72 / 89 / 90 s at 3). Bot now 48 / 55 / 54 s.
-
-**From playtest:**
-1. It swims round and round the same loop. It should be more active and move naturally,
-   without the sharp bends in the body.
-2. The creatures seem to appear out of nowhere.
-3. The fireball should become an attack where it coils up and then spits fire.
-4. The black hole should be bigger.
-5. It needs a lunge.
-6. Nothing shows when it can be hurt or where. The pearl moves to its **forehead**
-   (decided).
-
-Same rule as before: **storyboard first** for approval, then build.
-
-**What is wrong today (measured in the code)**
-- **It swims a fixed loop.** The head follows a figure of eight (`bs_zod_path` in
-  `web/native/boss/fights/warden.h`: 92 × 80 px around (372, 135), 16 s a loop), forever and
-  at the same speed. Nothing it does depends on where the pilot is.
-- **The head never turns.** The head sprite is always drawn facing left, unrotated
-  (`body-painters.mjs`, `warden`). For half of every loop it swims **right**, so the neck
-  leaves the back of the head at up to 180°. At the ends of the eight it moves straight up or
-  down, which puts a 90° kink just behind the jaw.
-- **Stops are instant.** The swim clock freezes for the breath and its own attacks, and halves
-  the moment the pearl opens, so it halts dead and lurches off again.
-- **A held dragon is a frozen chain.** The 26 segments are round discs with no motion of their
-  own. The legs always hang straight down.
-- **Creatures appear out of nowhere.** The dragon makes no gesture when it summons. The source
-  is the faint ring, about 120 px away: a few 1 px stars drift from it while the creature
-  simply fades in where it will stand (`drawCreature`, 700 ms).
-- **The black hole is small for what it does.** Its lethal core has a radius of 10 px and is
-  drawn 10 px across; it blocks shots in a 16 px radius and the swirl around it is 14 to 34 px.
-- **Shots vanish with no sign of why.**
-  - The head and neck (`BC_BLOCK`) eat shots silently.
-  - The closed pearl lets bullets straight through.
-  - Key stars look like any other star.
-  - The pearl window has no warning before it opens and no timer while it is open.
-
-### P3.1 Movement: a dragon with intent, not a loop
-
-**Steering (the base layer)**
-- [x] **The head steers.** It has a position, a heading and a speed, replacing
-  `AUX_ZOD_CLOCK`.
-  - Each tick it turns toward its current goal at a capped turn rate (about 110°/s
-    cruising, 180°/s in a surge). The minimum turn radius stays at 40 px or more, over three
-    times the 13 px segment gap, so the body can never kink.
-  - It stays in today's swim box (x 280 to 464, y 55 to 215, snout right of x = 216), except
-    during a lunge.
-- [x] **It swims like a serpent.** A sideways wave is added to the steered path: about 6 px,
-  with a 1.2 s period while cruising and faster in a surge, so the body travels in an S, the
-  way an eel or a sky dragon moves, even when its course is straight.
-- [x] **The body follows a trail.** A ring buffer of head positions, sampled every 2 px of
-  travel (about 180 points), holds the trail; segments sit at fixed arc lengths back along it.
-  It is deterministic and uses only the existing boss RNG.
-
-**Behaviours (what it chooses to do)**
-
-Between attacks, a small behaviour picker chooses the next move from the pilot's position and
-what it last did. It never picks the same move twice in a row, so it never settles into a loop.
-
-| Behaviour | What it does | When |
-| --- | --- | --- |
-| **Stalk** | It drifts toward the pilot's row and slows, with its head low and level, eyes on them. | It wants to attack from the head next |
-| **Surge** | A fast burst of 0.5 s along a wide S to the other half of the box, then a glide that slows down. | The pilot has stayed on one row for 2 s, or it has been stalking a while |
-| **Rear** | The head rises high and the body hangs below it, in an S. | Before every summon (P3.4) |
-| **Dive and rise** | It drops below a row and climbs back up behind the ring's stars, with a dip in its brightness as it passes behind them. | Cosmetic variety in the open, no more than once every 8 s |
-| **Coil** | It winds into a tight spiral on the spot. | Before the coil-spit (P3.5), and in phase 3 as a pause |
-| **Recoil** | When the pearl is hit, the head jerks back 8 px and up, and the body shudders back along its length. | On damage |
-
-- [ ] **The head is alive while it swims.**
-  - The head tracks the pilot within ±25° of its heading: a separate look angle, chosen from
-    the pre-turned frames.
-  - The jaw opens slightly in a surge.
-  - The whiskers trail the motion: drawn from the last two head positions.
-- [x] **Before any attack from the head** (eye laser, breath, coil-spit, lunge), it turns to
-  face the pilot first; that turn is the start of the tell. It may face right while cruising,
-  but it never fires from its head while facing away.
-
-**The head turns, and so does everything attached to it**
-- [x] **Head art.** New frames pre-rotated nearest-neighbour by the art tool:
-  - 22.5° steps from −90° to +90° off "facing left" (9 angles), mouth open and closed, with
-    the forehead pearl closed and open (P3.3);
-  - facing right is the same frames mirrored, so the horns stay on top;
-  - the damage overlays get the same treatment.
-- [x] **Head-relative points.** Every point measured from the head goes through one helper,
-  `bs_zod_local(dx, dy, &x, &y)`, mirrored in `src/boss/scene.mjs` as `zodLocal`. That
-  covers:
-  - the eye and the jaw;
-  - the forehead pearl;
-  - the head hit circles and their contact circles;
-  - the breath fan.
-
-  The heading and the look angle go to the scene in spare aux slots (12 to 15 are free).
-- [x] **Legs.** They sit perpendicular to the local spine and paddle faster in a surge. In a
-  rear, they reach forward. The tail fan already follows the last segment.
-
-**Easing and holding**
-- [x] **Ease every change.** Speed changes ease over about 400 ms: into and out of holds, and
-  into the pearl window (0.6×).
-  - Attacks that need it still start only once it has stopped.
-  - The hold flag is set when it starts slowing, so emitters still never move while an attack
-    is warned.
-- [x] **A held dragon still breathes.** The serpent wave keeps running down the body at a
-  third of its size (2 to 3 px, larger towards the tail).
-  - The contact circles move with it.
-  - The corridor test proves that a warned lane stays clear.
-- [ ] **Path dots.** The faint dots ahead of the head come from a 0.6 s look-ahead of the
-  steering. They stay hidden while it holds.
-
-**Tests**
-- [x] Over a 120 s fight at every tier, at every tick:
-  - the bend between neighbouring segments is at most 30°;
-  - the heading is within 5° of the direction of travel;
-  - no segment jumps more than its speed in one tick;
-  - the snout is right of x = 216 (except during a lunge);
-  - the `min_corridor` is at least 42;
-  - the anti-camp repel still fires.
-- [x] **No loops:** over 120 s the head's positions cover at least 60% of the swim box's
-  cells, and no 16 s stretch repeats another.
-- [x] Boss-bot: re-measure the clear time and hits, then update `web/COMBAT.md`. Update the
-  scene golden, `boss-states.html` and `zodiarch-attacks.html`, and check the emitters with
-  the head turned.
-
-### P3.2 Lunge (a new attack of its own, `ZA_LUNGE`)
-
-The neck is long enough to strike. The lunge is fast and dangerous, and it leaves the dragon
-open.
-
-| Time | What happens |
-| --- | --- |
-| 0 to 600 ms: **coil** | It slows to a stop and turns to face the pilot. The neck draws back into a tight S, the head pulling back about 40 px, the jaw opening and the eye flaring. A hiss rises. |
-| 0 to 900 ms: **warning** | A lane from the jaw along the strike line, aimed where the pilot was at the start and then locked. It is as wide as the head's contact plus 8 px. The reach stops at x = 120, so the far left always stays clear. |
-| 900 to 1150 ms: **strike** | The head shoots along the lane, easing out, and the body pours after it along the trail. A bite flash and a snap at full reach. |
-| 1150 to 2050 ms: **overextended** | It stays at full reach, panting. The **forehead pearl opens**, now close to the pilot: the reward for dodging. |
-| 2050 to 2650 ms: **retract** | It slides back along its own trail and swims on. |
-
-- [x] **When it appears:** phase 2 and up.
-  - In phase 3 it can **double-lunge**: the second lane is warned while the first strike is
-    still happening, and each lane gets its full 900 ms.
-  - Never alongside a charging or wall sign.
-- [x] **Fairness:**
-  - The lane covers the whole path of the head and neck: the strike starts at the coil point,
-    and the body behind it only travels where it already was. Test: at no tick is there a body
-    contact circle outside the lane or the trail.
-  - Lethal hazards stay at 6 or fewer, and the corridor stays at 42 or more.
-- [x] **Overextension:** the pearl window opens for it and then runs out as normal. It does not
-  move the 7 s rhythm forward.
-- [x] **Sound, guide and bot:**
-  - Sound book: the hiss and the snap.
-  - Field guide entry.
-  - Check that the demo pilot reads it like any lane.
-  - Re-measure the bot.
-
-### P3.3 Readable weak points: the pearl in its forehead
-
-**One rule, three looks, used everywhere in the fight**
-
-| What happens to a shot | Look | Sound |
-| --- | --- | --- |
-| **Hurts it** | pink burst, the boss bar ticks | the existing hit sound |
-| **Stopped** | gold spark glancing off the surface | a dull "tink" |
-| **Passes through** | nothing | nothing |
-
-**Where: the forehead pearl** (decided)
-- [x] **Art.** The pearl moves from under the chin into the dragon's forehead, between the
-  horns, set like a third eye.
-  - Closed: two heavy brow scales close over it like an eyelid, with a dim line of light
-    between them.
-  - Open: the scales part and the pearl blazes.
-  - Drawn into every turned head frame (P3.1), so it turns with the head.
-  - Remove `zod-pearl-0/1` as separate sprites.
-- [x] **Engine.**
-  - The pearl's offset goes through `bs_zod_local`.
-  - The head's two `BC_BLOCK` circles are reshaped so they do not cover the pearl. A shot
-    aimed at the forehead must reach the pearl first: snout circle in front, jaw circle below,
-    the pearl circle (radius 11) uncovered on top. Test that a shot from the left at pearl
-    height hits the pearl, not the block circles.
-  - The laser always reaches it, as now.
-  - Contact circles are unchanged in size.
-- [x] **What changes in play.** The pearl now faces the way the head faces: when it looks at
-  you, you can hit it.
-  - This is the point of the stalk, rear and lunge moves: it shows its forehead.
-  - While it faces away, the pearl is out of your line (the head blocks it). The bot's
-    shots-to-kill must stay within 10% of today's, or the window length is retuned.
-
-**When: the pearl window**
-- [x] **Before it opens (600 ms):** the brow scales twitch, light leaks between them, and a
-  rising chime plays. The window itself does not change length.
-- [x] **While it is open:** the pearl blazes, with a pink ring around the head that drains over
-  2.5 s as a timer. The ring flashes for the last 500 ms, then the scales snap shut.
-- [x] **Seen out of the corner of the eye:** while the pearl is open, the starlight rim along
-  the whole body shifts from gold to pink.
-- [ ] **On the boss bar:** a small pearl icon, lit while the window is open, with the same
-  draining timer.
-
-**Feedback on every surface**
-- [x] **The engine reports stopped shots.** In `bs_circle_hit`, a `BC_BLOCK` hit (and a closed
-  pearl) records x, y and the shot's angle in a small ring buffer of 4 in the scene. That is a
-  new block, so update `scene-layout.mjs` and the scene golden in the same commit.
-  - The renderer draws the gold glance spark.
-  - The sound book plays the tink, at most every 120 ms.
-- [x] **The closed pearl stops bullets** instead of letting them pass, so the player sees
-  them stopped. The laser still reaches it.
-- [x] **Key stars on creatures:** a four-pointed glint in the sign's colour, pulsing every
-  800 ms, with three pips under it that crack one per hit.
-- [x] **The body:** shots still pass through the coils (decided in P1). Say so in the field
-  guide.
-
-**Hit-circle overlay and audit**
-- [ ] `?hitboxes=1` on `web/dev/boss-states.html` and `zodiarch-attacks.html` draws every
-  circle by type:
-  - pink: hurts it;
-  - gold: stops shots;
-  - cyan: a key star;
-  - red outline: contact.
-- [ ] Measure contact against the turned head frames the P0.2 way, and fix outliers.
-
-### P3.4 Summoning: the dragon calls each creature down from the sky
-
-Today the creature fades in at its spot while a few faint stars drift from the ring. Instead,
-the summon becomes a visible act, from the dragon to the ring to the spot.
-
-| Time (from the throw) | What happens |
-| --- | --- |
-| −300 to 0 ms: **call** | It **rears** (P3.1): the head rises toward the sign's place on the ring, the jaw opens and a call sounds (the rising chime per sign, already in the sound book). A thin beam of starlight runs from its eye to that ring sign. This happens while it moves, so it costs no fight time. |
-| 0 to 250 ms: **wake** | The sign on the ring flares. Its constellation lines draw themselves star to star, and the sign's glyph lights over it. |
-| 250 to 550 ms: **flight** | The whole constellation (stars and lines, as one shape) peels off the ring and flies on an arc to its spot. It grows from ring size to creature size on the way and leaves a short trail of sparks. A ring of the sign's colour marks the spot from the start, so the player sees where it will land. |
-| 550 to 900 ms: **form** | The constellation lands where its stars match the creature's stars. The engraving lines trace themselves outward from the key star, stroke by stroke, then the star-fill washes in from the edges, the eyes light last, and it takes its first breath (its idle starts). |
-
-- [x] **Engine.**
-  - `ZOD_FORM_MS` goes from 700 to 900 ms. Forming is the creature's warning, and longer is
-    clearer.
-  - The throw spacing in phase 3 and the conjunction is checked against the 1.2 s rhythm.
-  - Re-measure the bot: about +0.2 s per throw.
-- [x] **Renderer** (`drawCreature`, forming branch).
-  - The flight path and scale come from the existing star lists (ring star positions and the
-    creature's star positions), so no new data is needed except the stroke order of the
-    engraving.
-  - The art tool exports each figure's outline as an ordered list of strokes, or the renderer
-    reveals the strike frame with a growing mask around the key star; choose whichever reads
-    better in the storyboard.
-- [x] **Exit is the reverse.** The fill drains, the lines unravel back to a constellation, and
-  it flies home to its gap in the ring. Chargers that leave the screen send their stars back
-  from the edge, as now.
-- [x] **The conjunction:** three summons at once, so three beams fan from its eye. That is the
-  biggest moment of the fight, and it should look like it.
-
-### P3.5 Coil-spit (replaces the fireball, `ZA_FIREBALL` becomes `ZA_COILSPIT`)
-
-| Time | What happens |
-| --- | --- |
-| 0 to 800 ms: **coil** | It winds into a tight spiral on the spot: the head turns inside its own coils, about 1.5 turns of 45 px radius, the body wrapping around it. The coils tighten and it shakes, like a spring. |
-| 300 to 1200 ms: **charge** | Fire glows inside the body. Light travels segment by segment up from the tail to the throat; the throat swells with light. Three aim lines from the jaw for the 900 ms warning, spread 0.3 rad apart, aimed at the pilot. |
-| 1200 to 1700 ms: **spit** | The coil springs loose: the head snaps forward 20 px and **spits** a stream of fire along the three aims, 4 globs each in quick succession (90 ms apart). Each glob bursts into 3 embers when its life runs out. Globs can be shot (they pop), like today's fireballs. |
-| 1700 to 2300 ms: **uncoil** | The body unwinds as it swims out of the spiral along its trail. Smoke puffs from the jaw. |
-
-- [x] **Engine.**
-  - Reuse `SF_FIREBALL` with less hp and a smaller burst: 12 globs and up to 36 embers is too
-    many for the 48-shot cap, so cap the total at 30. That means 4 globs × 3 aims with 2 embers
-    each, or fewer aims in phase 1.
-  - The coil is a steering behaviour (P3.1: the turn rate is raised for it, and the turn
-    radius stays at 40 px or more).
-  - The spring-forward snap of 20 px is inside the warned hold area.
-- [x] **Renderer.**
-  - The light travelling up the body (a brightness pulse on the segment draw, keyed by the
-    attack timer).
-  - The swollen throat glow and smoke puffs.
-  - A glob painter: a fire core with a flickering tail, replacing the fireball painter.
-- [x] **Guide, sound and bot.**
-  - The field guide entry is rewritten.
-  - The sound book gets a coiling creak, a rising roar and a spit.
-  - The bot's `speedOf` entry is updated, and the bot re-measured.
-
-### P3.6 Bigger black hole
-
-- [x] **The sizes.**
-
-  | Part | Now | New |
-  | --- | --- | --- |
-  | Lethal core (`HK_POOL c`) | radius 10 | radius 18 |
-  | Drawn disc | 10 px | 20 px |
-  | Shot-swallowing circle | 16 | 28 |
-  | Ring of streaks | 14 to 34 px | 24 to 60 px |
-  | Pull | as now | as now |
-
-- [x] **A lensing rim.** Stars behind it bend around it, drawn as a bright ring of arcs. A slow
-  turning disc of accretion streaks, tilted (an ellipse), with a hot inner edge.
-- [x] **Fairness.**
-  - Its spot keeps the corridor at 42 or more with the bigger core. It is placed at least
-    18 px further from the edges and from the pilot than today: x clamp 158 to 300, y 210 or
-    60.
-  - The warning swirl grows to match, so the warned area is the lethal area.
-  - Test the corridor with a pull, the hole and a ranged sign out together.
-- [x] **Summon.** It is flung from the forehead pearl, which glows violet as it throws.
-
-### P3 storyboard (for approval before building)
-
-Built 2026-11-18 as its own page, `web/dev/zodiarch-living.html` (open `localhost:<port>/zodiarch-living.html`;
-linked from the sign storyboard), drawn with the real sprites. The head is turned in the browser
-there; the game will use pre-turned frames. Nine tiles:
-1. **Old against new movement**, 20 s: the loop next to the steered dragon stalking, surging,
-   rearing, diving behind the ring, holding with the breathing wave, and recoiling from a hit.
-2. **The summon:** call, wake, flight, form for one sign, then a three-sign conjunction.
-3. **Coil-spit:** coil, light travelling up the body, spit, uncoil.
-4. **The lunge**, single and double.
-5. **The forehead pearl:** closed, tell, open with the draining ring and the pink body rim,
-   closing, and the three looks (a bullet off the snout, into the open pearl, off the closed
-   pearl, through the body; a key star losing its pips).
-6. **The bigger black hole**, next to the old one for scale.
-
-**Build order after approval:**
-1. P3.1 movement, the base for everything else.
-2. P3.3 forehead pearl and feedback.
-3. P3.4 summoning.
-4. P3.5 coil-spit.
-5. P3.6 black hole.
-6. P3.2 lunge.
-
-Each step keeps `npm run check`, `tests/run_host.sh` and the OLED build green, and
-re-measures the bot.
-
----
-
-## P4. Upgrades for the other bosses (brainstorm, 2026-11-18)
-
-**Status: ideas to discuss, nothing approved.** The Zodiarch got a living body, attacks you
-can read from where they leave, and a weak point tied to what it is doing. The five region
-bosses before it are still mostly turrets that slide between attacks (`native/boss/motion.h`)
-and open on a timer. This section collects options for each; we pick a short list per boss,
-storyboard it (as for P3), then build one boss at a time.
-
-**What carries over from the Zodiarch (the toolkit)**
-- **A body that moves with intent:** steering with a capped turn, a trail the body follows
-  (`zodiarch/swim.h`), behaviours chosen from where the pilot is. Usable for tendrils, chains,
-  hulls that bank, anything long.
-- **Every attack leaves a visible point:** light gathers at the emitter while it is warned,
-  a muzzle flash when it fires (`src/boss/zodiarch/fx.mjs`). Cheap to give every boss.
-- **The weak point follows the attack:** vulnerability opens where and when the boss commits,
-  not on a clock. It rewards watching instead of waiting.
-- **Clear hit feedback:** gold spark when stopped (already on every boss), a distinct burst
-  when it hurts, the outline lit while it can be hurt.
-- **A storyboard page before building**, and the bot baseline as the length check.
-
-**A verb per boss.** Each region boss should teach one thing, and its upgrade should deepen
-that thing rather than add a second one:
-
-| Boss | Region | Verb today | Bot time (I / II / III) | What feels thin |
+| Version | Stage | Goal | Depends on | Size |
 | --- | --- | --- | --- | --- |
-| Sentinel | frontier | timing: shoot between attacks | 28 / 46 / 48 s | a still eye; "hold fire" is passive |
-| Ringwarden | violet | angles: blades block, the laser pierces | 29 / 33 / 34 s | shortest fight; the rings only spin; most hits taken (17 to 22) |
-| Cinderforge | ember | territory: fire that stays | 36 / 44 / 43 s | eight attacks, little identity in the body; barely moves (6 px) |
-| Bastion | ruins | targets: hardpoints first | 44 / 50 / 53 s | never hits the bot (0 hits); a wall of guns |
-| Tidecaller | lunar | flow: streams and gaps | 43 / 48 / 51 s | the bell sits still while everything else swims |
+| **v0.3** | R1 | Playtest the upgraded bosses and tune from the logs | people | M |
+| v0.3 | R2 | Boss leftovers that playtesting asks for (P3, P2.1, P2.2 remainders) | R1 | S to L |
+| v0.3 | R3 | **Deterministic engine**: own `sinf`/`cosf`, recorded seed, replays | none | M |
+| v0.3 | R4 | One save format: versioned, exportable, mergeable | none | S |
+| v0.3 | R5 | Version, build id and changelog | none | S |
+| v0.3 | R6 | Release checks: music rights, shipped files, Safari and mid-laptop stress, accessibility | none | M |
+| v0.3 | R7 | Modularise leftovers that the network code will touch (M2, M6, M7) | none | M |
+| v0.3 | R8 | Tag `v0.3.0` | R1 to R7 | S |
+| v0.3.x | S2 | Maximum-combo bonuses (in the engine before the protocol is frozen) | R3 recommended | M |
+| **v0.4** | S3 | Network foundation: headless engine, snapshot codec, protocol | R3, R4 | L |
+| v0.4 | S4 | LAN co-op on two machines | S3 | XL |
+| **v0.5** | W1 | Public static site: solo and local co-op, no server | R6 | S |
+| v0.5 | W2 | Online rooms (the LAN server in a container) | S4 | L |
+| v0.5 | W3 | Accounts, cloud saves and verified leaderboards (optional, decide first) | W2, R3, R4 | L |
+| later | S6 | Versus | S4 (W2 for online) | M |
+| later | S7 | Run modifiers | S2 | M |
+| later | S8 | Barebones single-player ESP32 build | S2 | L |
 
-### P4.1 Sentinel: the armoured eye (first boss: keep it simple)
-- **A. It watches you.** The pupil tracks the pilot; the eye narrows before an attack and the
-  plates shiver. Purely readable, no new rule.
-- **B. Plates that leave.** "Plate throw": two or four plates detach, orbit out as boomerangs
-  and come back. While they are out, that side of the eye is bare. Replaces part of the
-  "open between attacks" rule with "open where the plates went".
-- **C. Vents after the lance.** The plate the lance fires through stays open and glowing as it
-  cools (about 1.5 s): the weak point follows the attack, as on the Zodiarch.
-- **D. Movement:** it slides on an unseen rail and turns its whole body toward you (it rolls
-  like an eyeball in its socket) instead of drifting.
-- **E. Phase 3:** it sheds its plates for good and gets faster: shorter warnings (still at
-  least 600 ms), always hurtable.
-
-### P4.2 Ringwarden: the crystal gyroscope
-- **A. Rings that tilt.** The two rings turn in 3D (drawn as ellipses that squash and turn),
-  so their gaps sweep across the core. An "eclipse" when both gaps line up is the big window.
-- **B. Blades as prisms.** Unbroken blades refract the prism beam into extra beams: breaking
-  blades becomes a choice (more damage now, or a simpler beam later).
-- **C. Halo lock (new signature):** the outer ring expands to the edge of the field and closes
-  back in with one gap; you thread it.
-- **D. Movement:** it precesses: a slow wobbling orbit, and leans into turns.
-- **E. Fairness:** it hits the bot most; any new attack replaces one rather than adds.
-
-### P4.3 Cinderforge: the living furnace
-- **A. A heat cycle.** It glows hotter with every attack. At full heat it must vent: the shell
-  splits, the core is bare for a few seconds, then it cools. The weak point follows its rhythm.
-- **B. Bellows.** The body breathes in (draws heat, sucks embers back) and out (blasts); the
-  breath shows which attack is next.
-- **C. A hammer arm** that delivers the anvil strikes, so the columns come from somewhere you
-  can see.
-- **D. Cooling the field:** shooting a lava pool cools it into rock you can stand on early.
-  Your fire answers its fire.
-- **E. Trim:** eight attacks is the most of any boss; merge (flare lob with magma barrage,
-  vent jets with vent burst) to make room for the new ones.
-- **F. Movement:** it is too big to roam. It could settle and rise (heavy steps), or tilt
-  toward you before a lob.
-
-### P4.4 Bastion: the battleship
-- **A. It sails.** It banks as it turns, shows its broadside before a broadside and its bow
-  before a run. The silhouette tells you the attack.
-- **B. Ramming run (new signature):** engines flare, it crosses the field, and its wake leaves
-  a lane of debris.
-- **C. Searchlight:** a cone sweeps the field. Caught in it, a targeted barrage follows
-  shortly after; out of it, only the plain attacks. Hiding becomes a choice.
-- **D. The bridge opens for the main gun:** the bridge shutters part when it fires its
-  biggest attack.
-- **E. Damage you can see:** every lost hardpoint leaves a smoking, burning hole, and the
-  ship lists and slows.
-- **F. It never hits the bot today:** the upgrade should add real pressure, not just length.
-
-### P4.5 Tidecaller: the jellyfish bell
-- **A. It swims in pulses.** The bell contracts, glides and relaxes; tendrils trail behind on
-  the Zodiarch's trail code. The bell opens on each contraction: the weak point follows its
-  stroke.
-- **B. Tides.** The water level rises and falls across the field (the region is lunar):
-  under the surface the ship is slower and shots drift. The gaps in its walls move with
-  the tide.
-- **C. Bubbles that drift:** the three shield bubbles float around it instead of sitting
-  still; shots push them.
-- **D. Bioluminescence:** a stream lights up along the bell before it fires, so you see where
-  it starts.
-
-### P4.6 The five minis
-Each mini previews its region's boss. The cheap upgrade is to give each one signature motion
-or tell from its boss's upgrade (the Picket's eye tracks you, the Cinderling vents with heat,
-the Gunnery banks), with no new attacks.
-
-### P4.7 Open questions
-1. Which bosses first, and how many? (Suggested: Sentinel, the first boss everyone meets; then
-   whichever feels flattest in play.)
-2. Keep the difficulty curve and fight lengths (bot times above), or let them grow?
-3. New art: pre-turned frames and new parts (hammer arm, searchlight, tendrils) mean new
-   sprites per boss. How much art per boss is acceptable?
-4. Same number of attacks per boss, or replace some?
-5. Should every boss get a "weak point follows the attack" rule, or only some (variety)?
-
-## P2. Open boss polish
-
-`web/assets/bosses/draft-*` stays git-ignored and unshipped: drafts are for approval first.
-
-### P2.1 Ninefold: natural movement (walk, run, contort, split)
-
-Today it sits in one pose and the framework slides it (`BOSS_MOTION`, `{60, 50, 1.4}`), so it
-glides.
-- **Illusion:** it shrinks to 0.6× size in one tick and the decoys glide into place (a lerp of
-  0.18 per tick toward `FOX_ILLUSION_AT`).
-- **Blink:** a dissolve on the spot.
-- **The rest:** the only motion of its own is the tail-sway wave.
-
-It should move like a fox throughout: weight, gait, anticipation and follow-through. Like the
-Zodiarch, the motion is driven by the engine (positions and states), and the renderer picks
-frames and offsets from them.
-
-**Movement**
-- [ ] **Its own motion** (`own = true` in `BOSS_MOTION`, like the Zodiarch and Shardling).
-  Between attacks it picks a **perch** from a 3×3 grid in the right of the field (x 270, 345,
-  420; y 92, 140, 188), keeping the whole fox on screen and the body at x ≥ 216.
-- [ ] **Choosing the perch.**
-  - Never the same perch twice in a row.
-  - Never one whose path passes within 50 px of a pilot.
-  - Prefer one level with the nearest pilot in front.
-- [ ] **How it gets there.**
-  - **Walk** for moves under 90 px: a 4-beat trot at about 1.2 px/tick, head low and level.
-  - **Run** (gallop) for longer moves, at about 3.2 px/tick.
-  - Both ease in (a crouch, the weight shifting back) and out (a skid with its front paws
-    braced and its tails swinging past and settling).
-- [ ] **No moving during warnings.** Attacks start only once it has sat down; it never moves
-  while an attack is warned. The rest times stay as today. Re-measure the difficulty table and
-  the boss-bot time.
-- [ ] **Contact and hit points.** Contact circles follow the pose. The run path is clear of
-  pilots. Tails stay shootable while it moves (they are its health); the forehead mark only
-  while it sits.
-
-**Idle (sitting)**
-- [ ] **It looks alive while it sits.**
-  - Breathing, a blink, and ears that flick at the pilot's shots.
-  - Its head tracks the pilot (3 frames: up, level, down).
-  - Its weight shifts paw to paw every few seconds.
-  - Tail sway as today.
-  - Restless when a pilot is close: it lowers its head and its tails bristle.
-
-**Contortions: every attack has a body**
-
-| Attack | Anticipation | Action | Follow-through |
-| --- | --- | --- | --- |
-| **Comets** | the fan of tails draws back and up over its back, body arched like a drawn bow | the tails whip forward over its head one after another, each comet leaving the tip at the top of its whip | tails settle back into the fan, rippling |
-| **Foxfire** | it ducks its head and scoops; foxfire gathers between its jaws | a head toss upward and forward that throws the flames | it licks its chops and shakes its head |
-| **Blink** | it crouches and wiggles its rear, like a fox about to pounce | it **leaps** in a high arc and dissolves into stars at the top of the leap | it reforms in the air above the new perch, **lands** on its front paws first, and skids into a sit |
-| **Tail lost** | none (it is a hit) | it yelps: head thrown back, body twisted toward the stump | it turns a full circle to look at its tails, then glares at the pilot (the forehead mark is open: the daze is the window) |
-| **Seen through** (the illusion broken) | none | it shakes itself like a wet dog, from head to tail | it stands taller, ears up, and the mark opens |
-
-**The split (illusion)**
-- [ ] **Coil (600 ms):** it spins on the spot in a tight circle, tails wrapping round it into a
-  cocoon of fur and stars that shrinks as it tightens. The 0.6× scale happens inside the
-  cocoon, eased, not in one tick.
-- [ ] **Unfold (400 ms):** the cocoon bursts and three foxes peel out of it in three directions,
-  each a mirror copy with a shimmer down its edge.
-- [ ] **Run to place:** each fox **runs** (the run cycle at 0.6×) to its place in the illusion
-  triangle, by its own path, instead of gliding. They arrive out of step, so the real one
-  cannot be told by its timing.
-  - Only the real one's eyes are lit, as now.
-  - While they run, the decoys' contact follows them, and their paths keep clear of pilots.
-- [ ] **Decoy popped:** the decoy bursts into wisps of foxfire that stream back to the real
-  fox, so the player sees who the real one is (and who is next).
-- [ ] **Ends (timeout or both decoys popped):** the decoys run back into the real fox, which
-  grows back to full size in a single shake.
-
-**Animation art** (in `zodiac_art.py`, sheet `rift`)
-- [ ] **Walk:** 4 frames.
-- [ ] **Run:** 6 frames of a gallop facing left (gather, reach, stretch, land), body long and
-  low, ears back, the nine tails streaming as one mass with a wave through it. Mirrored when
-  it runs right; it turns back (2 frames) before it sits.
-- [ ] **Up and down:** the run and walk drawn tilted about 25°, as separate frames rather than
-  rotated in the browser, plus a **leap** pose for runs of more than 80 px vertically, used
-  by the blink too.
-- [ ] **Transitions:** sit to rise (2 frames), skid to sit (2 frames), crouch to pounce
-  (2 frames), landing (1 frame).
-- [ ] **Contortions:** arched back with the tails drawn up (comets, 2 frames), head toss
-  (foxfire, 2 frames), yelp twist (1 frame), wet-dog shake (3 frames), cocoon spin (4 frames,
-  the tails wrapped).
-- [ ] **Head tracking:** up, level and down while sitting.
-- [ ] **Star paw prints:** each footfall leaves a small star that fades over 600 ms, so its
-  route reads like a constellation being drawn. Cosmetic only.
-- [ ] **Tail hit points per pose:** a table of the nine tail offsets for each pose (sit, walk,
-  run, arch, leap, cocoon), mirrored when facing right. The engine and `NINEFOLD` share it, as
-  the P1 geometry does, so the hit circles follow the drawn tails.
-
-**Optional, only if the fight needs more variety after playtest:** **Fox run**. It dashes along
-a warned lane (900 ms) across the right of the field and back to a perch, leaving star prints
-that flare into short-lived comets aimed at the pilot.
-
-**Checks**
-- Body x ≥ 216 and on screen at every frame of every move.
-- `min_corridor` ≥ 42.
-- No lethal hazard without its warning.
-- The boss-bot beats it within 150 s.
-- The repel ring still fires for a pilot behind it.
-- The illusion's real fox still cannot be told apart by timing.
-- The state sheet (`boss-states.html?kind=11`) is regenerated with walk, run, leap, contortion
-  and split strips.
-
-**Storyboard for approval first**, in the style of the Zodiarch one
-(`web/dev/ninefold-storyboard.html`), drawn from the draft frames:
-- sit and idle;
-- walk;
-- run in four directions;
-- blink as a leap;
-- each attack's contortion;
-- the cocoon split and the three foxes running to place;
-- a decoy popping;
-- the wet-dog shake.
-
-### P2.2 Zodiarch creatures: idle, tell and recoil motion
-
-The hurt and break states are built (`src/boss/zodiac.mjs`). Still open: each creature's own
-motion while it holds, tells and recoils, as drawn in the storyboard's "Creature states" row.
-Do this after P3, since the creatures stand in front of the moving coils.
-
-Every creature runs: **form** (stars stream from the ring, 700 ms) → **hold** (alive, idle)
-→ **tell** (per attack) → **release** → **recoil** → back to hold or the next attack →
-**exit**. Two states are new and come from the player: **hurt** (a shot hits the body, not
-the key star: a 2 px flinch away from the hit, a white edge flash, stars spill from the hit
-point; no damage) and **break** (the key star is shot: the figure cracks along its
-constellation lines, the pieces drift apart and wink out, the stars fly back to the ring
-dim; any warned attack is cancelled, a lane already live finishes). **Exit** is the
-dissolve back to the ring, or off-screen for chargers (the stars stream back from the edge).
-
-| Sign | Hold (idle) | Tell | Recoil | Hurt | Break |
-| --- | --- | --- | --- | --- | --- |
-| Aries | paws the ground (dust motes from the hooves), head dips | head lowers, horns glow | none (it is gone) | head jerks up | horns snap off first |
-| Taurus | snorts (two puffs from the muzzle), tail flicks | Aldebaran kindles; for the stampede, scrapes a hoof | head tosses after the beam | stamps | the star knot (Pleiades) scatters as seven sparks |
-| Gemini | the twins sway out of step, hands near | hands rise, light in the palms | arms kick back | the hit twin staggers, the other looks | both break together, the cord of light between them snaps |
-| Cancer | claws open and close, legs shuffle sideways | claws rear up | claws snap shut on return | claws pull in to guard | the shell splits down the middle |
-| Leo | mane ripples, tail sways | mane flares (roar), crouch (pounce) | head tosses (suns) | a snarl: the jaw drops one frame | the mane bursts outward as rays |
-| Virgo | wheat ear sways, robe stars drift | hand draws back | follow-through of the throw | turns her head away | the wheat ear falls separately, Spica last |
-| Libra | pans bob against each other | the beam tips | pans swing back | the beam rocks | the chains snap, pans fall |
-| Scorpius | tail sways, stinger twitches | tail cocks, venom at the tip | body lurches after the shot | the tail curls in | the tail segments come apart from the tip down |
-| Sagittarius | horse body paces on the spot | bow drawn, arrowhead glows | bow arm rebounds | rears | the bow string snaps first |
-| Capricornus | fish tail sweeps, slow rise and fall | dives | leaps up through the spray | ducks under the surface line | the fish tail and goat body part |
-| Aquarius | water drips from the urn lip | the urn tips | urn rights itself | water spills | the urn shatters, its stream falls as harmless drops |
-| Pisces | the fish nose about, the cord ripples | they part (pass 1), they turn and close (pass 2) | none | the hit fish darts aside | the cord snaps, each fish fades on its own |
-
-
-- [ ] Art: `hold` needs two or three extra frames per sign (or a part-animated layer: tail,
-  claws, urn, bow). Signs that change pose (tell, recoil) use the hold and strike frames with
-  small offsets, as the storyboard does.
-- [ ] Hold, tell and recoil motion per sign in the renderer, keyed by the attack timer.
-
-### P2.3 Optional, not scheduled
-
-- [ ] **Ascendant:** the sign of the real-world date is thrown first and a little stronger.
-- [ ] **Boss backstop:** during fights the ship's right bound becomes the boss's front edge,
-  drawn as a barrier. Build it only if playtesting still finds a safe spot behind a boss
-  (movement and the repel ring close it in tests).
+W1 can ship as soon as v0.3 is tagged: the game already runs entirely in the browser, so a
+public page needs no server at all. S6 to S8 keep their order from the old plan; S8 never
+touches the network code and can start any time after S2.
 
 ---
 
-## S0. Boss close-out (remainder)
+## v0.3 release: what to finish before scaling
 
-Goal: every boss is fun, fair and beatable by real people at the intended length. Everything
-that could be done without people is done. Still to do:
+The bosses are done but not yet proven on people, and a few things are much cheaper to do now
+than after other machines, servers or accounts depend on them. **R3 and R4 are the two I would
+not skip:** both change formats that the network and the cloud would otherwise freeze.
 
-- [ ] **Playtest sessions** (needs 2–4 people; follow `docs/PLAYTEST-PROTOCOL.md`; the fight
-  log exports JSON). Targets:
+### R1. Playtest and tune (was S0)
+
+- [ ] **Playtest sessions** (2–4 people; follow `docs/PLAYTEST-PROTOCOL.md`; the fight log
+  exports JSON). Targets:
   - Sentinel cleared first try by a new player with 3 lives.
   - The Zodiarch takes most players several attempts.
   - Fight lengths inside the COMBAT.md table, with people taking about 1.5× the bot.
+- [ ] **Questions to answer in play** (all came up while building P3 and P4):
+  - **Tidecaller:** is it clear that the bubbles must go first? If not, show a visible shield
+    over the bell while any bubble remains. Should the bell take damage only while it
+    contracts (built: any time)?
+  - **Bastion:** it still never hits the bot. Does the ramming run feel threatening to a
+    person? Its outriggers (±98 px) reach past the lane (±70 px) without hurting: widen the
+    lane or let the engines hurt.
+  - **Cinderforge:** do people land enough shots in a vent (the bot needs two vents; people
+    are expected to need three or four)?
+  - **Ringwarden:** most bot hits come from the repel ring and the prism beam. Are they
+    readable?
+  - **Zodiarch:** does its 338 px body curling into a loose ring after some attacks read as
+    natural?
+  - **Ninefold:** does it still need the optional fox run for variety?
 - [ ] **Tune from the logs:** `BOSS_K`, rest lengths, window lengths, per-attack frequency,
-  pickup drops at phases 2 and 3. Make one change per commit, with the evidence in the
-  message.
+  pickup drops at phases 2 and 3. One change per commit, with the evidence in the message.
 - [ ] **Re-verify after tuning:** every boss is beatable without pickups or laser at 1×
   multiplier, and each has a faster mechanic route.
-- [ ] **Stress run on a mid laptop and in Safari** (`npm run stress`). Budget: 60 fps, no
-  frame over 25 ms. It has only been run on the developer's Mac so far. Record the result in
-  `docs/ACCEPTANCE.md`.
 - [ ] **Design questions:**
   - Event pull: keep or cut (decide after the playtest; calm forces already removes it).
   - Mini-boss on first runs: strictly on wave 3 (proposed), or an earlier one too?
   - Boss practice picker: bosses and mini-bosses together, tagged (proposed)?
+
+### R2. Boss leftovers (build only what the playtest asks for)
+
+- [ ] **Zodiarch (P3):** boss-bar pearl icon (lit while the pearl is open, with a timer);
+  whiskers; path dots (needs a cheap look-ahead from the steering); `?hitboxes=1` on the state
+  and attack sheets; contact measured against the turned head frames.
+- [ ] **Ninefold (P2.1):** a popped decoy streams foxfire back to the real fox; ears flick at
+  shots; it licks its chops; a lost tail makes it turn a full circle; the optional fox run.
+- [ ] **Zodiarch creatures (P2.2):** each sign's own hold, tell and recoil motion (the table
+  is in the archive, "P2.2"). Needs two or three hold frames per sign or a part-animated layer.
+- [ ] **Optional, unscheduled (P2.3):** Ascendant (the sign of today's date is thrown first);
+  a boss backstop barrier, only if playtesting still finds a safe spot behind a boss.
+
+### R3. Deterministic engine (new; recommended before any network code)
+
+**Why now.** The engine takes `sinf` and `cosf` from the browser
+(`web/src/runtime/wasm-host.mjs`: `sinf: Math.sin, cosf: Math.cos`), and V8 and
+JavaScriptCore can disagree in the last bit. That one import is the only reason two machines
+fed the same inputs can drift apart. Everything else is already deterministic: WebAssembly
+float arithmetic is exact IEEE, `sqrtf` is a WASM instruction, and randomness already comes
+through one import (`browser_random`) that can be seeded.
+
+Fixing it costs one small C file. It does not change the plan for the network (the server
+stays the one authority, decision N1), but it gives:
+- **Replays:** a run is its seed plus its input frames, a few kB.
+- **Leaderboards you can trust** (W3): the server re-simulates a submitted solo replay
+  instead of believing a score.
+- **Desync checks in S4:** client and server can compare a hash of the state each second.
+- **Better tests:** a recorded fight replays to the same score on Node, Chrome and Safari.
+
+- [ ] `web/native/mathf.h`: `sinf`/`cosf` (range reduction plus a minimax polynomial;
+  within about 2e-7 of `Math.sin` is plenty, exact last-bit
+  agreement with any browser is not the goal), replacing the import.
+  Check every other `env` import for floats coming in from JavaScript.
+- [ ] Goldens and bot numbers will move slightly: one commit, goldens updated, bot times
+  re-measured.
+- [ ] Seed the run: `browser_random` draws from a seeded generator (one 64-bit seed per run,
+  from `crypto.getRandomValues` as now), and the seed goes into the run record.
+- [ ] Input recording: the session records `{tick, stick, aim, buttons}` per tick
+  (run-length coded); a replay feeds them back. A dev page plays a replay.
+- [ ] Test: a recorded boss fight replays to the identical final scene hash in Node and in the
+  browser pane (Chrome) and Safari.
+- [ ] The ESP32 build keeps its own `sinf` (shared `src/*.cpp` must still compile there).
+
+### R4. One save format
+
+Today the game keeps ten separate `localStorage` keys (`asteroids.web.scores-v3`,
+`personal-bests-v1`, `boss-defeats-v1`, `unlocks-v1`, `hangar-v1`, `settings-v1`, two co-op
+score tables, the HD table and the fight log). Cloud saves (W3) and a "move to another
+computer" button both need them as one thing.
+- [ ] A `save` module that reads and writes all of them as one versioned object
+  (`{format: 1, profiles, records, bossDefeats, unlocks, hangar, settings}`), keeping the
+  existing keys underneath so nothing is lost.
+- [ ] **Merge rule** (needed for the cloud): records and unlocks only ever grow, so merging
+  two saves is the larger of each best and the union of unlocks; settings take the newer
+  copy. Write it as a pure function with tests, since W3 reuses it on the server.
+- [ ] Settings → Data: **Export save** (a `.json` download) and **Import save** (validated,
+  merged, never a silent overwrite). The fight log stays separate (it is a dev tool).
+
+### R5. Version and build id
+
+- [ ] `package.json` version `0.3.0`; the build writes the version and the short git hash into
+  the page; shown in Settings → About and on the Records export.
+- [ ] `CHANGELOG.md` with v0.1 to v0.3 summarised from the git history and the archives.
+- [ ] The same build id becomes the network handshake's compatibility check (S3.5, S11).
+
+### R6. Release checks (needed before anything is public)
+
+- [ ] **Music rights** (open decision 8): confirm or replace every supplied track before W1.
+- [ ] **What ships:** `dist/` contains no `assets/inspo/`, no `assets/bosses/draft-*`, no dev
+  pages and no test builds. Add a build check that fails if any of them appear.
+- [ ] **Stress run on a mid laptop and in Safari** (`npm run stress`). Budget: 60 fps, no
+  frame over 25 ms. Record the result in `docs/ACCEPTANCE.md`.
+- [ ] **Accessibility pass:** reduced motion, colour-blind readability of every boss warning
+  (warnings must not rely on colour alone), keyboard and controller reach every screen.
+- [ ] **First-run experience:** someone new reaches a game in two clicks, and Help explains
+  the boss rules (weak points, warnings) in a sentence each.
+- [ ] **Licence:** choose one for the code (or "all rights reserved") before the repo or site
+  is public; list third-party fonts and sounds with their licences.
+
+### R7. Modularise what the network code will touch
+
+From M (archive): only the splits that S3 and W3 will edit, so the network diffs stay
+readable. The rules for splitting are unchanged (no behaviour change in a split commit).
+- [ ] **M2 Boss tests** (`web/tests/boss.test.mjs`, now 1625 lines) into `tests/boss/`.
+- [ ] **M6 Guide data** (`guide.mjs`, 670 lines) into per-boss data files.
+- [ ] **M7 Scene mirror** (`scene.mjs`, 568 lines): per-boss constants beside each boss. S3
+  builds its snapshot codec on this file.
+- [ ] Later, not blocking: M5 art tools, M8 shared C++ (`src/asteroid.cpp`, `src/game.cpp`;
+  carefully, the ESP32 shares them).
+
+### R8. Tag v0.3.0
+
+- [ ] `npm run check`, `sh tests/run_host.sh`, the PlatformIO build, the stress run; update
+  README, COMBAT and Help; tag `v0.3.0`.
 
 ---
 
@@ -848,6 +237,39 @@ Rules: the lobby never shows an option that does not work yet (Local first, then
 then Online); the server image for Online is the same program as `npm run host`, so LAN
 and Online cannot drift apart; the game page can be served by that server (default) or
 from a static host with a **server URL** setting (see S5.1).
+
+---
+
+## v0.4 LAN: vetting notes (2026-11-19)
+
+The S3 and S4 plan below was reviewed against the code as it is now. It holds; these are the
+changes and the risks found.
+
+- **Authority stays on the server.** With R3 the engine becomes deterministic, which would make
+  lockstep possible, but an authoritative server is still the better fit: a late joiner or a
+  reconnect needs no catch-up simulation, and a modified client cannot change a result. R3
+  is used for desync checks and tests, not to replace the server.
+- **The scene is bigger than the plan assumed.** S3.3's 1408 floats was measured before P3
+  and P4 added boss aux slots and parts. Re-measure `scene-layout.mjs` first; the codec
+  target (under 20 kB/s per client) stays.
+- **Painter memory.** Several painters remember earlier frames (shatters, exhaust and missile
+  trails, tendrils, the blocked-shot sparks). With snapshots at 25 Hz and interpolation they
+  will see half as many distinct frames, and a dropped snapshot looks like a part vanishing
+  (a Ringwarden blade "shattering" on a hiccup). S3.2 must list every painter that compares
+  frames and either move the fact into the event list (blade broken, missile destroyed) or
+  make the painter tolerant of gaps.
+- **Sound.** The boss sound observer also compares scenes; the same audit applies.
+- **`ws` is still needed.** Node has a built-in WebSocket *client* but no server; `ws` stays
+  the one runtime dependency (decision 2). Ask before installing it.
+- **Browsers' local-network rules.** Chrome now asks permission before a public site talks to
+  a private address. The same-origin design (the guest opens `http://<host-ip>:<port>/`
+  served by the host itself) avoids it; keep it, and never offer LAN from the public site.
+- **Gamepads on the guest.** The Gamepad API only works in a secure context or on
+  `localhost` in some browsers; a guest on `http://192.168.x.x` may lose gamepad access.
+  Test this first in S4 (Chrome, Safari, Firefox); if it bites, the host serves HTTPS with a
+  self-signed certificate (a one-time browser warning) or the guest uses the keyboard.
+- **Joining.** Show the join address as a QR code and a short link in the host lobby as well
+  as text; typing an IP and port is the most common failure.
 
 ---
 
@@ -975,7 +397,118 @@ First network release: the existing two-player co-op rules on two machines, one 
 
 ---
 
-## S5. Hosted-server multiplayer (task 9)
+## v0.5 Web deployment (plan and vetting, 2026-11-19)
+
+"Web deployment" is three separate things with very different costs. Ship them in this order;
+each is useful on its own.
+
+| Step | What players get | Needs a server | Needs accounts | Running cost (late 2026, check before buying) |
+| --- | --- | --- | --- | --- |
+| **W1 Static site** | solo, practice, local co-op in any browser, records on that browser | no | no | free (Cloudflare Pages, Netlify or GitHub Pages); a domain is about $10–15 a year |
+| **W2 Online rooms** | co-op (later versus) with a friend anywhere, by room code | yes, always on | no | about $2–6 a month for one small Fly.io machine, or a $4–6 VPS |
+| **W3 Accounts** | progress on every device, global leaderboards | yes (W2's server) | yes | auth and database free tiers cover a hobby game; $0 to start |
+
+The game already runs entirely in the browser, so **W1 is a release, not a project**: build,
+upload `dist/`, add headers. Accounts are the only step that changes the privacy and security
+picture, so they come last and only if you want what they give.
+
+### W1. Static site (solo and local co-op)
+
+- [ ] **Host:** Cloudflare Pages (recommended: free, global CDN, custom domain, headers file),
+  Netlify or GitHub Pages. Deploy `dist/` from CI on a tag.
+- [ ] **Headers:** `Content-Type: application/wasm` for `.wasm`; a strict
+  `Content-Security-Policy` (`default-src 'self'`; no inline scripts, which also keeps the
+  page dependency-free); `X-Content-Type-Options`, `Referrer-Policy`. Long cache lifetimes on
+  hashed asset names, short on `index.html`, so an update never mixes old and new files.
+- [ ] **Asset names with a content hash** in the build, so a cached old `game.wasm` can never
+  pair with a new page.
+- [ ] **Offline and install (optional):** a service worker and manifest make it installable
+  and playable offline. Cheap once hashed names exist.
+- [ ] **Privacy note** in Help: nothing leaves the browser in W1.
+- [ ] **Error reports (optional):** none by default. If wanted, a self-hosted endpoint on the W2
+  server that receives stack traces only, never records or settings.
+- [ ] Acceptance: Chrome, Safari, Firefox, a mid laptop, the stress budget; records survive a
+  refresh and a new deploy.
+
+### W2. Online rooms (was S5; the full checklist follows)
+
+The S5 plan below stands. Vetting notes:
+- **Fly.io has no free tier any more** (a short trial only). The cheapest always-on
+  shared-cpu machine is about $2 a month, but shared CPUs get a guaranteed 6.25% of a core
+  with bursts. A 50 Hz tick loop is steady load, so measure the per-room tick cost in S3.1
+  first: if a room needs more than a few percent of a core, use a performance CPU or a VPS
+  (Hetzner, DigitalOcean) with dedicated cores, where the price is flat.
+- **Where the page comes from.** With W1 live, the page is on the static host and the game
+  server lives at its own address (`wss://play.<domain>/ws`). That is the "Server URL" case in
+  S5.1, so it becomes the default rather than the option: the server's `ALLOWED_ORIGINS` holds
+  the site's origin, and the page's CSP `connect-src` allows the server.
+- **Room codes, no accounts** (S1, S2): W2 works without W3. A `ROOM_CREATE_KEY` is not usable
+  on a public site (anyone can read it from the page); use per-IP limits and `MAX_ROOMS`, or
+  require a signed-in account to *create* rooms once W3 exists.
+
+### W3. Accounts, cloud saves and leaderboards (optional; decide before building)
+
+**First decide what accounts are for.** The current design deliberately has none (decision N6
+in `docs/NETWORK-AND-SECURITY.md`: nothing to leak or breach). Accounts are worth it for:
+1. **Progress on every device** (cloud saves of the R4 save).
+2. **Global leaderboards** that mean something.
+3. **Friends and invites** instead of room codes (later).
+
+Guests must keep the whole game: an account adds sync and leaderboards and is never required
+to play. If none of the three matters yet, skip W3; W1 and W2 work without it.
+
+**Choosing the parts.**
+
+| Option | What it is | For | Against |
+| --- | --- | --- | --- |
+| **Clerk + Postgres (Neon)** (recommended) | Hosted sign-in (email codes, Google, Apple, passkeys) with ready UI; a serverless Postgres database the game server talks to | Least auth code to write and secure; vanilla JS SDK, no framework needed; the server verifies Clerk's session token without a network call; Neon's free plan is enough for saves and boards and wakes on demand | Two vendors; Clerk's script loads from Clerk's domain (CSP must allow it, the page is no longer dependency-free); a production Clerk instance needs your own domain |
+| **Supabase** | Auth and Postgres in one | One vendor, one dashboard; row-level security | Free projects pause after about a week without activity (a hobby game will be idle); the client library talks to the database from the browser, so every table needs correct row rules |
+| **Self-hosted** (Better Auth or similar, plus SQLite or Postgres on the W2 machine) | Your own auth library in the game server | No vendors, no per-user pricing | You own password resets, email sending, account recovery and their security; the most work and the most risk |
+
+Free-tier figures checked 2026-11-19 (third-party summaries; confirm on the vendors' own
+pricing pages before signing up): Clerk free to about 50,000 monthly retained users; Neon free
+plan 1 GB per project with compute that scales to zero; Supabase free 500 MB, 50,000 monthly
+users, pauses when idle.
+
+**Design (with Clerk + Neon):**
+- [ ] **Only the game server touches the database.** The browser signs in with Clerk and sends
+  its session token to the W2 server (on the WebSocket handshake and to a small `/api`); the
+  server verifies it and reads or writes Postgres. No database keys in the page.
+- [ ] **Tables:** `players` (Clerk user id, initials, created), `saves` (player, R4 save JSON,
+  format version, updated), `runs` (player, mode, rules key, score, seed, replay blob,
+  verified, created), leaderboard views over `runs`. No email or name stored by the game:
+  Clerk holds them.
+- [ ] **Cloud save sync:** on sign-in, merge the local save and the cloud save with the R4 merge
+  rule (bests take the larger, unlocks the union, settings the newer) and write the result to
+  both. Never overwrite either side blindly.
+- [ ] **Leaderboards only from runs the server saw or re-ran.** A score typed into the page
+  is worthless, so a board entry must be either an online run (W2, the server simulated it) or
+  a solo run whose replay the server re-simulates (R3) to the same score. Replays are capped
+  in size and length, and re-simulation runs in a queue so it cannot starve live rooms.
+  Separate boards per rules key (mode, friendly fire, modifiers), as records are today.
+- [ ] **Names on public boards:** keep the three-letter initials (no free text, nothing to
+  moderate; decision S6). If free names are ever wanted, they need a filter and a report
+  button.
+- [ ] **Account deletion:** a button in Settings, plus Clerk's user-deleted webhook removing the
+  player's rows. Export of their data (the R4 save plus their runs) on request.
+- [ ] **Legal pages:** privacy policy (what is stored, where, for how long, which vendors), terms,
+  and a minimum age (children's data rules such as COPPA in the US, GDPR in the EU and the
+  PDPA in Singapore make under-13 sign-ups the riskiest case; say "13 or older to create an
+  account" and keep guest play open to everyone). Clerk's cookies are essential, so no cookie
+  banner is needed if nothing else sets cookies; confirm for the regions you launch in.
+
+**Security changes W3 brings** (update `docs/NETWORK-AND-SECURITY.md` when building):
+- [ ] Decision N6 changes from "no accounts" to "optional accounts held by Clerk".
+- [ ] Account takeover is now in scope (Clerk handles passwords, codes and sessions; turn on
+  bot protection and email verification).
+- [ ] New secrets: the Clerk secret key and the database URL, as platform secrets only.
+- [ ] Database backups (Neon's free plan keeps a short restore window; export weekly to
+  storage you own once there are real players).
+- [ ] Rate limits on `/api` and on replay submission; replay size and length caps.
+
+---
+
+## S5. Online rooms in detail (W2, task 9)
 
 Same rules and protocol as LAN, on the public internet with private rooms. The Online
 option runs the same server as `npm run host`, packaged as a container.
@@ -1237,7 +770,6 @@ host and strict-C17 checks pass, the budgets hold, and the README describes the 
 - [ ] Keep evidence types separate in `docs/ACCEPTANCE.md`: automated, rendered, physical
   input, two-machine. Anything not performed stays unchecked.
 
----
 
 ---
 
@@ -1245,17 +777,20 @@ host and strict-C17 checks pass, the budgets hold, and the README describes the 
 
 | # | Question | Blocks | Proposed |
 | --- | --- | --- | --- |
-| 19 | ~~Engraving reveal for a summon~~ **Settled:** a circle growing from the key star | P3.4 | Done |
-| 20 | ~~Should the lunge open the pearl~~ **Settled:** yes, for 900 ms, outside the normal rhythm | P3.2 | Done |
-| 21 | ~~Summon length~~ **Settled:** 900 ms | P3.4 | Done |
+| 22 | Make the engine deterministic (own `sinf`/`cosf`, seeded runs, replays) | R3, W3 leaderboards | Yes, in v0.3 |
+| 23 | Do we want accounts at all, and for what (cloud saves, global boards, friends)? | W3 | Optional accounts, guests keep the full game; build after W2 |
+| 24 | Auth and database provider | W3 | Clerk + Neon Postgres, only the game server touches the database |
+| 25 | Static host for the page | W1 | Cloudflare Pages, game server on its own subdomain |
+| 26 | A domain name | W1 (and Clerk production) | Buy one before W1 |
+| 27 | Code licence | R6 | Decide before anything is public |
+| 8 | Rights to the supplied music tracks | R6, W1 | Confirm or replace before any public release |
 | 1 | Ordinary assist split in co-op | S2 | The killer gets the award; the team bonus is the only assist payout |
 | 2 | Allow `ws` as the one runtime dependency, and put the server in `web/server/` | S4 | Yes |
 | 3 | Client-side prediction for the local ship | S4.6 | Decide after measuring LAN latency |
-| 4 | Hosting provider and budget | S5 | Fly.io (or Railway), one small always-on instance per region; Vercel only for static pages |
-| 4b | Serve the page from the game server, or from a static host too | S5.1 | From the server (same origin, simplest); a Server URL setting for the rest |
+| 4 | Hosting provider and budget for rooms | W2 | Fly.io after measuring tick cost; a VPS if shared CPU is not enough |
+| 4b | Serve the page from the game server, or from a static host | W2 | Static host (W1) with the server on its own origin; the server can still serve it for LAN |
 | 6 | Versus round length and rematch rules | S6 | 3 minutes, best of one |
 | 7 | Modifier combinations | S7.5 | One at a time first |
-| 8 | Rights to the supplied music tracks | S0 | Confirm or replace before any public release |
 | 11 | Portable power and enclosure | S8.7 | Optional; do after the firmware is accepted |
 | 12 | Sabotage: who scores targeted rocks and summoned mini-bosses | S6.3 | The first to kill a rock scores it; a mini-boss scores nothing |
 | 13 | Sabotage in co-op or solo, or versus only | S6.3 | Versus only |
@@ -1265,37 +800,26 @@ host and strict-C17 checks pass, the budgets hold, and the README describes the 
 
 ## Tools needed
 
-**Already installed and used:**
+**Already installed and used:** Node 26, Homebrew `llvm` + `lld`, Xcode command-line tools,
+PlatformIO, Prettier, ESLint, `postcss`, Python 3 with Pillow, NumPy and fontTools, the
+built-in browser pane, Safari, Chrome, and `web/tests/boss-bot.mjs`.
 
-| Tool | Used for |
-| --- | --- |
-| Node 26 (`node --test`, built-in `WebSocket` client, `fetch`) | Tests, build, dev server, and the future game server |
-| Homebrew `llvm` (`clang++`) + `lld` (`wasm-ld`) | Building `game.wasm` from `web/native/` |
-| Xcode command-line tools | Host C17/C++ tests with UBSan (`tests/run_host.sh`) |
-| PlatformIO | ESP32 compile check (`platformio.ini`) |
-| Prettier, ESLint, `postcss` | Format, lint, CSS tooling (`npm run check`) |
-| Python 3 venv + Pillow, NumPy, fontTools | Art and sprite generators in `web/tools/` |
-| Built-in browser pane, Safari, Chrome | Visual and flow checks, smoke walk |
-| `web/tests/boss-bot.mjs` | Scripted pilot for fight length and fairness |
-
-**To acquire:**
+**To acquire (ask before installing any package):**
 
 | Tool | Needed by | Notes |
 | --- | --- | --- |
-| Two physical gamepads, ideally one identical pair plus a different brand | S4, S6 | Same model twice is an explicit acceptance case |
-| A second computer on the same network (and a phone hotspot for a different network) | S4, S5 | Two browser tabs are not acceptance |
-| 2–4 playtesters, a screen recorder (QuickTime), a notes sheet | S0 | Real-player tuning |
-| `ws` npm package (server dependency; the game page stays dependency-free) | S4 | The one new runtime dependency; confirm OK |
-| Playwright (dev dependency, optional) | S4.8 | Two-context lobby tests; skip if hand-driven checks suffice |
-| A lossy/latency TCP proxy script (`web/dev/net-conditioner.mjs`, written in Node) | S4.9 | Avoids needing macOS Network Link Conditioner; either works |
-| `cloudflared` or `ngrok` | S5 test only | Quick wss tunnel before real hosting |
-| Docker (Desktop or Colima) and a container registry (GitHub Container Registry) | S5 | Build and test the image locally first |
-| A hosting account: Fly.io (`flyctl`) or Railway (CLI) first choice; Render or a VPS with Caddy as alternatives | S5 | TLS comes from the platform or Caddy; a domain is optional |
-| GitHub Actions | S5.1 | Build, test and push the image on a tag |
-| A static host (Vercel, Netlify or Cloudflare Pages), optional | S5.1 | Only if the page is hosted apart from the server |
-| Chrome DevTools Performance panel, Safari Web Inspector timelines | S0, S4.6 | Frame pacing, CPU, memory |
-| ESP32 DevKit, SSD1306 OLED, joystick, button, passive buzzer, USB cable (the existing handheld) | S8 | Wiring is in `docs/SETUP.md` |
-| PlatformIO CLI and `pio device monitor` (115200 baud) | S8 | Build, flash, serial logging; `pio run -t size` for flash/RAM |
-| Multimeter or logic analyser (optional) | S8 | Only if I²C refresh time or buzzer timing needs measuring |
-| Battery and charger board (e.g. LiPo + TP4056) and an enclosure (3D print or box) | S8.7 | Only if the handheld becomes truly portable |
-| A text editor for the music score (`tools/soundtracks/tracks.mjs`) and `ffmpeg` if new tracks are imported | S0 | Only if tracks change |
+| 2–4 playtesters, a screen recorder, a notes sheet | R1 | Real-player tuning |
+| A mid-range laptop, Safari | R6 | Stress budget |
+| A domain name | W1, W3 | Clerk production needs one |
+| Cloudflare (Pages) account | W1 | Free; deploy `dist/` from CI |
+| Two physical gamepads, ideally an identical pair plus a different brand | S4, S6 | Same model twice is an acceptance case |
+| A second computer on the same network, and a phone hotspot for a different network | S4, W2 | Two browser tabs are not acceptance |
+| `ws` npm package | S4 | The one new runtime dependency |
+| Playwright (dev dependency, optional) | S4.8 | Two-context lobby tests |
+| A lossy/latency proxy script (`web/dev/net-conditioner.mjs`) | S4.9 | Written in Node |
+| `cloudflared` or `ngrok` | W2 testing | A quick `wss` tunnel before real hosting |
+| Docker (Desktop or Colima), GitHub Container Registry, GitHub Actions | W2 | Build and test the image locally first |
+| Fly.io (`flyctl`) or a VPS with Caddy | W2 | Set a spend limit before the first deploy |
+| Clerk account, Neon account, `@clerk/backend` and a Postgres client (`pg`) on the server | W3 | Only if W3 goes ahead |
+| ESP32 DevKit, SSD1306 OLED, joystick, button, passive buzzer; PlatformIO monitor | S8 | Wiring is in `docs/SETUP.md` |
+| Battery, charger board and an enclosure | S8.7 | Optional |

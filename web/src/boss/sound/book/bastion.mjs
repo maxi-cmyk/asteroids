@@ -19,8 +19,10 @@ export const bastion = {
             arp(v, [1000, 1000, 1000, 1400], d / 4, { type: 'square', vol: 0.05, dur: 0.06 });
             v.noise({ dur: d, vol: 0.05, f: 500, to: 1400, type: 'bandpass', env: 'swell' });
         },
-        [ATTACK.mines]: (v, d) => {
-            v.tone({ f: 90, to: 60, type: 'square', dur: d, vol: 0.08, env: 'pulse' });
+        // The ramming run: the engines spool up to a roar as it lines up.
+        [ATTACK.ram]: (v, d) => {
+            v.tone({ f: 40, to: 110, type: 'sawtooth', dur: d, vol: 0.14, env: 'swell' });
+            v.noise({ dur: d, vol: 0.14, f: 200, to: 2400, type: 'lowpass', env: 'swell' });
         },
         [ATTACK.broadside]: (v, d) => {
             v.tone({ f: 500, to: 900, type: 'square', dur: d * 0.5, vol: 0.06, env: 'pulse' });

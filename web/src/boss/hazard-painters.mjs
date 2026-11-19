@@ -1,5 +1,5 @@
 import { pixelGlow as glow } from '../render/fx.mjs';
-import { HAZARD, ZOD_STYLE } from './scene.mjs';
+import { HAZARD, ZOD_STYLE, RAM_LANE } from './scene.mjs';
 import { blackHole, splash, swirl } from './zodiarch/fx.mjs';
 
 const ZODIARCH_KIND = 5;
@@ -24,6 +24,8 @@ export const HAZARD_PAINTERS = {
     [HAZARD.lane](ctx, h, m) {
         if (h.e === ZOD_STYLE.cord) return zodLine(ctx, h, m);
         if (h.e === ZOD_STYLE.tether && !m.warning) return tether(ctx, h);
+        // The Bastion's ramming run: once it goes, the ship itself is the danger.
+        if (h.e === RAM_LANE && !m.warning) return;
         const { warning, blink } = m;
         const half = h.c,
             x = h.x,

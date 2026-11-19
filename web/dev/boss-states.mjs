@@ -8,6 +8,12 @@ import { createRuntime } from '../src/runtime/runtime.mjs';
 import { GUIDE } from '../src/boss/guide.mjs';
 import { ATTACK, KINDS, PART, bossParts, bossState } from '../src/boss/scene.mjs';
 import { deathMs } from '../src/boss/death.mjs';
+import { FOX_POSES } from '../src/boss/ninefold/poses.mjs';
+import { sentinel } from './boss-states/sentinel.mjs';
+import { ringwarden } from './boss-states/ringwarden.mjs';
+import { cinderforge } from './boss-states/cinderforge.mjs';
+import { bastion } from './boss-states/bastion.mjs';
+import { tidecaller, mini } from './boss-states/swimmers.mjs';
 
 const kind = Number(new URLSearchParams(location.search).get('kind') ?? 5);
 const status = document.getElementById('status');
@@ -208,8 +214,32 @@ async function zodiarch() {
     add('Death', await death());
 }
 
+// Ninefold's pose names (P2.1), to find moments in its footwork.
+const foxPose = (b) => FOX_POSES[b.aux[6] | 0]?.name ?? '';
 async function ninefold() {
     add('Idle motion (breathing, tail sway, eye blink)', await idleStrip(4, 33, 'Idle'));
+    const about = [];
+    status.textContent = 'Getting about…';
+    {
+        const game = await fight(1, 11);
+        for (const [test, label] of [
+            [
+                (b) => foxPose(b) === 'rise' || foxPose(b) === 'crouch',
+                'Getting up (rise or crouch)',
+            ],
+            [
+                (b) => foxPose(b).startsWith('walk') || foxPose(b).startsWith('run'),
+                'Trot or gallop',
+            ],
+            [(b) => foxPose(b) === 'skid' || foxPose(b) === 'stand', 'Skid or stand'],
+            [
+                (b) => foxPose(b).startsWith('run-up') || foxPose(b).startsWith('run-down'),
+                'Gallop up or down',
+            ],
+        ])
+            if (game.until(test, 9000)) about.push({ label, canvas: await photo(game) });
+    }
+    add('Getting about (perch to perch)', about);
     add('Firing', await attackTiles());
     const hurt = [];
     status.textContent = 'Taking damage…';
@@ -230,7 +260,11 @@ async function ninefold() {
     status.textContent = 'Specials…';
     {
         const game = await fight(1);
-        game.until((b) => b.attack === ATTACK.illusion && b.attackMs >= 1300, 9000);
+        game.until((b) => b.attack === ATTACK.illusion && b.attackMs >= 300, 9000);
+        special.push({ label: 'Illusion: the cocoon of tails', canvas: await photo(game) });
+        game.until((b) => b.attackMs >= 800, 200);
+        special.push({ label: 'Illusion: three foxes run out', canvas: await photo(game) });
+        game.until((b) => b.attackMs >= 1300, 200);
         special.push({
             label: 'Illusion: two decoys (real fox has lit eyes)',
             canvas: await photo(game),
@@ -241,10 +275,16 @@ async function ninefold() {
     }
     {
         const game = await fight(1);
-        game.until((b) => b.attack === ATTACK.foxBlink && b.attackMs >= 250, 9000);
-        special.push({ label: 'Blink: dissolving into stars', canvas: await photo(game) });
-        game.until((b) => b.attackMs >= 750, 200);
-        special.push({ label: 'Blink: gathering at its new place', canvas: await photo(game) });
+        for (const [ms, label] of [
+            [250, 'Blink: the crouch (its warning)'],
+            [700, 'Blink: the leap'],
+            [930, 'Blink: dissolving into stars at the top'],
+            [1250, 'Blink: back above the next perch'],
+            [1480, 'Blink: landing'],
+        ]) {
+            game.until((b) => b.attack === ATTACK.foxBlink && b.attackMs >= ms, 9000);
+            special.push({ label, canvas: await photo(game) });
+        }
     }
     special.push(...(await repels()));
     add('Special', special);
@@ -253,6 +293,13 @@ async function ninefold() {
 
 if (kind === 5) await zodiarch();
 else if (kind === 11) await ninefold();
+else if (kind === 0) await sentinel({ fight, photo, add, attackTiles, death, healthAt, status });
+else if (kind === 1) await ringwarden({ fight, photo, add, attackTiles, death, healthAt, status });
+else if (kind === 2) await cinderforge({ fight, photo, add, attackTiles, death, healthAt, status });
+else if (kind === 3) await bastion({ fight, photo, add, attackTiles, death, healthAt, status });
+else if (kind === 4) await tidecaller({ fight, photo, add, attackTiles, death, healthAt, status });
+else if (kind >= 6 && kind <= 10)
+    await mini({ fight, photo, add, attackTiles, death, healthAt, status }, kind);
 
 for (const s of sections) {
     const h = document.createElement('h2');

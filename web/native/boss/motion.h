@@ -21,12 +21,12 @@ struct BossMotion {
 // Ranges keep every body at x >= 216 (the "right 55%" rule) and the core on
 // screen.
 static const BossMotion BOSS_MOTION[BK_COUNT] = {
-        {40, 45, 1.0f, false}, // Sentinel
+        {0,
+         70,
+         0.9f,
+         false}, // Sentinel (a vertical rail; it rolls as it slides)
         {15, 20, 1.0f, false}, // Ringwarden (bobs 40 on its own)
-        {6,
-         25,
-         0.8f,
-         false}, // Cinderforge (its panel ring nearly fills the room)
+        {10, 18, 0.8f, false}, // Cinderforge (a tall golem)
         {16, 40, 0.9f, false}, // Bastion
         {30, 25, 1.0f, false}, // Tidecaller (loops on its own)
         {0, 0, 0.0f, true},    // Zodiarch (swims its own figure of eight)
@@ -35,7 +35,7 @@ static const BossMotion BOSS_MOTION[BK_COUNT] = {
         {60, 60, 1.4f, false}, // Cinderling
         {50, 40, 1.4f, false}, // Gunnery (bobs 20 on its own)
         {60, 35, 1.4f, false}, // Moonjelly (loops on its own)
-        {60, 50, 1.4f, false}, // Ninefold
+        {0, 0, 0.0f, true},    // Ninefold (moves itself, perch to perch)
 };
 static const unsigned long BOSS_CAMP_MS
         = 1200; // level with or behind the centre this long

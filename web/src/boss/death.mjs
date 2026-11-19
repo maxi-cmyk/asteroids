@@ -5,8 +5,8 @@
 //
 //   Sentinel      plates blast off, the bare eye overloads
 //   Ringwarden    blades shear away one by one, the core implodes, then shatters
-//   Cinderforge   hatches pop with fire jets, the shell splits on a column of fire, embers rain
-//   Bastion       chain explosions walk nose to stern, the hull breaks in two
+//   Cinderforge   doors blow off, arms fall away, the kiln splits on a column of fire, embers rain
+//   Bastion       chain explosions walk nose to stern, the engines blow off, the hull breaks in two
 //   Tidecaller    the bell deflates and dissolves into bubbles
 //   Zodiarch      bursts into stars segment by segment from the tail, then the pearl goes nova
 //   Picket        splits top and bottom      Shardling   blades spin off, core pops

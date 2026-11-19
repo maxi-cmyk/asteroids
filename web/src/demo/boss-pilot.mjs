@@ -3,7 +3,6 @@ import { S } from '../runtime/scene-layout.mjs';
 // reads, picks the sub-target a person would, and keeps clear of every shot, lethal hazard and
 // body. The boss tests use it to prove each fight is beatable, and the Home demo flies with it.
 import {
-    BOSS_AT,
     HAZARD,
     PART,
     SHOT,
@@ -11,10 +10,10 @@ import {
     NINEFOLD,
     bossHazards,
     bossParts,
-    bossPart,
     bossShots,
     bossState,
 } from '../boss/scene.mjs';
+import { FOX_POSES } from '../boss/ninefold/poses.mjs';
 
 const SPEED = 3.65625,
     SHIP = 7;
@@ -103,23 +102,15 @@ export class BossPilot {
                 return { x, y };
             case 7:
                 return { x, y };
-            case 2: {
-                const panels = Array.from({ length: 8 }, (_, i) => bossPart(scene, i)).filter(
-                    (p) => p.exists,
-                );
-                const windows = panels.filter((p) => p.state >= 1);
-                const pick = windows.length
-                    ? nearest(windows)
-                    : nearest(panels.filter((p) => p.state === 0));
-                return scene[BOSS_AT + 16 + 1] ? { x, y } : pick || { x, y };
-            }
+            case 2:
+                // The golem: only its core while the doors are open (P4.3).
+                return aux[1] > 0.5 ? { x, y: y + 2 } : null;
             case 8:
                 return aux[1] > 0.5 ? { x, y } : null;
             case 3: {
-                const hard = parts
-                    .filter((p) => p.kind === PART.hard)
-                    .sort((a, b) => a.slot - b.slot)[0];
-                return hard || { x: x + 114, y: y + 2 };
+                // The Bastion: its engines are where it is hurt (P4.4).
+                const engines = parts.filter((p) => p.kind === PART.engine && p.state === 0);
+                return engines.length ? nearest(engines) : null;
             }
             case 9:
                 return { x: x + 68, y };
@@ -149,7 +140,9 @@ export class BossPilot {
                         })),
                     );
                 const s = aux[5] || 1,
-                    mark = { x: x + NINEFOLD.mark[0] * s, y: y + NINEFOLD.mark[1] * s };
+                    pose = FOX_POSES[aux[6] | 0] ?? FOX_POSES[0],
+                    flip = aux[7] > 0 ? -1 : 1,
+                    mark = { x: x + pose.mark[0] * s * flip, y: y + pose.mark[1] * s };
                 if (aux[2] > 0.5) return mark;
                 const tails = parts.filter((p) => p.kind === PART.tail);
                 return tails.length ? nearest(tails) : mark;
@@ -197,9 +190,12 @@ export class BossPilot {
         const sx = scene[S.SHIP_X],
             sy = scene[S.SHIP_Y];
         const here = this.danger(sx, sy, scene, boss, shots, hazards, body, 0);
-        // A sweeping wedge can take more than 22 ticks to leave from a corner: look further.
+        // A sweeping wedge, or a lane wider than 22 ticks of flying (the Bastion's ramming
+        // run), can take longer than that to leave: look further.
         const wedge = hazards.some(
-            (h) => (h.kind === HAZARD.beam || h.kind === HAZARD.arm) && h.e !== h.c && h.e !== 0,
+            (h) =>
+                ((h.kind === HAZARD.beam || h.kind === HAZARD.arm) && h.e !== h.c && h.e !== 0) ||
+                (h.kind === HAZARD.lane && h.c > 40),
         );
         const horizon = wedge ? [1, 3, 6, 10, 15, 22, 30, 40] : [1, 3, 6, 10, 15, 22];
         let best = null;

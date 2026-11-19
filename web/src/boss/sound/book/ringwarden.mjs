@@ -30,8 +30,21 @@ export const ringwarden = {
             v.tone({ f: 500, to: 3000, type: 'sine', dur: d, vol: 0.09, env: 'swell' });
             v.tone({ f: 1000, to: 6000, type: 'sine', dur: d, vol: 0.03, env: 'swell' });
         },
-        [ATTACK.pick]: (v, d) =>
+        // The Shardling's pick-off (the boss's own was replaced by the halo lock).
+        [ATTACK.shards]: (v, d) =>
             arp(v, [1760, 1760, 1760], d / 4, { type: 'sine', vol: 0.07, dur: 0.08 }),
+        // The halo lock: the outer ring hums up as its gap is marked.
+        [ATTACK.halo]: (v, d) => {
+            v.tone({ f: 330, to: 660, type: 'triangle', dur: d, vol: 0.08, env: 'swell' });
+            for (let i = 0; i < 3; i++)
+                v.tone({
+                    f: 1320 * (1 + i * 0.5),
+                    type: 'sine',
+                    at: (i * d) / 3,
+                    dur: 0.25,
+                    vol: 0.04,
+                });
+        },
         [ATTACK.collapse]: (v, d) => {
             v.tone({
                 f: 2400,

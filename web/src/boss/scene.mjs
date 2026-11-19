@@ -2,6 +2,7 @@
 // 512..524 and the detail block at BOSS_AT; everything the UI knows about a fight
 // is decoded here so no other module carries magic offsets.
 import { S, BOSS, BOSS_AT, SCENE_FLOATS } from '../runtime/scene-layout.mjs';
+import { FOX_POSES, FOX_SMALL } from './ninefold/poses.mjs';
 export { BOSS_AT, SCENE_FLOATS };
 const PARTS_AT = BOSS_AT + BOSS.PARTS.at,
     PART_STRIDE = BOSS.PARTS.stride,
@@ -52,6 +53,8 @@ export const PART = Object.freeze({
     sign: 6, // a zodiac creature the Zodiarch threw (slot = sign); r is how far it has formed
     tail: 7, // one of Ninefold's tails (slot = tail)
     decoy: 8, // one of Ninefold's illusions
+    plate: 9, // one of the Sentinel's plates (slot = plate); state 1 warned, 2 thrown, 3 shed
+    engine: 10, // one of the Bastion's engines (slot 0 top, 1 bottom); state 1 dead
 });
 // The zodiac, in ring order (the Zodiarch's sign index = slot of a sign part).
 export const SIGNS = Object.freeze([
@@ -124,6 +127,8 @@ export const ZOD_STYLE = Object.freeze({
     splash: 9,
     fish: 11,
 });
+// The Bastion's ramming run marks its lane with this `e` (native/boss/fights/bastion.h).
+export const RAM_LANE = 20;
 // The Zodiarch's ring (centre and radii) and, for the storyboards' before-and-after, the old
 // figure-of-eight swim it had before it steered itself (nextSteps.md P3.1).
 export const ZODIARCH = Object.freeze({
@@ -151,26 +156,22 @@ export function zodLocal(x, y, heading, [dx, dy]) {
         lx = right ? -dx : dx;
     return [x + lx * Math.cos(r) - dy * Math.sin(r), y + lx * Math.sin(r) + dy * Math.cos(r)];
 }
-// Ninefold's geometry from its frame centre (mirrors FOX_* in warden.h).
+// Ninefold sitting, from its centre (every pose's points: src/boss/ninefold/poses.mjs).
 export const NINEFOLD = Object.freeze({
-    mark: [-33, -54],
-    head: [-35, -40],
-    body: [-19, 22],
-    illusionScale: 0.6, // the three foxes of an illusion
-    swayPeriod: 2.4, // s, a wave across the nine tails
+    mark: FOX_POSES[0].mark,
+    head: FOX_POSES[0].head,
+    body: FOX_POSES[0].body,
+    illusionScale: FOX_SMALL, // the three foxes of an illusion
 });
-// Tail i's bend frame (0..4, 2 at rest) for the engine's fox clock: the same wave the engine
-// moves the tail's hit point by (bs_fox_bend).
-export const foxBend = (i, clock) =>
-    Math.round(2 * Math.sin((2 * Math.PI * clock) / NINEFOLD.swayPeriod - i * 0.55)) + 2;
 export const ATTACK = Object.freeze({
     lance: 1,
     fan: 2,
     volley: 3,
     cross: 4,
+    plateThrow: 5,
     burst: 10,
     prism: 11,
-    pick: 12,
+    halo: 12,
     collapse: 13,
     lob: 20,
     jets: 21,
@@ -182,7 +183,7 @@ export const ATTACK = Object.freeze({
     vent: 27,
     cannon: 30,
     missile: 31,
-    mines: 32,
+    ram: 32, // the Bastion's ramming run (replaced the mines)
     broadside: 33,
     sine: 40,
     tendril: 41,
@@ -244,9 +245,19 @@ export const KINDS = Object.freeze([
         region: 'frontier',
         mini: false,
         size: [220, 220],
-        phases: [0.6],
+        phases: [0.6, 0.3],
         hull: null,
-        aux: { open: 0, busy: 1 },
+        aux: {
+            open: 0,
+            busy: 1,
+            tell: 2,
+            seam: 3,
+            roll: 4,
+            gazeX: 5,
+            gazeY: 6,
+            shed: 7,
+            bare: 8,
+        },
     },
     {
         id: 'ringwarden',
@@ -256,7 +267,19 @@ export const KINDS = Object.freeze([
         size: [270, 270],
         phases: [0.66, 0.33],
         hull: null,
-        aux: { scale: 0, outerSpin: 1, innerSpin: 2, charging: 3 },
+        aux: {
+            scale: 0,
+            outerSpin: 1,
+            innerSpin: 2,
+            charging: 3,
+            outerTilt: 4,
+            outerAxis: 5,
+            innerTilt: 6,
+            innerAxis: 7,
+            eclipse: 8,
+            halo: 9,
+            haloGap: 14,
+        },
     },
     {
         id: 'cinderforge',
@@ -266,7 +289,17 @@ export const KINDS = Object.freeze([
         size: [300, 300],
         phases: [0.66, 0.33],
         hull: null,
-        aux: { heat: 0, open: 1 },
+        aux: {
+            heat: 0,
+            open: 1,
+            breath: 2,
+            hammer: 3,
+            ladle: 4,
+            core: 5,
+            steam: 6,
+            lamps: 7,
+            flame: 9,
+        },
     },
     {
         id: 'bastion',
@@ -276,7 +309,7 @@ export const KINDS = Object.freeze([
         size: [340, 196],
         phases: [0.5],
         hull: null,
-        aux: { cannon: 0, pods: 1, armour: 2 },
+        aux: { cannon: 0, pods: 1, armour: 2, roll: 3, thrust: 4, lock: 6, lane: 7 },
     },
     {
         id: 'tidecaller',
@@ -286,7 +319,7 @@ export const KINDS = Object.freeze([
         size: [230, 290],
         phases: [0.7, 0.35],
         hull: null,
-        aux: { clock: 0, exposed: 2 },
+        aux: { clock: 0, exposed: 2, squeeze: 3, lean: 4, rim: 5, rimTo: 6 },
     },
     {
         id: 'warden', // internal id kept from the Horizon Warden, so saves carry over
@@ -330,7 +363,7 @@ export const KINDS = Object.freeze([
         size: [170, 170],
         phases: [],
         hull: 'lancer',
-        aux: { spin: 2 },
+        aux: { spin: 2, tilt: 5, axis: 6 },
     },
     {
         id: 'cinderling',
@@ -360,7 +393,7 @@ export const KINDS = Object.freeze([
         size: [150, 190],
         phases: [],
         hull: 'moth',
-        aux: { clock: 0 },
+        aux: { clock: 0, squeeze: 1, lean: 2 },
     },
     {
         id: 'lensimp', // internal id kept from the Lens Imp, so saves carry over
@@ -370,7 +403,18 @@ export const KINDS = Object.freeze([
         size: [250, 196],
         phases: [],
         hull: 'comet',
-        aux: { clock: 0, blink: 1, open: 2, tails: 3, illusion: 4, scale: 5 },
+        aux: {
+            clock: 0,
+            blink: 1,
+            open: 2,
+            tails: 3,
+            illusion: 4,
+            scale: 5,
+            pose: 6,
+            face: 7,
+            alpha: 8,
+            step: 9,
+        },
     },
 ]);
 export const REGION_SHEETS = Object.freeze([

@@ -1,5 +1,6 @@
 // Death sequences for the rift region's boss and mini-boss.
 import { ease } from '../../render/fx.mjs';
+import { FOX_POSES } from '../ninefold/poses.mjs';
 import { PART, bossBody, bossParts, bossState } from '../scene.mjs';
 import { segmentKey } from '../zodiarch/dragon.mjs';
 import {
@@ -81,20 +82,22 @@ export const SCRIPTS = {
         const { ctx, x, y, age } = d,
             tails = bossParts(d.snap).filter((p) => p.kind === PART.tail),
             s = bossState(d.snap).aux[5] || 1,
-            fox = s < 0.9 ? 'ninefold-s' : 'ninefold',
+            // It dies sitting (the pose's cells: src/boss/ninefold/poses.mjs).
+            fox = s < 0.9 ? 'fox-s-' : 'fox-',
+            set = FOX_POSES[0].set,
             step = 110;
         tails.forEach((tail, k) => {
             const at = k * step;
-            if (age < at) d.art.drawFx(ctx, 'rift', `${fox}-tail-${tail.slot}`, x, y, {});
+            if (age < at) d.art.drawFx(ctx, 'rift', `${fox}t${set}-${tail.slot}`, x, y, {});
             else starBurst(ctx, tail.x, tail.y, age - at, 8, 0.08, 500, k);
         });
         const from = tails.length * step,
             p = clamp01((age - from) / 600);
-        if (p < 1) dissolved(d, 'rift', `${fox}-1`, x, y, ease(p));
-        else if (age < from + 700) body(d, `${fox}-1`, { alpha: 0 });
+        if (p < 1) dissolved(d, 'rift', `${fox}sit`, x, y, ease(p));
+        else if (age < from + 700) body(d, `${fox}sit`, { alpha: 0 });
         if (age > from) starBurst(ctx, x - 20 * s, y, age - from, 20, 0.1, 900, 2);
-        const mx = x - 33 * s,
-            my = y - 54 * s;
+        const mx = x + FOX_POSES[0].mark[0] * s,
+            my = y + FOX_POSES[0].mark[1] * s;
         ring(d, mx, my, from + 200, {
             colour: '#ffaad2',
             speed: 0.2,

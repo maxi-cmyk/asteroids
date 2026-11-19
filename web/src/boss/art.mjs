@@ -15,7 +15,7 @@ const loadImage = async (url) => {
 const MAIN_FRAME = [
     'sentinel-0',
     'ringwarden-core-0',
-    'forge-1',
+    'golem-whole',
     'bastion-hull',
     'tide-0-0',
     'zod-head-0',
@@ -24,7 +24,7 @@ const MAIN_FRAME = [
     'cinderling-0',
     'gunnery-0',
     'moonjelly-0',
-    'ninefold-0',
+    'fox-sit',
 ];
 
 export class BossArt {

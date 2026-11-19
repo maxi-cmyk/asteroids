@@ -181,10 +181,10 @@ def frontier():
     sent = [sentinel(o, 0) for o in (0, 1 / 3, 2 / 3, 1)]
     for i, im in enumerate(sent):
         sh.add(f'sentinel-{i}', im)
-    sh.add('sentinel-glow', sentinel(1, 1))
-    sh.add('sentinel-bare', sentinel(1, 1, bare=True))
     for k in range(4):
         sh.add(f'sentinel-plate-{k}', sentinel(0, 0, only=k))
+    for name, im in sentinel_parts().items():                     # the living eye (P4.1)
+        sh.add(f'sentinel-{name}', im)
     with_damage(sh, 'sentinel', [sent[0], sent[3]], (220, 220), 10)
     pick = [picket_gate(o, 0) for o in (0, .5, 1)]
     for i, im in enumerate(pick):
@@ -211,14 +211,11 @@ def violet():
 
 def ember():
     sh = Sheet()
-    forge = [cinderforge(core=c) for c in (.35, .65, .95)]
-    for i, im in enumerate(forge):
-        sh.add(f'forge-{i}', im)
-    with_damage(sh, 'forge', forge, (300, 300), 50)
-    sh.add('panel-0', forge_panel(0))
-    for state in (1, 2):
-        for frame in (0, 1):
-            sh.add(f'panel-{state}{"ab"[frame]}', forge_panel(state, frame))
+    for name, im in golem_parts().items():                        # the furnace golem (P4.3)
+        sh.add(f'golem-{name}', im)
+    whole = golem_whole()
+    sh.add('golem-whole', whole)
+    with_damage(sh, 'golem', [whole], (300, 300), 50)
     ling = [cinderling(.4), cinderling(.9, open_cells=[(1, 1), (2, 1), (1, 2), (2, 2)])]
     for i, im in enumerate(ling):
         sh.add(f'cinderling-{i}', im)
@@ -232,6 +229,8 @@ def ruins():
     for name, im in layers.items():
         sh.add(f'bastion-{name.replace("_", "-")}', im)
     with_damage(sh, 'bastion', [layers['hull']], (340, 196), 70)
+    sh.add('bastion-engine', bastion_engine(0))                   # the weak point (P4.4)
+    sh.add('bastion-engine-dead', bastion_engine(1))
     gun = [gunnery_hull(0), gunnery_hull(1)]
     for i, im in enumerate(gun):
         sh.add(f'gunnery-{i}', im)
@@ -282,11 +281,10 @@ def rift():
     import zodiac_myth
     for name, im in zodiac_myth.game_cells()[0].items():
         sh.add(name, im)
-    for k, prefix in ((1.0, 'ninefold'), (zod.FOX_ILLUSION_SCALE, 'ninefold-s')):
-        fox = zod.fox_cells(k=k, prefix=prefix)
-        for name, im in fox.items():
-            sh.add(name, im)
-        with_star_damage(sh, prefix, [fox[f'{prefix}-0'], fox[f'{prefix}-1']], fox[f'{prefix}-0'].size, 120)
+    # Ninefold (P2.1): every pose from the posable fox, body and tails apart, full size and
+    # at 0.6; also writes the pose tables the engine and renderer share.
+    import fox_game
+    fox_game.build(sh)
     for i, rgb in enumerate([(154, 208, 255), (255, 233, 160), (255, 176, 112), (255, 255, 255)]):
         sh.add(f'star-{i}', star_sprite(rgb))
     return sh

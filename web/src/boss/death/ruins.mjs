@@ -29,6 +29,28 @@ export const SCRIPTS = {
                     alpha,
                 });
         };
+        // The engines (P4.4): they burn on their outriggers, then blow off at 1100 ms and
+        // tumble away, the bottom one flipped.
+        for (const [k, sy0] of [
+            [0, -1],
+            [1, 1],
+        ]) {
+            const a = age - 1100 - k * 120;
+            if (a > 1200) continue;
+            const dx = 66 + (a > 0 ? a * 0.12 : 0) + sx,
+                dy = sy0 * 98 + (a > 0 ? sy0 * a * 0.1 + a * a * 0.00015 : 0) + sy;
+            ctx.save();
+            ctx.translate(Math.round(x + dx), Math.round(y + dy));
+            if (a > 0) ctx.rotate(sy0 * a * 0.004);
+            if (sy0 > 0) ctx.scale(1, -1);
+            d.art.drawFx(ctx, 'ruins', 'bastion-engine-dead', 0, 0, {
+                alpha: a > 0 ? 1 - clamp01(a / 1200) : 1,
+                flash: flicker(d, 90, 1100),
+            });
+            ctx.restore();
+            if (a < 0) fireball(d, x + 106, y + sy0 * 98, 200 + k * 300, 0.3, FIRE, 900);
+            else if (a < 300) fireball(d, x + 66, y + sy0 * 98, 1100 + k * 120, 0.5, FIRE, 600);
+        }
         if (whole) {
             piece(null, 0, 0, 0);
             layers.forEach((key, i) => {

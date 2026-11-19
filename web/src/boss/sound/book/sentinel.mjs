@@ -33,6 +33,19 @@ export const sentinel = {
                 vib: { rate: 22, depth: 25 },
             });
         },
+        // The plates unlatch and spin up.
+        [ATTACK.plateThrow]: (v, d) => {
+            v.tone({
+                f: 120,
+                to: 600,
+                type: 'sawtooth',
+                dur: d,
+                vol: 0.08,
+                env: 'swell',
+                vib: { rate: 14, depth: 30 },
+            });
+            v.noise({ at: d * 0.8, dur: 0.12, vol: 0.12, f: 2500, type: 'highpass' });
+        },
         [ATTACK.cross]: (v, d) => {
             v.tone({ f: 180, to: 1400, type: 'sawtooth', dur: d, vol: 0.08, env: 'swell' });
             v.tone({

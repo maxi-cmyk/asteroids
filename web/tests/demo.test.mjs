@@ -62,7 +62,11 @@ test('the Home demo plays the whole game: bosses, deaths and all, until it is st
     const { createDemo } = await import('../src/demo/engine.mjs');
     const { S } = await import('../src/runtime/scene-layout.mjs');
     const bytes = await readFile(new URL('../dist/test.wasm', import.meta.url));
-    const demo = await createDemo(bytes);
+    // Seeded, so the run is the same every time (unseeded, some runs lose no life at all).
+    let seed = 1;
+    const demo = await createDemo(bytes, undefined, {
+        random: () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0),
+    });
     demo.start();
     let bossSeen = false,
         maxWave = 0,

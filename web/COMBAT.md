@@ -170,14 +170,19 @@ set the fight length. A primary shot is one sub-hit and counts once toward
 primary accuracy; the laser stays worth eight design hits and pierces. Shields,
 multishot and 2× fire use the ordinary paths.
 
-Each fight has a signature rule: Sentinel plates open only between attacks;
-Ringwarden blades absorb shots and break (the laser pierces both rings);
-Cinderforge's shell opens at vents or at panels broken with three hits; Bastion's
-bridge takes half damage while a hardpoint lives; Tidecaller's bell is shielded
+Each fight has a signature rule: the Sentinel's eye can be hurt while its plates stand open
+between attacks, while its thrown plates are out, and always once it sheds them in phase 3;
+Ringwarden blades absorb shots and break (the laser pierces both rings), and each of its
+two tilting rings has a gap: when both gaps turn in front of the core there is a clear lane in;
+the Cinderforge (a furnace golem) lights a heat lamp with each attack and at five it vents:
+its doors open and the core is bare for about 3.5 s, taking double, while shots glance off
+its shell otherwise (the laser reaches the core at half); the Bastion is hurt only at its
+two engines (double during its ramming run) while its hull turns shots away, and knocking out a
+gun silences that gun's attack; Tidecaller's bell is shielded
 by bubbles (the laser pops all three); the Zodiarch's pearl surfaces, for about 3 s, on the
 part of its body each of its attacks comes from.
 
-The Cinderforge's fire stays. A lob's lava pool (4 s) burns down into **scorched ground** for
+The Cinderforge's fire stays. A ladle blob's lava pool (4 s) burns down into **scorched ground** for
 another 6 s (`HK_BURN`, `bs_scorch` in `native/boss/hazards.h`): standing in it burns you, the
 first time 500 ms after stepping in and then every 800 ms. Shooting a lob down still cancels the
 pool, but marks the ground (900 ms, shown as a dotted ring) and leaves a small patch that burns
@@ -273,7 +278,28 @@ health. Losing a tail, or popping both decoys of an illusion, opens the forehead
 (the laser reaches it any time). It flicks comets from its tails down aim lines (fewer tails,
 fewer comets but faster), sends three homing foxfire wisps, splits into three foxes of which
 only the real one has lit eyes (each decoy fires one aimed needle; two hits pop one), and
-blinks to another height behind a 500 ms shimmer.
+blinks to another perch.
+
+**It moves like a fox** (nextSteps.md P2.1, `native/boss/fights/ninefold/`). It sits on one of
+nine perches (x 300, 320, 340; y 92, 140, 188: standing, its head reaches 84 px ahead of its
+centre, so x 300 keeps it right of 216, and sitting at 340 its tails stay on screen). After
+each attack it moves to another perch, preferring the nearest pilot's row: a trot at 1.2 px a
+tick for moves under 90 px (it rises first and stands at the end), otherwise a gallop at
+3.2 px a tick (a 300 ms crouch, then a 400 ms skid), and it turns back to face left before it
+sits. It attacks only once it has sat down, so it never moves while an attack is warned. Every
+attack has a body: the comets whip from tails arched over its back (700 ms) down 500 ms aim
+lines; the foxfire is scooped into its jaws (700 ms) and tossed; the blink is a crouch (the
+500 ms warning), a leap that dissolves into stars at the top (it cannot be hit or touched for
+300 ms), and a landing on another perch; the illusion is a cocoon of tails that shrinks to
+0.6× (600 ms), then three foxes run to their places (330, 54), (380, 135) and (330, 216) at
+their own pace, so the real one cannot be told by its timing. At the end the decoys run back
+into it, it runs to the nearest perch and grows back in one shake. Seated it breathes, blinks,
+follows the pilot with its head, shifts its weight and bristles when a pilot comes within
+150 px; a lost tail makes it yelp and look round. Its art is a posable skeleton
+(`tools/fox_pose.py`, poses in `tools/fox_poses.py`): `tools/fox_game.py` draws every pose's
+body and nine tails, full size and at 0.6, and writes the pose table the engine and the
+renderer share (each tail's hit point, the mark, the jaw, head and body), so the hit circles
+follow the drawn tails in every pose.
 
 ### Difficulty
 
@@ -284,7 +310,7 @@ once, its own attacks) and after the pilot learned to keep out of a sweeping bea
 as a person reads it (that moved the Ringwarden, Cinderforge and Tidecaller hit counts a little;
 no fairness faults); the Zodiarch row again on 2026-11-18 after P3 (steered swim, forehead pearl,
 coil-spit, lunge) and again after the pearl moved to the attacking body part and the signs out
-were capped at two (its health is 2 sub-hits per design hit, a break costs it 3). The pilot keeps out of the space level with or behind a boss, as a sensible player
+were capped at two (its health is 2 sub-hits per design hit, a break costs it 3). Ninefold again on 2026-11-19 after P2.1 (it moves between perches and sits before each attack, about 5 s longer). The Sentinel on 2026-11-19 after P4.1 (the plate throw and a third phase with its eye always open: 1 to 5 s shorter). The Ringwarden on 2026-11-19 after P4.2 (tilting rings with gaps, prism splits, the halo lock: 1 to 2 s longer; most of its hits are the repel ring and the beam, not the halo lock). The Cinderforge on 2026-11-19 after P4.3 (redesigned as a furnace golem: it can only be hurt while it vents, so tier I is 5 s longer and tiers II and III 3 to 5 s shorter; its health is now 2 sub-hits per design hit, and the bare core takes double). The Bastion on 2026-11-19 after P4.4 (engines as its weak point, the ramming run instead of the mines: 2 to 8 s longer; the scripted pilot now looks further ahead in a lane wider than it can cross in 22 ticks, as it already did for sweeping wedges). The Tidecaller and the minis on 2026-11-19 after P4.5 and P4.6 (the bell swims in pulses with drifting bubbles; the Shardling's tilting ring and the Cinderling's golem shape changed their times by up to 9 s). The pilot keeps out of the space level with or behind a boss, as a sensible player
 would. Times are seconds from the start of the fight (the 1.4 s entrance included) to the defeat,
 averaged over the seeds; **hits** is how often the pilot was touched (practice loses no lives).
 People are expected to take about 1.5× the bot time; that figure is an estimate until the S0.2
@@ -292,24 +318,24 @@ playtest records real ones.
 
 | Fight | Tier I | Tier II | Tier III | Hits (tier I / II / III) | Expected person, tier I |
 | --- | --- | --- | --- | --- | --- |
-| Sentinel | 28 | 46 | 48 | 0 / 0 / 0 | 42 s |
-| Ringwarden | 29 | 33 | 34 | 17 / 22 / 21 | 44 s |
-| Cinderforge | 36 | 44 | 43 | 12 / 10 / 23 | 54 s |
-| Bastion | 44 | 50 | 53 | 0 / 0 / 0 | 66 s |
-| Tidecaller | 43 | 48 | 51 | 4 / 4 / 3 | 65 s |
+| Sentinel | 27 | 43 | 43 | 0 / 0 / 0 | 41 s |
+| Ringwarden | 30 | 35 | 35 | 15 / 24 / 25 | 45 s |
+| Cinderforge | 41 | 39 | 40 | 0 / 0 / 0 | 62 s |
+| Bastion | 46 | 58 | 59 | 0 / 0 / 0 | 69 s |
+| Tidecaller | 40 | 47 | 46 | 1 / 2 / 2 | 60 s |
 | Zodiarch | 48 | 55 | 54 | 0.8 / 1.2 / 1.2 | 81 s |
 | Picket | 18 | 24 | 24 | 0 | 27 s |
-| Shardling | 14 | 16 | 16 | 0 | 21 s |
-| Cinderling | 10 | 23 | 23 | 0 | 15 s |
+| Shardling | 17 | 20 | 20 | 0 | 26 s |
+| Cinderling | 11 | 14 | 14 | 0 | 17 s |
 | Gunnery | 19 | 23 | 23 | 0 | 29 s |
 | Moonjelly | 19 | 22 | 22 | 0 | 29 s |
-| Ninefold | 21 | 29 | 29 | 0 | 32 s |
+| Ninefold | 26 | 35 | 35 | 0 | 39 s |
 
 Fairness counters over the same 36 fights (tiers I to III): no lethal hazard without its warning,
 no entrance hit, shots never above the cap of 48 (the Tidecaller reaches it), hazards never above
 the cap of 6 (the Cinderforge reaches it), and the narrowest safe corridor was 230 px, far above
 42. The Zodiarch's creatures and its own attacks stay inside those limits with up to two signs
-out (at most four lethal hazards and 41 shots). The Ringwarden hurts the bot most (17 to 22 touches), so expect people
+out (at most four lethal hazards and 41 shots). The Ringwarden hurts the bot most (15 to 25 touches), so expect people
 to find it the busiest of the first three.
 
 Playtest log: Settings → Display → Playtest records one entry per boss attempt (boss, tier, outcome,
@@ -326,8 +352,8 @@ pilot, counts participation for every pilot who touched the boss, scales health 
 two, and alternates its aim between the nearer and the farther pilot.
 
 Every boss and mini-boss has its own defeat sequence (`src/boss/death.mjs`), played from a
-frozen copy of its last frame: the Sentinel's plates blast off, the Ringwarden shears and
-implodes, the Cinderforge splits on a column of fire, the Bastion breaks in two along a
+frozen copy of its last frame: the Sentinel's bare eye overloads, the Ringwarden shears and
+implodes, the Cinderforge's doors blow off and its arms fall away as it splits on a column of fire, the Bastion's engines blow off and it breaks in two along a
 chain of explosions, the Tidecaller dissolves into bubbles, the Zodiarch comes apart segment
 by segment from the tail before its pearl goes nova, and Ninefold sheds its tails one by one. Each has a matching defeat sound. Replay them on `/boss-attacks.html`.
 

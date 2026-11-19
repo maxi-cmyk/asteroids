@@ -3,9 +3,13 @@
 
 // Slots of boss.aux and boss.stamp.
 enum {
-    AUX_TIDE_CLOCK = 0, // seconds since the entrance, drives the sway
-    AUX_TIDE_EXPOSED = 2
-}; // 1 once no bubble guards the bell
+    AUX_TIDE_CLOCK = 0,   // seconds since the entrance, drives the swim
+    AUX_TIDE_EXPOSED = 2, // 1 once no bubble guards the bell
+    AUX_TIDE_SQUEEZE = 3, // 0..1: the bell contracting (each pulse's thrust)
+    AUX_TIDE_LEAN = 4,    // it leans toward where it swims
+    AUX_TIDE_RIM = 5,     // 0..1: light running along the bell before a stream
+    AUX_TIDE_RIM_TO = 6   // where on the bell that stream starts (angle)
+};
 // Slots of boss.scratch, this attack's own random choices (shared with the
 // Horizon Warden, which borrows these attacks, so they never live in boss.aux).
 enum {
@@ -15,7 +19,9 @@ enum {
     SCR_TIDE_GAP = 3
 }; // 3..5: where each tidal wall's gap is
 enum {
-    AUX_JELLY_CLOCK = 0
+    AUX_JELLY_CLOCK = 0,
+    AUX_JELLY_SQUEEZE = 1,
+    AUX_JELLY_LEAN = 2
 };
 enum {
     STAMP_TIDE_BARE_SINCE
@@ -40,6 +46,40 @@ static const BossRow SEQ_TIDE[]
             TA_RAIN,
             TA_SPORE}};
 static const BossRow SEQ_MOONJELLY[] = {{1, MA_SINE6}};
+// It swims in pulses (nextSteps.md P4.5): contract (300 ms, the thrust), glide
+// (700 ms), relax (600 ms), from one stop to the next around its rest point.
+static const unsigned long TIDE_PULSE = 1600;
+static const float TIDE_STOPS[5][2]
+        = {{0, 4}, {-26, -18}, {16, -10}, {-12, 26}, {24, 16}};
+static float bs_tide_ease(float u) {
+    u = bs_clamp(u, 0, 1);
+    return u * u * (3 - 2 * u);
+}
+// Where a swim on TIDE_STOPS (scaled by `k`) has the bell `ms` in: offset from
+// the rest point, lean and squeeze.
+static void bs_tide_swim(
+        float ms, float k, float& dx, float& dy, float& lean, float& squeeze) {
+    unsigned n = unsigned(ms / TIDE_PULSE);
+    float u = (ms - n * float(TIDE_PULSE));
+    const float *a = TIDE_STOPS[n % 5], *b = TIDE_STOPS[(n + 1) % 5];
+    float moved;
+    if (u < 300) {
+        squeeze = bs_tide_ease(u / 300);
+        moved = .35f * squeeze;
+    } else if (u < 1000) {
+        squeeze = 1 - bs_tide_ease((u - 300) / 700) * .7f;
+        moved = .35f + .6f * sinf((u - 300) / 700 * BOSS_PI / 2);
+    } else {
+        squeeze = .3f * (1 - (u - 1000) / 600);
+        moved = .95f + .05f * bs_clamp((u - 1000) / 600, 0, 1);
+    }
+    dx = k * (a[0] + (b[0] - a[0]) * moved);
+    dy = k * (a[1] + (b[1] - a[1]) * moved);
+    lean = bs_clamp((b[0] - a[0]) / 140, -.35f, .35f);
+}
+// Each bubble wanders its own way round the bell (rad/s across, down, phase).
+static const float TIDE_WANDER[3][3]
+        = {{1.3f, 1.7f, 0}, {1.1f, 2.1f, 2.1f}, {1.6f, 1.2f, 4.2f}};
 static unsigned bs_bubbles() {
     unsigned n = 0;
     for (unsigned i = 0; i < 3; i++) {
@@ -60,15 +100,36 @@ static void bs_tide_begin() {
 }
 static void bs_tide_update() {
     boss.aux[AUX_TIDE_CLOCK] += FRAME_TIME_MS / 1000.0f;
-    float w = TWO_PI / 9.0f * boss.aux[AUX_TIDE_CLOCK];
-    boss.x = boss.home_x + 22 * sinf(w);
-    boss.y = boss.home_y + 26 * sinf(2 * w);
+    float clock = boss.aux[AUX_TIDE_CLOCK];
+    float dx, dy, lean, squeeze;
+    bs_tide_swim(clock * 1000, 1, dx, dy, lean, squeeze);
+    boss.x = boss.home_x + dx;
+    boss.y = boss.home_y + dy;
+    boss.aux[AUX_TIDE_LEAN] += (lean - boss.aux[AUX_TIDE_LEAN]) * .08f;
+    boss.aux[AUX_TIDE_SQUEEZE] = squeeze;
     boss.aux[AUX_TIDE_EXPOSED] = bs_bubbles() ? 0.0f : 1.0f;
+    // Bioluminescence: before a stream, light runs along the bell to where it
+    // will start.
+    unsigned long t = boss.atk ? bs_since(boss.atk_t0) : 0;
+    if (boss.atk == TA_SINE && t < 600) {
+        float mx = boss.x - 78, my = boss.y + 4 + boss.scratch[SCR_TIDE_MUZZLE];
+        boss.aux[AUX_TIDE_RIM] = t / 600.0f;
+        boss.aux[AUX_TIDE_RIM_TO] = bs_atan2(my - (boss.y - 37), mx - boss.x);
+    } else {
+        boss.aux[AUX_TIDE_RIM] = 0;
+    }
+    // The bubbles drift in front of the bell, each its own way, guarding it;
+    // a shot pushes one outward, away from the bell (p.u, p.v), and it drifts
+    // back in.
     for (unsigned i = 0; i < 3; i++) {
         BossPart& p = boss.parts[i];
-        float a = boss.aux[AUX_TIDE_CLOCK] * 1.3f + i * TWO_PI / 3;
-        p.x = boss.x + cosf(a) * 108;
-        p.y = boss.y - 17 + sinf(a) * 40;
+        const float *w = TIDE_WANDER[i];
+        p.u *= .97f;
+        p.v *= .97f;
+        p.x = boss.x - 70 + cosf(clock * w[0] + w[2]) * 48
+              + sinf(clock * w[1] * .7f) * 12 + p.u;
+        p.y = bs_clamp(
+                boss.y - 30 + sinf(clock * w[1] + w[2]) * 70 + p.v, 18, 252);
     }
     if (boss.phase && !bs_bubbles()) {
         if (!boss.stamp[STAMP_TIDE_BARE_SINCE]) {
@@ -78,6 +139,7 @@ static void bs_tide_update() {
             for (unsigned i = 0; i < 3; i++) {
                 boss.parts[i].exists = true;
                 boss.parts[i].hp = 2;
+                boss.parts[i].u = boss.parts[i].v = 0;
             }
             boss.stamp[STAMP_TIDE_REFORMED] = 1; // bubbles reform once
             boss.stamp[STAMP_TIDE_BARE_SINCE] = 0;
@@ -326,9 +388,13 @@ static int bs_moonjelly_pick() {
 }
 static void bs_moonjelly_update() {
     boss.aux[AUX_JELLY_CLOCK] += FRAME_TIME_MS / 1000.0f;
-    float w = TWO_PI / 8.0f * boss.aux[AUX_JELLY_CLOCK];
-    boss.x = boss.home_x + 16 * sinf(w);
-    boss.y = boss.home_y + 24 * sinf(2 * w);
+    float dx, dy, lean, squeeze;
+    bs_tide_swim(
+            boss.aux[AUX_JELLY_CLOCK] * 1000 + 400, .8f, dx, dy, lean, squeeze);
+    boss.x = boss.home_x + dx;
+    boss.y = boss.home_y + dy;
+    boss.aux[AUX_JELLY_LEAN] += (lean - boss.aux[AUX_JELLY_LEAN]) * .08f;
+    boss.aux[AUX_JELLY_SQUEEZE] = squeeze;
 }
 static void bs_tide_circles() {
     for (unsigned i = 0; i < 3; i++) {
@@ -380,6 +446,12 @@ static void bs_tide_hit(BossPart& p, unsigned, unsigned damage, bool laser) {
     if (p.hp <= 0) {
         p.exists = false;
         bs_particles(p.x, p.y);
+    } else {
+        // Pushed outward, away from the bell: it stays in front of you.
+        float dx = p.x - boss.x, dy = p.y - (boss.y - 37);
+        float len = bs_max(1.0f, sqrtf(dx * dx + dy * dy));
+        p.u = bs_clamp(p.u + dx / len * 36, -60, 60);
+        p.v = bs_clamp(p.v + dy / len * 36, -60, 60);
     }
 }
 static const BossOps OPS_TIDECALLER = {356,

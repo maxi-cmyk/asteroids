@@ -27,7 +27,7 @@ static const BossOps OPS_WARDEN = {372,
                                    nullptr,
                                    bs_zod_hit};
 static const BossOps OPS_LENSIMP = {340,
-                                    135,
+                                    140,
                                     6,
                                     1,
                                     {0, 0},

@@ -1,5 +1,6 @@
 import { pixelGlow as glow } from '../render/fx.mjs';
 import { SHOT } from './scene.mjs';
+import { missile } from './missile-fx.mjs';
 import { band, dottedRing, px } from './draw-kit.mjs';
 
 // One painter per hostile shot family: (ctx, art, shot, time, flicker) where `flicker`
@@ -20,13 +21,7 @@ export const SHOT_PAINTERS = {
         art.draw(ctx, 'shots', 'curve', s.x, s.y);
         glow(ctx, s.x, s.y, 7, '255,120,230', 0.35);
     },
-    [SHOT.missile](ctx, art, s, time, flicker) {
-        const tail = 8;
-        ctx.fillStyle = flicker ? '#ffcf70' : '#ff8a3a';
-        px(ctx, s.x - Math.cos(s.angle) * tail, s.y - Math.sin(s.angle) * tail, 2, 2);
-        px(ctx, s.x - Math.cos(s.angle) * (tail + 3), s.y - Math.sin(s.angle) * (tail + 3), 1, 1);
-        art.drawRotated(ctx, 'shots', 'missile', s.x, s.y, s.angle);
-    },
+    [SHOT.missile]: (ctx, art, s, time) => missile(ctx, s, time),
     [SHOT.mine]: (ctx, art, s, time) =>
         art.draw(
             ctx,

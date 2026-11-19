@@ -65,10 +65,13 @@ enum PartKind : uint8_t {
     PK_BUBBLE,
     PK_STAR,
     PK_ORB,
-    PK_SIGN, // a zodiac creature the Zodiarch threw (slot = sign 0..11)
-    PK_TAIL, // one of Ninefold's nine tails (slot = tail 0..8)
-    PK_DECOY
-}; // one of Ninefold's illusions
+    PK_SIGN,  // a zodiac creature the Zodiarch threw (slot = sign 0..11)
+    PK_TAIL,  // one of Ninefold's nine tails (slot = tail 0..8)
+    PK_DECOY, // one of Ninefold's illusions
+    PK_PLATE, // one of the Sentinel's plates (slot = plate 0..3)
+    PK_ENGINE // one of the Bastion's engines (slot 0 top, 1 bottom; state 1
+              // dead)
+};
 // BC_DEFLECT throws player shots and the laser back at whoever fired them.
 enum CircleType : uint8_t {
     BC_CORE,
@@ -82,9 +85,10 @@ enum {
     SA_FAN,
     SA_VOLLEY,
     SA_CROSS,
+    SA_THROW, // the plate throw (P4.1)
     RA_BURST = 10,
     RA_PRISM,
-    RA_PICK,
+    RA_HALO, // the halo lock (replaced the pick-off)
     RA_COLLAPSE,
     CA_LOB = 20,
     CA_JETS,
@@ -96,7 +100,7 @@ enum {
     CA_VENT,
     BA_CANNON = 30,
     BA_MISSILE,
-    BA_MINES,
+    BA_RAM, // the ramming run (replaced the mines)
     BA_BROAD,
     TA_SINE = 40,
     TA_TENDRIL,
@@ -149,6 +153,15 @@ struct BossSwim {
     float pull = 0, coil = 0, ext = 0, ext_a = 0;
     float trail[SWIM_TRAIL][2] = {};
     unsigned at = 0, n = 0;
+};
+
+// Ninefold's footwork (fights/ninefold/move.h): where it is, the move it is
+// making between perches (from, to, how far it has gone, at what pace) and
+// which way it faces.
+struct BossFox {
+    float x = 0, y = 0, fx = 0, fy = 0, tx = 0, ty = 0, dist = 0, speed = 0;
+    int gait = 0, face = -1, perch = 7, pose = -1, react = 0, last_atk = 0;
+    unsigned long phase_at = 0, react_at = 0;
 };
 
 struct BossShot {
@@ -238,7 +251,8 @@ struct BossState {
     float seg[28][3]
             = {}; // the Zodiarch's body: x, y, r per segment, neck first
     BossSwim swim
-            = {}; // the Zodiarch's steering and the trail its body follows
+            = {};     // the Zodiarch's steering and the trail its body follows
+    BossFox fox = {}; // Ninefold's footwork
     float block_fx[4][3]
             = {}; // shots stopped by a hard surface: x, y, incoming angle
     unsigned long block_at[4] = {};
