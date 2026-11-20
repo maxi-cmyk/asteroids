@@ -75,6 +75,15 @@ void web_step(int raw_x, int raw_y, int fire, int click, int pause) {
 #endif
     sound_update();
 }
+// The two clocks a run starts from: a replay restores them on a fresh engine
+// (nextSteps.md R3). Nothing else survives from earlier runs.
+unsigned long web_clock(int which) {
+    return which ? visual_ms : browser_ms;
+}
+void web_set_clock(unsigned long browser, unsigned long visual) {
+    browser_ms = browser;
+    visual_ms = visual;
+}
 void web_audio_step() {
     sound_advance(FRAME_TIME_MS);
 }

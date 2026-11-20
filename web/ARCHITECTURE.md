@@ -9,11 +9,13 @@ web/
   src/                 browser code (copied as-is to dist/src)
     main.mjs           boots the App
     app/               composition root, game loop, input, menus, routing
-    runtime/           the engine as the UI sees it: WASM host, runs, scene layout
+    runtime/           the engine as the UI sees it: WASM host, runs, scene layout, seeded
+                       randomness (rng.mjs) and replays (replay.mjs)
     render/            canvas rendering: renderer, layers, backgrounds, effects
     boss/              boss presentation: scene decoding, painters, death, sound, UI
     screens/           one module per screen (DOM rendering and wiring)
-    state/             persisted state: settings, records, hangar, navigation
+    state/             persisted state: settings, records, hangar, navigation, and the one
+                       save that bundles them for export, import and merging (save.mjs)
     input/             controllers, keyboard/pad bindings, co-op input, calibration
     audio/             sound effects and music
     demo/              the isolated Home demo run

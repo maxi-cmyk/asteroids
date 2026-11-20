@@ -119,6 +119,7 @@ export class App {
             getRuntime: () => this.runtime,
             profileStore: this.profileStore,
             draw: () => this.draw(),
+            storage: this.storage,
         });
     }
 

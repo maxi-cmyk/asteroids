@@ -53,7 +53,9 @@ createServer(async (request, response) => {
             return;
         }
         const file = found.page ? 'index.html' : found.file;
-        const bytes = found.page ? Buffer.from(assembleHtml()) : await readFile(file);
+        const bytes = found.page
+            ? Buffer.from(assembleHtml(undefined, { developer: true }))
+            : await readFile(file);
         const headers = {
             'Content-Type': types[extname(file)] || 'application/octet-stream',
             'Cache-Control': 'no-store',

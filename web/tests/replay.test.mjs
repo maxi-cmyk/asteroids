@@ -1,0 +1,162 @@
+// Replays (nextSteps.md R3): a recorded run, played on a fresh engine, matches the live run
+// scene for scene, even when the live engine had already been used for other runs.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { createRuntime } from '../src/runtime/runtime.mjs';
+import { playReplay, sceneHash, engineFingerprint } from '../src/runtime/replay.mjs';
+import { SeededRandom } from '../src/runtime/rng.mjs';
+
+const bytes = await readFile(new URL('../dist/game.wasm', import.meta.url));
+const memory = () => {
+    const values = new Map();
+    return {
+        getItem: (k) => values.get(k) ?? null,
+        setItem: (k, v) => values.set(k, String(v)),
+        removeItem: (k) => values.delete(k),
+    };
+};
+// A scripted pilot: wandering stick, bursts of fire, the laser now and then. Its own
+// generator, so the inputs are the same on every run of the test.
+function pilot(seed) {
+    let s = seed >>> 0;
+    const r = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 2 ** 32;
+    let x = 2048,
+        y = 2048,
+        tick = 0;
+    return () => {
+        tick++;
+        x = Math.max(0, Math.min(4095, x + (r() - 0.5) * 700));
+        y = Math.max(0, Math.min(4095, y + (r() - 0.5) * 700));
+        return {
+            x: Math.round(x),
+            y: Math.round(y),
+            fire: tick % 40 < 28,
+            firePressed: tick % 40 === 0,
+            aimX: Math.cos(tick / 50),
+            aimY: Math.sin(tick / 37) * 0.6,
+            laser: tick % 400 > 380,
+        };
+    };
+}
+const hashOf = (g) => sceneHash(g.host.memory, g.api.web_scene());
+
+async function usedEngine() {
+    const g = await createRuntime(bytes, { storage: memory() });
+    // Use it first: a solo run and a co-op run that are thrown away.
+    g.start(false);
+    const warm = pilot(7);
+    for (let i = 0; i < 900; i++) g.step(warm());
+    g.abandon();
+    g.startCoop({ friendlyFire: true });
+    for (let i = 0; i < 400; i++) g.step({ players: [warm(), warm()] });
+    g.abandon();
+    for (let i = 0; i < 60; i++) g.step({});
+    return g;
+}
+
+test('a boss-practice run replays on a fresh engine, tick for tick', async () => {
+    const g = await usedEngine();
+    g.bossAssist({ longWarnings: true, calm: false });
+    g.start(true);
+    g.bossPractice(2, 1, 1);
+    const input = pilot(42);
+    const live = [];
+    for (let i = 0; i < 3000; i++) {
+        g.step(input());
+        live.push(hashOf(g));
+    }
+    g.menu(); // ends the practice run, which finishes its replay
+    const replay = JSON.parse(JSON.stringify(g.replay)); // survives being stored as JSON
+    assert.equal(replay.engine, engineFingerprint(bytes));
+    assert.equal(replay.rules.practice, true);
+    const played = await playReplay(bytes, replay);
+    assert.equal(played.ticks, 3000);
+    const first = played.hashes.findIndex((h, i) => h !== live[i]);
+    assert.equal(first, -1, `replay diverged at tick ${first}`);
+    // A different seed is a different run.
+    const other = await playReplay(bytes, { ...replay, seed: 'f'.repeat(32) });
+    assert.notEqual(other.final, played.final);
+});
+
+test('a solo run and a co-op run replay to the same scenes', async () => {
+    const g = await usedEngine();
+    g.start(false);
+    const input = pilot(5);
+    const solo = [];
+    for (let i = 0; i < 5000 && g.recorder.run; i++) {
+        g.step(input());
+        solo.push(hashOf(g));
+    }
+    assert.equal(g.recorder.run, null, 'the scripted pilot should lose the run');
+    const soloPlayed = await playReplay(bytes, g.replay);
+    assert.equal(soloPlayed.ticks, solo.length);
+    assert.equal(
+        soloPlayed.hashes.findIndex((h, i) => h !== solo[i]),
+        -1,
+    );
+    // An abandoned run keeps no replay of its own.
+    const finished = g.replay;
+    g.start(false);
+    for (let i = 0; i < 50; i++) g.step(input());
+    g.abandon();
+    assert.equal(g.replay, finished);
+
+    g.startCoop({ friendlyFire: false });
+    const a = pilot(11),
+        b = pilot(12);
+    const coop = [];
+    for (let i = 0; i < 2500; i++) {
+        g.step({ players: [a(), b()] });
+        coop.push(hashOf(g));
+        if (g.api.web_state() === 6) break;
+    }
+    // End the tape as a finished run would.
+    g.replays.finish();
+    const played = await playReplay(bytes, g.replay);
+    assert.equal(played.ticks, coop.length);
+    assert.equal(
+        played.hashes.findIndex((h, i) => h !== coop[i]),
+        -1,
+    );
+});
+
+test('runs of identical ticks are stored once', async () => {
+    const g = await createRuntime(bytes, { storage: memory() });
+    g.start(true);
+    for (let i = 0; i < 1000; i++) g.step({}); // nobody touches anything
+    g.menu();
+    assert.ok(g.replay.ticks.length < 20, `${g.replay.ticks.length} groups`);
+    assert.ok(JSON.stringify(g.replay).length < 4000);
+});
+
+test('replays refuse another build, a bad seed and an unknown format', async () => {
+    const g = await createRuntime(bytes, { storage: memory() });
+    g.start(true);
+    for (let i = 0; i < 10; i++) g.step({});
+    g.menu();
+    const r = g.replay;
+    await assert.rejects(playReplay(bytes, { ...r, engine: 'deadbeef' }), /another build/);
+    await assert.rejects(playReplay(bytes, { ...r, seed: 'x' }), /seed/);
+    await assert.rejects(playReplay(bytes, { ...r, format: 9 }), /format/);
+});
+
+test('the seeded generator is the same sequence on every runtime', () => {
+    const r = new SeededRandom('0123456789abcdef0123456789abcdef');
+    const values = Array.from({ length: 5 }, () => r.next());
+    // Fixed values: if these change, every stored replay breaks.
+    assert.deepEqual(values, [3530455095, 2738071380, 2303632856, 2328069915, 2463861768]);
+    r.reseed('0123456789abcdef0123456789abcdef');
+    assert.deepEqual(
+        Array.from({ length: 5 }, () => r.next()),
+        values,
+    );
+});
+
+test('the cross-runtime check agrees with itself in Node (compare with dev/replay.html)', async () => {
+    const { replayCheck } = await import('../dev/replay-check.mjs');
+    const result = await replayCheck(bytes);
+    console.log('replay check (Node):', JSON.stringify(result));
+    assert.equal(result.live, result.replay);
+    assert.equal(result.ticks, 3000);
+});

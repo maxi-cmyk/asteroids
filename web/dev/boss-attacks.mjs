@@ -70,36 +70,98 @@ const playAttack = (kind, entry, part) => {
     else s.play(kind, entry.release[0], entry.release[1]);
 };
 
-async function photograph(kind, entry) {
+// One deterministic run of an attack's fight: the same seed and the same scripted pilot every
+// time, so a tile's photo and its Charge / Release clips show the same moment.
+async function fight(kind, entry, canvas, reduced) {
     let seed = 4000 + kind * 17 + entry.id;
     const game = await createRuntime(bytes, {
         random: () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0),
     });
     game.start(true);
     game.bossPractice(kind, 0, entry.phase);
+    const renderer = new PixelRenderer(canvas, art);
+    renderer.reduced = reduced;
+    await Promise.all([renderer.bossArt.load(KINDS[kind].region), renderer.bossArt.load('shots')]);
+    return {
+        game,
+        renderer,
+        // Walk the ship to a readable spot, then hold still.
+        step() {
+            const scene = game.scene();
+            game.step({
+                x: scene[S.SHIP_X] < 110 ? 2048 + 1500 : 2048,
+                y: scene[S.SHIP_Y] < 145 ? 2048 + 1200 : scene[S.SHIP_Y] > 155 ? 2048 - 1200 : 2048,
+                aimX: 1,
+                aimY: 0,
+            });
+            return bossState(game.scene());
+        },
+    };
+}
+
+// Runs the fight until the attack reads best and photographs it. Also notes the tick the
+// attack started on, so the clips can begin there.
+async function photograph(kind, entry) {
     const canvas = document.createElement('canvas');
     canvas.width = 480;
     canvas.height = 270;
-    const renderer = new PixelRenderer(canvas, art);
-    renderer.reduced = true;
-    await Promise.all([renderer.bossArt.load(KINDS[kind].region), renderer.bossArt.load('shots')]);
+    const { game, renderer, step } = await fight(kind, entry, canvas, true);
+    let start = -1;
     for (let tick = 0; tick < 14000; tick++) {
-        const scene = game.scene();
-        // Walk the ship to a readable spot, then hold still.
-        game.step({
-            x: scene[S.SHIP_X] < 110 ? 2048 + 1500 : 2048,
-            y: scene[S.SHIP_Y] < 145 ? 2048 + 1200 : scene[S.SHIP_Y] > 155 ? 2048 - 1200 : 2048,
-            aimX: 1,
-            aimY: 0,
-        });
-        const b = bossState(game.scene());
-        if (b.attack === entry.id && b.attackMs >= entry.at && b.stage >= entry.phase) {
-            renderer.render(game.scene());
-            return canvas;
-        }
+        const b = step();
+        const ours = b.attack === entry.id && b.stage >= entry.phase;
+        if (!ours) start = -1;
+        else if (start < 0) start = tick;
+        if (ours && b.attackMs >= entry.at) break;
     }
     renderer.render(game.scene());
-    return canvas;
+    const photo = document.createElement('canvas');
+    photo.width = 480;
+    photo.height = 270;
+    photo.getContext('2d').drawImage(canvas, 0, 0);
+    return { canvas, photo, start };
+}
+
+// Plays the charge (the warning) or the release (the attack itself) in the tile, live, with
+// its sound, then puts the photo back. A second press while one plays restarts it.
+const clips = new WeakMap();
+async function playClip(kind, entry, part, tile) {
+    clips.set(tile.canvas, (clips.get(tile.canvas) ?? 0) + 1);
+    const mine = clips.get(tile.canvas);
+    if (tile.start < 0) {
+        playAttack(kind, entry, part);
+        return;
+    }
+    const warnTicks = Math.round((WARN[entry.id] ?? 0.8) * 50);
+    const from = part === 'charge' ? tile.start : tile.start + warnTicks;
+    const length = part === 'charge' ? warnTicks : 75;
+    const { game, renderer, step } = await fight(kind, entry, tile.canvas, false);
+    // Fast-forward to the clip, drawing the last second so trails and flashes have a past.
+    for (let tick = 0; tick < from; tick++) {
+        step();
+        if (tick >= from - 50) renderer.render(game.scene());
+    }
+    playAttack(kind, entry, part);
+    let previous = null,
+        played = 0,
+        carry = 0;
+    await new Promise((resolve) => {
+        const frame = (now) => {
+            if (clips.get(tile.canvas) !== mine) return resolve();
+            carry += previous === null ? 20 : Math.min(100, now - previous);
+            previous = now;
+            while (carry >= 20 && played < length) {
+                carry -= 20;
+                step();
+                played++;
+            }
+            renderer.render(game.scene());
+            if (played < length) requestAnimationFrame(frame);
+            else setTimeout(resolve, 400);
+        };
+        requestAnimationFrame(frame);
+    });
+    if (clips.get(tile.canvas) === mine) tile.canvas.getContext('2d').drawImage(tile.photo, 0, 0);
 }
 
 const tileCanvases = new Map();
@@ -197,8 +259,9 @@ async function build() {
         }
         for (const entry of boss.attacks) {
             status.textContent = `Photographing ${info.name} · ${entry.name}…`;
-            const canvas = await photograph(boss.kind, entry);
-            tileCanvases.set(`${boss.kind}:${entry.id}`, canvas);
+            const tile = await photograph(boss.kind, entry);
+            const { canvas } = tile;
+            tileCanvases.set(`${boss.kind}:${entry.id}`, tile.photo);
             const figure = document.createElement('figure');
             const caption = document.createElement('figcaption');
             caption.innerHTML =
@@ -217,7 +280,7 @@ async function build() {
                 const button = document.createElement('button');
                 button.textContent = label;
                 button.addEventListener('click', () => {
-                    playAttack(boss.kind, entry, part);
+                    playClip(boss.kind, entry, part, tile);
                 });
                 caption.querySelector('.row').append(button);
             }

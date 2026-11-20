@@ -38,6 +38,8 @@ bool browser_fire = false, browser_click = false;
 static bool browser_fire_edge = false;
 static unsigned long visual_ms = 0;
 
+#include "mathf.h"
+
 extern "C" void *memcpy(void *dest, const void *src, size_t count) {
     auto *d = (uint8_t *)dest;
     auto *s = (const uint8_t *)src;

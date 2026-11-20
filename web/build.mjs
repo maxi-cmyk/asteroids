@@ -41,6 +41,8 @@ const exports = [
     'web_fire_diagnostics',
     'web_step',
     'web_audio_step',
+    'web_clock',
+    'web_set_clock',
     'web_pixels',
     'web_offset',
     'web_state',
@@ -141,9 +143,9 @@ const result = spawnSync(clang, args, {
 if (result.error) throw result.error;
 if (result.status !== 0) process.exit(result.status || 1);
 const output = resolve(root, 'dist', `${outputName}.wasm`);
+// sinf and cosf are the engine's own (native/mathf.h): no float may enter from the host, so
+// every runtime plays the same inputs out the same way.
 const allowedImports = new Set([
-    'sinf',
-    'cosf',
     'browser_random',
     'browser_tone',
     'browser_storage_read',
@@ -164,14 +166,30 @@ if (!test && !oled) {
     // index.html is a template: each `<!-- @include html/name.html -->` line is replaced by that
     // partial, so every screen's markup lives in its own file.
     writeFileSync(resolve(root, 'dist/index.html'), assembleHtml(resolve(root, 'index.html')));
-    for (const folder of ['src', 'styles', 'dev']) {
+    for (const folder of ['src', 'styles']) {
         rmSync(resolve(root, 'dist', folder), { recursive: true, force: true });
         cpSync(resolve(root, folder), resolve(root, 'dist', folder), { recursive: true });
     }
-    for (const page of readdirSync(resolve(root, 'dev')).filter((name) => name.endsWith('.html'))) {
-        copyFileSync(resolve(root, 'dev', page), resolve(root, 'dist', page));
-        rmSync(resolve(root, 'dist/dev', page));
-    }
+    // Files no current build writes are leftovers from older layouts: remove them so they
+    // can never be deployed.
+    const outputs = new Set([
+        'gen',
+        'src',
+        'styles',
+        'assets',
+        'index.html',
+        'style.css',
+        'theme.css',
+    ]);
+    outputs.add('THIRD-PARTY-LICENSE.txt');
+    for (const entry of readdirSync(resolve(root, 'dist')))
+        if (!outputs.has(entry) && !/\.(wasm|o)$/.test(entry))
+            rmSync(resolve(root, 'dist', entry), { recursive: true, force: true });
+    // Developer pages (storyboards, state sheets, replays, stress) never ship: they are served
+    // live from dev/ by the local dev server only. Remove copies an older build left behind.
+    rmSync(resolve(root, 'dist/dev'), { recursive: true, force: true });
+    for (const page of readdirSync(resolve(root, 'dev')).filter((name) => name.endsWith('.html')))
+        rmSync(resolve(root, 'dist', page), { force: true });
     cpSync(resolve(root, 'assets'), resolve(root, 'dist/assets'), {
         recursive: true,
         // Notes, reference sheets, art inspiration (third-party, reference only) and approval
@@ -184,5 +202,31 @@ if (!test && !oled) {
         resolve(root, 'vendor/LICENSE.txt'),
         resolve(root, 'dist/THIRD-PARTY-LICENSE.txt'),
     );
+}
+if (!test && !oled) {
+    // Nothing developer-only or third-party may ship (nextSteps.md R6): no dev pages, no
+    // approval drafts or art inspiration, no test engines, no developer screen in the page.
+    const shipped = (dir, base = '') =>
+        readdirSync(resolve(root, 'dist', dir), { withFileTypes: true }).flatMap((e) =>
+            e.isDirectory()
+                ? shipped(`${dir}/${e.name}`, `${base}${e.name}/`)
+                : [`${base}${e.name}`],
+        );
+    const files = shipped('.');
+    const banned = files.filter(
+        (f) =>
+            /^dev\//.test(f) ||
+            /(^|\/)assets\/(inspo|screenshots)\//.test(f) ||
+            /(^|\/)assets\/bosses\/(draft-|attacks-)/.test(f) ||
+            readdirSync(resolve(root, 'dev')).includes(f),
+    );
+    if (banned.length)
+        throw new Error(`Release build would ship: ${banned.slice(0, 5).join(', ')}`);
+    if (
+        /data-view="developer"|data-go="developer"/.test(
+            readFileSync(resolve(root, 'dist/index.html'), 'utf8'),
+        )
+    )
+        throw new Error('Release page would contain the developer tools');
 }
 console.log(`Built ${outputName}.wasm from production C17/C++ sources.`);

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Asteroids — Replays</title>
+  <style>
+    :root { color-scheme:dark; }
+    body { margin:0; background:#080d1c; color:#eef2ff; font:15px/1.45 ui-monospace, monospace; }
+    main { max-width:1500px; margin:0 auto; padding:16px 20px 40px; }
+    h1 { font-size:22px; margin:0 0 6px; color:#ffc88a; }
+    h2 { font-size:17px; margin:22px 0 6px; color:#ffc88a; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:10px 0; }
+    button, input { font:inherit; color:#eef2ff; background:#16224a; border:2px solid #33447f; padding:3px 10px; cursor:pointer; }
+    canvas { display:block; width:100%; max-width:1440px; aspect-ratio:16/9; image-rendering:pixelated; background:#000; }
+    pre { background:#0f1830; border:2px solid #33447f; padding:10px; overflow:auto; }
+    .note { color:#aab6dc; max-width:80ch; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Replays</h1>
+  <p class="note">A run is its seed plus every engine call from its start (nextSteps.md R3). <b>Check this browser</b> records a scripted Zodiarch fight and replays it on a fresh engine; the hashes must match each other and the ones Node prints (<code>node --test tests/replay.test.mjs</code>) for the same <code>game.wasm</code>. <b>Watch</b> plays a saved replay (<code>.json</code>) with the game's renderer.</p>
+  <h2>Check this browser</h2>
+  <div class="row"><button id="check">Check this browser</button></div>
+  <pre id="result">Not run yet.</pre>
+  <h2>Watch a replay</h2>
+  <div class="row">
+    <input id="file" type="file" accept=".json,application/json">
+    <button id="pause">Pause</button>
+    <span id="status"></span>
+  </div>
+  <canvas id="stage" width="480" height="270"></canvas>
+</main>
+<script type="module" src="./dev/replay.mjs"></script>
+</body>
+</html>

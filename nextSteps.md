@@ -23,8 +23,8 @@ S7 Modifiers · S8 ESP32 handheld · Standing rules · Open decisions · Tools
 | --- | --- | --- | --- | --- |
 | **v0.3** | R1 | Playtest the upgraded bosses and tune from the logs | people | M |
 | v0.3 | R2 | Boss leftovers that playtesting asks for (P3, P2.1, P2.2 remainders) | R1 | S to L |
-| v0.3 | R3 | **Deterministic engine**: own `sinf`/`cosf`, recorded seed, replays | none | M |
-| v0.3 | R4 | One save format: versioned, exportable, mergeable | none | S |
+| v0.3 | R3 | **Built 2026-11-19.** Deterministic engine: own `sinf`/`cosf`, seeded runs, replays | none | M |
+| v0.3 | R4 | **Built 2026-11-19.** One save format: versioned, exportable, mergeable | none | S |
 | v0.3 | R5 | Version, build id and changelog | none | S |
 | v0.3 | R6 | Release checks: music rights, shipped files, Safari and mid-laptop stress, accessibility | none | M |
 | v0.3 | R7 | Modularise leftovers that the network code will touch (M2, M6, M7) | none | M |
@@ -32,8 +32,8 @@ S7 Modifiers · S8 ESP32 handheld · Standing rules · Open decisions · Tools
 | v0.3.x | S2 | Maximum-combo bonuses (in the engine before the protocol is frozen) | R3 recommended | M |
 | **v0.4** | S3 | Network foundation: headless engine, snapshot codec, protocol | R3, R4 | L |
 | v0.4 | S4 | LAN co-op on two machines | S3 | XL |
-| **v0.5** | W1 | Public static site: solo and local co-op, no server | R6 | S |
-| v0.5 | W2 | Online rooms (the LAN server in a container) | S4 | L |
+| **v0.5** | W1 | Public site on Vercel: solo and local co-op, no server | R6 | S |
+| v0.5 | W2 | Online rooms on Railway (the LAN server in a container, Redis beside it) | S4 | L |
 | v0.5 | W3 | Accounts, cloud saves and verified leaderboards (optional, decide first) | W2, R3, R4 | L |
 | later | S6 | Versus | S4 (W2 for online) | M |
 | later | S7 | Run modifiers | S2 | M |
@@ -48,8 +48,8 @@ touches the network code and can start any time after S2.
 ## v0.3 release: what to finish before scaling
 
 The bosses are done but not yet proven on people, and a few things are much cheaper to do now
-than after other machines, servers or accounts depend on them. **R3 and R4 are the two I would
-not skip:** both change formats that the network and the cloud would otherwise freeze.
+than after other machines, servers or accounts depend on them. R3 and R4 (the two formats the
+network and the cloud would otherwise freeze) are built.
 
 ### R1. Playtest and tune (was S0)
 
@@ -93,51 +93,60 @@ not skip:** both change formats that the network and the cloud would otherwise f
 - [ ] **Optional, unscheduled (P2.3):** Ascendant (the sign of today's date is thrown first);
   a boss backstop barrier, only if playtesting still finds a safe spot behind a boss.
 
-### R3. Deterministic engine (new; recommended before any network code)
+### R3. Deterministic engine (built 2026-11-19)
 
-**Why now.** The engine takes `sinf` and `cosf` from the browser
-(`web/src/runtime/wasm-host.mjs`: `sinf: Math.sin, cosf: Math.cos`), and V8 and
-JavaScriptCore can disagree in the last bit. That one import is the only reason two machines
-fed the same inputs can drift apart. Everything else is already deterministic: WebAssembly
-float arithmetic is exact IEEE, `sqrtf` is a WASM instruction, and randomness already comes
-through one import (`browser_random`) that can be seeded.
+**Built.** A run is now its seed plus its engine calls, and plays out the same everywhere:
+- **Own maths:** `web/native/mathf.h` gives the engine its own `sinf`/`cosf` (double-precision
+  fdlibm kernels, only `rint` and `floor` besides arithmetic, all exact in WebAssembly); the
+  `sinf`/`cosf` imports are gone and `build.mjs` refuses them. Over 4 million samples the
+  results equal `Math.fround(Math.sin(x))` exactly, so no golden moved and the bot is unchanged.
+- **Seeded runs:** `src/runtime/rng.mjs` (sfc32, integer-only) feeds `browser_random`; every
+  run reseeds it from `crypto.getRandomValues` (`start(practice, {seed})` and
+  `startCoop({seed})` can fix it). Tests that inject their own `random` keep working and
+  simply record no replay.
+- **Replays:** `src/runtime/replay.mjs` records every state-changing engine call from the start
+  of a run (runs of identical ticks stored once), plus the build fingerprint, the seed, the
+  leaderboard bytes the engine read, the boss assists, and the two engine clocks
+  (`web_clock` / `web_set_clock`, new exports: they were the only state that survived from
+  earlier runs). `runtime.replay` holds the last finished run; an abandoned run keeps none.
+  `ReplayPlayer` plays one on a fresh engine a tick at a time; `playReplay` all at once.
+- **Checked:** `tests/replay.test.mjs` replays boss-practice, solo and co-op runs recorded on an
+  engine that had already played other runs, and matches the live scene every tick. The
+  cross-runtime check (`dev/replay-check.mjs`: a 60 s Zodiarch fight, fixed seed, integer-only
+  inputs) gives the same hash, `d1fcbccb` for engine `ea84b9aa33b0a`, in Node, Chrome (the
+  browser pane) and JavaScriptCore (Safari's engine, run through macOS's `jsc`).
+- **Dev page:** `replay.html` runs that check in any browser and plays a saved replay with the
+  real renderer.
 
-Fixing it costs one small C file. It does not change the plan for the network (the server
-stays the one authority, decision N1), but it gives:
-- **Replays:** a run is its seed plus its input frames, a few kB.
-- **Leaderboards you can trust** (W3): the server re-simulates a submitted solo replay
-  instead of believing a score.
-- **Desync checks in S4:** client and server can compare a hash of the state each second.
-- **Better tests:** a recorded fight replays to the same score on Node, Chrome and Safari.
+Still open:
+- [ ] Run the check once in Safari itself and in Firefox (`replay.html`), and note it in
+  `docs/ACCEPTANCE.md`.
+- [ ] **Replay size:** 60 s of constant stick movement is about 240 kB of JSON (every tick
+  differs). Before replays are uploaded (W3), store per-tick deltas in a compact binary form
+  and cap the length.
+- [ ] A way for players to keep a replay (a "Save replay" button on Results) once there is a
+  use for it (sharing, W3 leaderboards).
+- [ ] The ESP32 build keeps its own `sinf` (nothing shared changed; `tests/run_host.sh` passes).
 
-- [ ] `web/native/mathf.h`: `sinf`/`cosf` (range reduction plus a minimax polynomial;
-  within about 2e-7 of `Math.sin` is plenty, exact last-bit
-  agreement with any browser is not the goal), replacing the import.
-  Check every other `env` import for floats coming in from JavaScript.
-- [ ] Goldens and bot numbers will move slightly: one commit, goldens updated, bot times
-  re-measured.
-- [ ] Seed the run: `browser_random` draws from a seeded generator (one 64-bit seed per run,
-  from `crypto.getRandomValues` as now), and the seed goes into the run record.
-- [ ] Input recording: the session records `{tick, stick, aim, buttons}` per tick
-  (run-length coded); a replay feeds them back. A dev page plays a replay.
-- [ ] Test: a recorded boss fight replays to the identical final scene hash in Node and in the
-  browser pane (Chrome) and Safari.
-- [ ] The ESP32 build keeps its own `sinf` (shared `src/*.cpp` must still compile there).
+### R4. One save format (built 2026-11-19)
 
-### R4. One save format
-
-Today the game keeps ten separate `localStorage` keys (`asteroids.web.scores-v3`,
-`personal-bests-v1`, `boss-defeats-v1`, `unlocks-v1`, `hangar-v1`, `settings-v1`, two co-op
-score tables, the HD table and the fight log). Cloud saves (W3) and a "move to another
-computer" button both need them as one thing.
-- [ ] A `save` module that reads and writes all of them as one versioned object
-  (`{format: 1, profiles, records, bossDefeats, unlocks, hangar, settings}`), keeping the
-  existing keys underneath so nothing is lost.
-- [ ] **Merge rule** (needed for the cloud): records and unlocks only ever grow, so merging
-  two saves is the larger of each best and the union of unlocks; settings take the newer
-  copy. Write it as a pure function with tests, since W3 reuses it on the server.
-- [ ] Settings → Data: **Export save** (a `.json` download) and **Import save** (validated,
-  merged, never a silent overwrite). The fight log stays separate (it is a dev tool).
+**Built.** `src/state/save.mjs` reads every part a browser keeps as one versioned object
+(`format: 1`): the HD and OLED top-five tables, both co-op tables, personal bests, boss
+defeats, unlocks, equipped hulls and settings (the fight log stays out; it is a dev tool).
+The parts keep their own storage keys, so no module changed how it loads.
+- **Validation:** an imported file is written into scratch storage and read back through each
+  module's own validator, so a bad part is dropped and the rest kept; files over 512 kB or not
+  from this game are refused.
+- **Merge rule** (`mergeSaves`, pure, reused by W3): bests take the larger value per metric,
+  accuracy the better ratio (50 shots or more), top-five tables the best five of both with
+  duplicates once, unlocks the union, boss defeats the larger count (not the sum, so merging
+  the same save twice changes nothing). Settings, hulls and the active profile come from one
+  side. Tested for order independence and idempotence.
+- **Writing** is all or nothing: if storage refuses any part, the earlier parts are put back.
+- **UI:** Records → **Export save** downloads `asteroids-save-<date>.json`; **Import save…**
+  shows what the file holds, merges it on confirm (keeping this browser's settings) and
+  reloads. Checked in the browser pane with a test save.
+- Tests: `tests/save.test.mjs`.
 
 ### R5. Version and build id
 
@@ -149,8 +158,16 @@ computer" button both need them as one thing.
 ### R6. Release checks (needed before anything is public)
 
 - [ ] **Music rights** (open decision 8): confirm or replace every supplied track before W1.
-- [ ] **What ships:** `dist/` contains no `assets/inspo/`, no `assets/bosses/draft-*`, no dev
-  pages and no test builds. Add a build check that fails if any of them appear.
+- [x] **What ships (2026-11-19):** the release build no longer copies the dev pages, leaves
+  the developer screen and its footer button out of the page (`<!-- @include-dev -->` and
+  `<!-- @dev -->` blocks in `tools/assemble-html.mjs`; `#developer` goes Home), removes stale
+  files older layouts left in `dist/`, and fails if a dev page, `assets/inspo/`,
+  `assets/bosses/draft-*` or the developer screen would ship. Developer tools exist only on
+  the local dev server (`serve.mjs`, bound to 127.0.0.1).
+- [ ] **Test engines stay out of a deploy:** `dist/` also holds `test.wasm`, `oled-test.wasm`
+  (state-editing hooks), `*.o` and `gen/` for the tests. The W1 deploy must upload only
+  `index.html`, `style.css`, `theme.css`, `src/`, `styles/`, `assets/`, `game.wasm` and the
+  licence file (or the build writes those to their own folder).
 - [ ] **Stress run on a mid laptop and in Safari** (`npm run stress`). Budget: 60 fps, no
   frame over 25 ms. Record the result in `docs/ACCEPTANCE.md`.
 - [ ] **Accessibility pass:** reduced motion, colour-blind readability of every boss warning
@@ -235,8 +252,9 @@ using one rules engine and one codebase:
 
 Rules: the lobby never shows an option that does not work yet (Local first, then LAN,
 then Online); the server image for Online is the same program as `npm run host`, so LAN
-and Online cannot drift apart; the game page can be served by that server (default) or
-from a static host with a **server URL** setting (see S5.1).
+and Online cannot drift apart. On LAN that server also serves the page (same origin); online
+the page comes from Vercel and connects to the room server at `wss://rooms.<domain>/ws`
+(decision N3 in `docs/NETWORK-AND-SECURITY.md`).
 
 ---
 
@@ -296,7 +314,7 @@ thin renderer fed scenes.
 - [ ] Confirm which parts of the engine need the browser (audio, storage bridge, records)
   and give each a no-op or server-side implementation.
 
-**S3.2 Scene completeness audit.**
+**S3.2 Scene completeness audit** (starting list of known cases in `docs/NETWORK-AND-SECURITY.md` §7).
 - [ ] Verify the scene alone is enough to render everything and to drive every sound cue.
   List what is derived from local state today (hit blips, score pops, pickup sounds,
   boss cues) and move any missing facts into the scene or into an **event list** appended
@@ -319,7 +337,7 @@ thin renderer fed scenes.
 - [ ] Define the server-side input delay buffer (one tick) and what happens when an input
   is late (repeat the last, never stall the room).
 
-**S3.5 Write `docs/NET-PROTOCOL.md`** (decisions N1–N10 and S1–S14 live in `docs/NETWORK-AND-SECURITY.md`; settle the open ones first). Message list with version byte, hello / join / ready
+**S3.5 Write `docs/NET-PROTOCOL.md`** (decisions N1–N12 and S1–S17 live in `docs/NETWORK-AND-SECURITY.md`; settle the open ones first). Message list with version byte, hello / join / ready
 / start / input / snapshot / event / pause / ping / leave / error, build hash for the
 compatibility check, size limits, and the reconnect handshake. Review before building S4.
 
@@ -404,8 +422,8 @@ each is useful on its own.
 
 | Step | What players get | Needs a server | Needs accounts | Running cost (late 2026, check before buying) |
 | --- | --- | --- | --- | --- |
-| **W1 Static site** | solo, practice, local co-op in any browser, records on that browser | no | no | free (Cloudflare Pages, Netlify or GitHub Pages); a domain is about $10–15 a year |
-| **W2 Online rooms** | co-op (later versus) with a friend anywhere, by room code | yes, always on | no | about $2–6 a month for one small Fly.io machine, or a $4–6 VPS |
+| **W1 Static site** | solo, practice, local co-op in any browser, records on that browser | no | no | free on Vercel Hobby (non-commercial use only; Pro is $20 a month); a domain is about $10–15 a year |
+| **W2 Online rooms** | co-op (later versus) with a friend anywhere, by room code | yes, always on | no | Railway Hobby: about $5 a month minimum, which counts toward usage (room service, Redis); more if rooms need more CPU |
 | **W3 Accounts** | progress on every device, global leaderboards | yes (W2's server) | yes | auth and database free tiers cover a hobby game; $0 to start |
 
 The game already runs entirely in the browser, so **W1 is a release, not a project**: build,
@@ -414,9 +432,17 @@ picture, so they come last and only if you want what they give.
 
 ### W1. Static site (solo and local co-op)
 
-- [ ] **Host:** Cloudflare Pages (recommended: free, global CDN, custom domain, headers file),
-  Netlify or GitHub Pages. Deploy `dist/` from CI on a tag.
-- [ ] **Headers:** `Content-Type: application/wasm` for `.wasm`; a strict
+- [ ] **Host: Vercel** (chosen 2026-11-19). A `vercel.json` at the repo root with
+  `buildCommand` (`cd web && npm ci && npm run build`), `outputDirectory` `web/dist`, and the
+  headers below. Vercel's build machines run Linux, so `web/build.mjs` must find `clang` and
+  `wasm-ld` there (it looks for Homebrew paths first): either install LLVM in the build
+  command, or (simpler) build `dist/` in GitHub Actions and deploy it with the Vercel CLI
+  (`vercel deploy --prebuilt`). Check which works before W1.
+- [ ] **Previews:** every push gets a preview URL. Turn on deployment protection for previews,
+  or keep them public deliberately; production deploys only from a tag.
+- [ ] **Plan:** Hobby is free but limited to non-commercial use; move to Pro if the game ever
+  takes money (ads, donations with perks, sales).
+- [ ] **Headers** (in `vercel.json`): `Content-Type: application/wasm` for `.wasm`; a strict
   `Content-Security-Policy` (`default-src 'self'`; no inline scripts, which also keeps the
   page dependency-free); `X-Content-Type-Options`, `Referrer-Policy`. Long cache lifetimes on
   hashed asset names, short on `index.html`, so an update never mixes old and new files.
@@ -432,14 +458,34 @@ picture, so they come last and only if you want what they give.
 
 ### W2. Online rooms (was S5; the full checklist follows)
 
-The S5 plan below stands. Vetting notes:
-- **Fly.io has no free tier any more** (a short trial only). The cheapest always-on
-  shared-cpu machine is about $2 a month, but shared CPUs get a guaranteed 6.25% of a core
-  with bursts. A 50 Hz tick loop is steady load, so measure the per-room tick cost in S3.1
-  first: if a room needs more than a few percent of a core, use a performance CPU or a VPS
-  (Hetzner, DigitalOcean) with dedicated cores, where the price is flat.
-- **Where the page comes from.** With W1 live, the page is on the static host and the game
-  server lives at its own address (`wss://play.<domain>/ws`). That is the "Server URL" case in
+Stack chosen 2026-11-19: **Vercel** for the page and API, **Railway** for the room server, **Redis**
+and (with W3) **Postgres**, all three in one Railway project. The S5 plan below stands with
+these notes:
+- **Railway has no sticky sessions** (its docs: nearest region, then a random replica). Two
+  players in one room must reach the same process, so the room service runs **one replica**.
+  To grow, add room *services* (`rooms-1`, `rooms-2`, or one per region), each with its own
+  domain, and keep a room directory in Redis (`room:<code>` → that service's URL) so a joiner
+  is sent to the right one. Never add replicas to a room service.
+- **Redis does the shared bookkeeping, not the game:** the room directory, rate-limit counters
+  (shared by every room server and every Vercel function, which cannot count on their own),
+  reconnect tokens with the 10 s grace as their TTL, and later a leaderboard cache. Room state
+  stays in the room server's memory (50 Hz is far too fast for Redis round trips) and saves and
+  runs go to Postgres (Redis can lose recent writes on a restart). Details:
+  `docs/NETWORK-AND-SECURITY.md` §1.
+- **Measure first.** S3.1's per-room tick cost decides the room service's CPU and `MAX_ROOMS`.
+  Railway bills CPU and memory by use, so a busy room server costs more than the $5 minimum.
+- **Private networking:** the room server reaches Redis and Postgres over Railway's private
+  network. Vercel functions are outside it, so they connect through Railway's public TCP proxy
+  with TLS and a password; keep those credentials in Vercel environment variables only.
+- **LAN needs no Redis:** `npm run host` keeps its directory and counters in memory. The server
+  takes a `REDIS_URL` and falls back to in-memory when it is missing, so one program serves both.
+- **Not on Vercel.** Vercel Functions now accept WebSockets, but a function cannot hold a room:
+  two players' sockets can land on different instances, nothing ticks between messages, and a
+  50 Hz loop is the most expensive thing to run under Vercel's active-CPU billing. Rooms stay a
+  long-lived Node process on Railway (the reasoning is in
+  `docs/NETWORK-AND-SECURITY.md` §1).
+- **Where the page comes from.** The page is on Vercel and the room server lives at its own
+  address (`wss://rooms.<domain>/ws`). That is the "Server URL" case in
   S5.1, so it becomes the default rather than the option: the server's `ALLOWED_ORIGINS` holds
   the site's origin, and the page's CSP `connect-src` allows the server.
 - **Room codes, no accounts** (S1, S2): W2 works without W3. A `ROOM_CREATE_KEY` is not usable
@@ -461,19 +507,21 @@ to play. If none of the three matters yet, skip W3; W1 and W2 work without it.
 
 | Option | What it is | For | Against |
 | --- | --- | --- | --- |
-| **Clerk + Postgres (Neon)** (recommended) | Hosted sign-in (email codes, Google, Apple, passkeys) with ready UI; a serverless Postgres database the game server talks to | Least auth code to write and secure; vanilla JS SDK, no framework needed; the server verifies Clerk's session token without a network call; Neon's free plan is enough for saves and boards and wakes on demand | Two vendors; Clerk's script loads from Clerk's domain (CSP must allow it, the page is no longer dependency-free); a production Clerk instance needs your own domain |
+| **Clerk + Railway Postgres** (recommended) | Hosted sign-in (email codes, Google, Apple, passkeys) with ready UI; Postgres in the same Railway project as the rooms and Redis | Least auth code to write and secure; vanilla JS SDK, no framework needed; the servers verify Clerk's session token without a network call; the database sits on the room server's private network | One more vendor (Clerk); a Railway database is billed by use and never sleeps; Clerk's script loads from Clerk's domain (CSP must allow it, the page is no longer dependency-free); a production Clerk instance needs your own domain |
 | **Supabase** | Auth and Postgres in one | One vendor, one dashboard; row-level security | Free projects pause after about a week without activity (a hobby game will be idle); the client library talks to the database from the browser, so every table needs correct row rules |
 | **Self-hosted** (Better Auth or similar, plus SQLite or Postgres on the W2 machine) | Your own auth library in the game server | No vendors, no per-user pricing | You own password resets, email sending, account recovery and their security; the most work and the most risk |
 
 Free-tier figures checked 2026-11-19 (third-party summaries; confirm on the vendors' own
-pricing pages before signing up): Clerk free to about 50,000 monthly retained users; Neon free
-plan 1 GB per project with compute that scales to zero; Supabase free 500 MB, 50,000 monthly
+pricing pages before signing up): Clerk free to about 50,000 monthly retained users; Railway
+Hobby about $5 a month minimum, counted toward usage; Supabase free 500 MB, 50,000 monthly
 users, pauses when idle.
 
-**Design (with Clerk + Neon):**
-- [ ] **Only the game server touches the database.** The browser signs in with Clerk and sends
-  its session token to the W2 server (on the WebSocket handshake and to a small `/api`); the
-  server verifies it and reads or writes Postgres. No database keys in the page.
+**Design (with Clerk + Railway Postgres):**
+- [ ] **Only servers touch the database.** The browser signs in with Clerk and sends its
+  session token to the **API** (Vercel Functions under `/api`, beside the page: saves,
+  boards, replay checks) and, for online play, to the room server on the WebSocket handshake.
+  Both verify it and read or write Postgres. The room server's database role may only insert
+  finished runs. No database keys in the page.
 - [ ] **Tables:** `players` (Clerk user id, initials, created), `saves` (player, R4 save JSON,
   format version, updated), `runs` (player, mode, rules key, score, seed, replay blob,
   verified, created), leaderboard views over `runs`. No email or name stored by the game:
@@ -484,8 +532,13 @@ users, pauses when idle.
 - [ ] **Leaderboards only from runs the server saw or re-ran.** A score typed into the page
   is worthless, so a board entry must be either an online run (W2, the server simulated it) or
   a solo run whose replay the server re-simulates (R3) to the same score. Replays are capped
-  in size and length, and re-simulation runs in a queue so it cannot starve live rooms.
+  in size and length; re-simulation runs in an API function (WASM under Node), so it never
+  touches the room server, with a per-player rate limit so it cannot run up the bill.
   Separate boards per rules key (mode, friendly fire, modifiers), as records are today.
+- [ ] **Developer role:** once accounts exist, developer tools on the live site (dev pages,
+  replay viewer, the fight log) are served only to accounts with a `developer` role (Clerk
+  public metadata, checked on the server for every dev request, never by hiding a button
+  alone). Until then they exist only on the local dev server.
 - [ ] **Names on public boards:** keep the three-letter initials (no free text, nothing to
   moderate; decision S6). If free names are ever wanted, they need a filter and a report
   button.
@@ -502,8 +555,8 @@ users, pauses when idle.
 - [ ] Account takeover is now in scope (Clerk handles passwords, codes and sessions; turn on
   bot protection and email verification).
 - [ ] New secrets: the Clerk secret key and the database URL, as platform secrets only.
-- [ ] Database backups (Neon's free plan keeps a short restore window; export weekly to
-  storage you own once there are real players).
+- [ ] Database backups (check what Railway's Postgres backups cover on your plan; export
+  weekly to storage you own once there are real players).
 - [ ] Rate limits on `/api` and on replay submission; replay size and length caps.
 
 ---
@@ -518,20 +571,20 @@ ticking 50 times a second, so it needs a host that keeps a process and WebSocket
 connections alive. Check current prices, regions and free-tier limits before choosing; they
 change often.
 
+**Chosen: Railway** (2026-11-19), with Redis and Postgres in the same project and Vercel for the
+page and API. Alternatives considered, kept for reference:
+
 | Service | Fit | Notes |
 | --- | --- | --- |
-| **Fly.io** (recommended first choice) | Very good | Runs a Dockerfile as a long-lived machine; WebSockets work; you pick regions near players, which matters for a real-time game; `fly.toml` config; easy to run one small machine |
-| **Railway** | Good, simplest | Deploy from GitHub or a Dockerfile; WebSockets work; minimal config; fewer region controls; usage-based billing |
-| **Render** | Good | Docker web service with WebSockets and automatic TLS; free instances sleep when idle, so use a paid always-on one for real rooms |
-| **Hetzner / DigitalOcean / any VPS** | Best value, most work | One small VM, Docker, Caddy for automatic TLS; you maintain the OS; cheapest for a steady load |
-| **Google Cloud Run / AWS ECS Fargate** | Possible | Containers with WebSockets, but scale-to-zero and request time limits fight in-memory rooms; set min instances 1 and max 1 |
-| **Cloudflare Durable Objects** | Possible, different design | Each room is a durable object and fits rooms well, but it means rewriting the server for Workers and driving the WASM engine from alarms; consider only if you outgrow a single container |
-| **Vercel / Netlify / Cloudflare Pages** | **Static pages only** | Vercel runs serverless functions that cannot hold a WebSocket server. They can host the built game page, with the game pointing at a server elsewhere |
+| **Railway** (chosen) | Good, simplest | Deploy from GitHub or a Dockerfile; WebSockets work; Redis and Postgres one click away on a private network; usage-based billing; **no sticky sessions**, so one replica per room service |
+| **Fly.io** | Very good | Long-lived machines in a region you pick; no free tier; a fallback if Railway's regions are too far from players |
+| **A VPS** (Hetzner, DigitalOcean) | Best value, most work | Flat price and dedicated cores; you maintain the OS; a fallback if rooms need a lot of CPU |
+| **Vercel** (chosen for the page and the API) | **Not for rooms** | Its functions accept WebSockets now, but cannot hold a shared, ticking room (see W2) |
 
 Recommended path: develop with `cloudflared` or `ngrok` tunnelling to your laptop, then
-deploy the container to **Fly.io or Railway**; fall back to a VPS if cost or control
-matters. Rooms live in one process, so run **one instance per region** at first; a room code
-should encode the region so a joiner reaches the right instance.
+deploy the container to Railway as one service with one replica, plus a Redis service. Add a
+second room service (another region, or more capacity) only when needed, through the Redis
+room directory.
 
 - [ ] **S5.1 Container and build.** Subtasks:
   - [ ] `Dockerfile`, multi-stage. Stage 1 (Debian or Ubuntu base) installs `clang`, `lld`
@@ -544,14 +597,17 @@ should encode the region so a joiner reaches the right instance.
   - [ ] `.dockerignore`: `node_modules`, `.pio`, `inspo`, `docs`, `tests`, screenshots and
     reference sheets, so the image stays small and secrets or local notes never ship.
   - [ ] Environment variables: `PORT`, `MAX_ROOMS`, `MAX_ROOMS_PER_IP`, `ALLOWED_ORIGINS`,
-    `LOG_LEVEL`, `REGION`, and a build id exposed to the version handshake. Defaults make
+    `LOG_LEVEL`, `REGION`, `PUBLIC_URL` (this service's own `wss://` address, written to the
+    room directory), `REDIS_URL` (optional: in-memory without it, as on LAN), `DATABASE_URL` (W3), and a build id exposed to the version handshake. Defaults make
     `docker run -p 4173:4173 asteroids` work for **LAN** too.
-  - [ ] Same-origin by default: the server serves the built page and the `/ws` endpoint, so
-    the client connects to `wss://<host>/ws` with no configuration. Add an optional
-    **Server URL** field in Online settings for a static-hosted page (Vercel, Netlify or
-    Cloudflare Pages) or a self-hosted server; check the CORS and origin rules.
-  - [ ] Per-service config files kept in `deploy/`: `fly.toml`, `railway.json` (or its
-    dashboard steps), `render.yaml`, and a `docker-compose.yml` with Caddy for a VPS.
+  - [ ] Origins: online, the page on Vercel connects to `wss://rooms.<domain>/ws` (built into
+    the release page; `ALLOWED_ORIGINS` on the server holds the site's origins). On LAN the
+    server serves the page itself and the client uses `ws://<same host>/ws`. An optional
+    **Server URL** field in Online settings lets someone point the page at a self-hosted
+    server (`wss://` only).
+  - [ ] Config kept in `deploy/`: `railway.json` (build from the Dockerfile, one replica, the
+    health check path, restart policy) and the Railway project's service list (rooms, Redis,
+    Postgres) written down as dashboard steps; `vercel.json` for the page.
   - [ ] CI (GitHub Actions): on a tag, run `npm run check` and host tests, build the image,
     push to GitHub Container Registry, then trigger the chosen host's deploy.
   - [ ] Keepalive: send a WebSocket ping about every 20 s so platform proxies with idle
@@ -569,8 +625,8 @@ should encode the region so a joiner reaches the right instance.
   with scripted bot clients (reuse the boss bot) to find the point where tick time slips,
   then size the instance (CPU matters more than memory).
 - [ ] **S5.6 Security pass.** Work through the checklist and tests in
-  `docs/NETWORK-AND-SECURITY.md` §5 and §7: origin check, message validation and rate limits, room
-  code entropy and join limits, per-IP and global caps, `ROOM_CREATE_KEY`, platform spend limit,
+  `docs/NETWORK-AND-SECURITY.md` §5 and §8: origin check, message validation and rate limits, room
+  code entropy and join limits, per-IP and global caps, usage limits (Railway and Vercel),
   security headers and CSP, log retention, dependency and container audit, no secrets in the image.
 - [ ] **S5.7 Acceptance.** Two machines on different networks, TLS in place, high latency
   and loss, reconnect, several simultaneous rooms, server restart mid-run. Repeat once
@@ -779,16 +835,16 @@ host and strict-C17 checks pass, the budgets hold, and the README describes the 
 | --- | --- | --- | --- |
 | 22 | Make the engine deterministic (own `sinf`/`cosf`, seeded runs, replays) | R3, W3 leaderboards | Yes, in v0.3 |
 | 23 | Do we want accounts at all, and for what (cloud saves, global boards, friends)? | W3 | Optional accounts, guests keep the full game; build after W2 |
-| 24 | Auth and database provider | W3 | Clerk + Neon Postgres, only the game server touches the database |
-| 25 | Static host for the page | W1 | Cloudflare Pages, game server on its own subdomain |
+| 24 | Auth and database provider | W3 | Clerk, with Postgres in the Railway project; only servers touch the database |
+| 25 | ~~Host for the page~~ **Settled 2026-11-19:** Vercel; rooms on their own subdomain elsewhere | W1 | Done |
 | 26 | A domain name | W1 (and Clerk production) | Buy one before W1 |
 | 27 | Code licence | R6 | Decide before anything is public |
 | 8 | Rights to the supplied music tracks | R6, W1 | Confirm or replace before any public release |
 | 1 | Ordinary assist split in co-op | S2 | The killer gets the award; the team bonus is the only assist payout |
 | 2 | Allow `ws` as the one runtime dependency, and put the server in `web/server/` | S4 | Yes |
 | 3 | Client-side prediction for the local ship | S4.6 | Decide after measuring LAN latency |
-| 4 | Hosting provider and budget for rooms | W2 | Fly.io after measuring tick cost; a VPS if shared CPU is not enough |
-| 4b | Serve the page from the game server, or from a static host | W2 | Static host (W1) with the server on its own origin; the server can still serve it for LAN |
+| 4 | ~~Hosting provider for rooms~~ **Settled 2026-11-19:** Railway (one replica per room service) with Redis; budget set after measuring tick cost | W2 | Done |
+| 4b | ~~Serve the page from the game server or a static host~~ **Settled:** Vercel online, the room server on LAN | W2 | Done |
 | 6 | Versus round length and rematch rules | S6 | 3 minutes, best of one |
 | 7 | Modifier combinations | S7.5 | One at a time first |
 | 11 | Portable power and enclosure | S8.7 | Optional; do after the firmware is accepted |
@@ -811,7 +867,7 @@ built-in browser pane, Safari, Chrome, and `web/tests/boss-bot.mjs`.
 | 2–4 playtesters, a screen recorder, a notes sheet | R1 | Real-player tuning |
 | A mid-range laptop, Safari | R6 | Stress budget |
 | A domain name | W1, W3 | Clerk production needs one |
-| Cloudflare (Pages) account | W1 | Free; deploy `dist/` from CI |
+| Vercel account (and the Vercel CLI if deploying a prebuilt `dist/` from CI) | W1 | Hobby is free for non-commercial use |
 | Two physical gamepads, ideally an identical pair plus a different brand | S4, S6 | Same model twice is an acceptance case |
 | A second computer on the same network, and a phone hotspot for a different network | S4, W2 | Two browser tabs are not acceptance |
 | `ws` npm package | S4 | The one new runtime dependency |
@@ -819,7 +875,8 @@ built-in browser pane, Safari, Chrome, and `web/tests/boss-bot.mjs`.
 | A lossy/latency proxy script (`web/dev/net-conditioner.mjs`) | S4.9 | Written in Node |
 | `cloudflared` or `ngrok` | W2 testing | A quick `wss` tunnel before real hosting |
 | Docker (Desktop or Colima), GitHub Container Registry, GitHub Actions | W2 | Build and test the image locally first |
-| Fly.io (`flyctl`) or a VPS with Caddy | W2 | Set a spend limit before the first deploy |
-| Clerk account, Neon account, `@clerk/backend` and a Postgres client (`pg`) on the server | W3 | Only if W3 goes ahead |
+| Railway account and CLI; a Redis service in the project | W2 | Set a usage limit before the first deploy |
+| A Redis client in the room server (e.g. `ioredis` or `redis`) | W2 | A second runtime dependency after `ws`; ask before installing |
+| Clerk account; Postgres in the Railway project; `@clerk/backend` and a Postgres client in the API and room server | W3 | Only if W3 goes ahead |
 | ESP32 DevKit, SSD1306 OLED, joystick, button, passive buzzer; PlatformIO monitor | S8 | Wiring is in `docs/SETUP.md` |
 | Battery, charger board and an enclosure | S8.7 | Optional |

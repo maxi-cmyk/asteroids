@@ -4,7 +4,7 @@ const NO_STORAGE = 'Storage unavailable; initials cannot be saved.';
 const UNREADABLE = 'Saved leaderboard could not be read.';
 const SAVE_FAILED = 'Could not save initials. Allow browser storage and retry from score entry.';
 
-// Instantiates the engine and supplies everything it may import: math, randomness, the
+// Instantiates the engine and supplies everything it may import: randomness, the
 // audio tone hook and the leaderboard bytes in browser storage. `scoreStatus` carries the
 // last storage outcome for the UI.
 export class WasmHost {
@@ -39,8 +39,6 @@ export class WasmHost {
     #imports() {
         return {
             env: {
-                sinf: Math.sin,
-                cosf: Math.cos,
                 browser_random: this.random,
                 browser_tone: this.tone,
                 browser_storage_read: (pointer, capacity) => this.#read(pointer, capacity),

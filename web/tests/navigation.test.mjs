@@ -13,10 +13,24 @@ async function setup(options = {}) {
 }
 
 test('stable utility links restore only utility destinations; live and invalid links restore Home', () => {
-    for (const screen of ['records', 'settings', 'help', 'developer', 'hangar'])
+    for (const screen of ['records', 'settings', 'help', 'hangar'])
         assert.equal(routeFromHash(`#${screen}`), screen);
     for (const hash of ['#play', '#pause', '#results', '#warp', '#unknown', ''])
         assert.equal(routeFromHash(hash), 'home');
+    // Developer tools only where the page has them (the local dev server's page).
+    assert.equal(routeFromHash('#developer', { developer: true }), 'developer');
+    assert.equal(routeFromHash('#developer', { developer: false }), 'home');
+    assert.equal(routeFromHash('#developer'), 'home'); // no document here: no developer screen
+});
+
+test('the release page has no developer tools; the dev server page does', async () => {
+    const { assembleHtml } = await import('../tools/assemble-html.mjs');
+    const release = assembleHtml();
+    const dev = assembleHtml(undefined, { developer: true });
+    assert.doesNotMatch(release, /data-view="developer"|data-go="developer"|@dev|@include/);
+    assert.match(dev, /data-view="developer"/);
+    assert.match(dev, /data-go="developer"/);
+    assert.doesNotMatch(dev, /@dev|@include/);
 });
 
 test('Pause → Settings/Help → Back retains exact runtime snapshot, bullets and effect deadlines', async () => {

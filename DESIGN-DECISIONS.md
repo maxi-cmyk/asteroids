@@ -46,9 +46,13 @@ Deeper docs: network + security `docs/NETWORK-AND-SECURITY.md`; combat engine in
 - **Decision:** the engine only advances in exact 20 ms ticks fed by the host. Pause means "stop
   feeding ticks".
 - **Meaning:** same ticks + same inputs + same random numbers + same `sin/cos` = same game.
-- **Gap 1:** `sin/cos` come from the browser, so two browsers can differ in the last bit.
-- **Gap 2:** randomness is unseeded unless the host injects a seed (tests and the server do).
-- **Consequence:** never expect two browsers to simulate identically. This drives card 6.
+- **Gap 1 (closed, see below):** `sin/cos` came from the browser, so two browsers could differ in the last bit.
+- **Gap 2 (closed, see below):** randomness was unseeded unless the host injected a seed.
+- **Consequence (before the fix):** two browsers could not be expected to simulate identically. This drove card 6.
+- **Fixed 2026-11-19 (R3 in `nextSteps.md`):** the engine has its own `sinf`/`cosf`
+  (`web/native/mathf.h`) and every run is seeded (`web/src/runtime/rng.mjs`), closing both gaps;
+  a recorded run replays to the same scene in Node, Chrome and JavaScriptCore. The server still
+  decides (card 6); determinism adds replays and desync checks.
 - **How big is gap 1?** `sin/cos` feed the rotation matrices of curving shots (`v ← R(turn)·v`,
   `web/combat-docs/07`). A one-ulp difference in the angle grows only *linearly* in ticks (`n·δθ`,
   not exponentially, because a rotation has `|λ| = 1`), so a curving shot drifts by a tiny fraction
@@ -87,9 +91,13 @@ Deeper docs: network + security `docs/NETWORK-AND-SECURITY.md`; combat engine in
   can throttle the host, the host can cheat.
 - **Transport:** WebSocket (works everywhere). Revisit WebRTC only if measured loss demands it.
 - **Three modes, one server:** Local (no server), LAN (`npm run host` on one PC), Online (the same
-  server in a container). The page is served by the server (same origin).
-- **Security stance:** no accounts, inputs only, strict message limits, origin check, caps on
-  rooms and connections.
+  server in a container on Railway, one replica per room service since Railway has no sticky
+  sessions; Redis beside it keeps the room directory, rate limits and reconnect tokens, never the
+  game). On LAN the server serves the page too (same origin) and needs no Redis; online the page
+  and a small API are on Vercel and the rooms on their own subdomain.
+- **Security stance:** accounts optional (guests play everything), inputs only, strict message
+  limits, origin check, caps on rooms and connections; leaderboards take only runs a server
+  played or re-ran (updated 2026-11-19).
 - **More:** `docs/NETWORK-AND-SECURITY.md` (all decisions, open questions, threat model,
   checklist).
 

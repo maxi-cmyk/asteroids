@@ -8,8 +8,13 @@ export const FLIGHT_STATES = ['countdown', 'playing', 'death'];
 // no inside the flight, where a held direction key has to keep steering through a respawn.
 export const needsRelease = (previous, next) =>
     next !== previous && !(FLIGHT_STATES.includes(previous) && FLIGHT_STATES.includes(next));
-export function routeFromHash(hash) {
+// Developer tools exist only on the local dev server's page (tools/assemble-html.mjs); on the
+// release page `#developer` goes Home like any unknown route.
+export const developerTools = () =>
+    typeof document !== 'undefined' && !!document.querySelector('[data-view="developer"]');
+export function routeFromHash(hash, { developer = developerTools() } = {}) {
     const route = String(hash).replace(/^#/, '').toLowerCase();
+    if (route === 'developer' && !developer) return 'home';
     return UTILITIES.includes(route) ? route : 'home';
 }
 export function fitPlayfield(width, height) {

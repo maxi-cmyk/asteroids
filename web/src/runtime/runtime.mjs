@@ -7,6 +7,8 @@ import { CoopRun } from './coop-run.mjs';
 import { RunRecorder } from './run-recorder.mjs';
 import { FightLog } from '../boss/fight-log.mjs';
 import { WasmHost } from './wasm-host.mjs';
+import { SeededRandom } from './rng.mjs';
+import { ReplayRecorder, engineFingerprint } from './replay.mjs';
 
 export const STATES = [
     'menu',
@@ -36,9 +38,11 @@ const STAT_KEYS = [
 // The engine as the UI sees it: one object that steps the game, exposes the scene and
 // remembers how runs ended. Solo and co-op share it; a CoopRun exists only during co-op.
 class Runtime {
-    constructor(host, { storage, scoreKey, profile }) {
+    constructor(host, { storage, scoreKey, profile, rng, fingerprint }) {
         this.host = host;
-        this.api = host.api;
+        // Every state-changing engine call goes through the replay recorder (nextSteps.md R3).
+        this.replays = new ReplayRecorder(host.api, { fingerprint, rng, storage, scoreKey });
+        this.api = this.replays.api;
         this.storage = storage;
         this.scoreKey = scoreKey;
         this.records = new PersonalBests(storage);
@@ -64,6 +68,10 @@ class Runtime {
     }
     get runProfile() {
         return this.recorder.runProfile;
+    }
+    // The last finished run as a replay (null if none, or if a test supplied its randomness).
+    get replay() {
+        return this.replays.last;
     }
     get teamEntries() {
         return this.coop?.board.entries ?? [];
@@ -94,10 +102,12 @@ class Runtime {
             ),
         );
     }
-    startCoop({ profiles = [0, 1], friendlyFire = false } = {}) {
+    // `seed` fixes the run's randomness (tests and the replay check); normally it is fresh.
+    startCoop({ profiles = [0, 1], friendlyFire = false, seed } = {}) {
         this.coop = new CoopRun({ profiles, friendlyFire, storage: this.storage });
         this.resultsVisible = false;
         this.recorder.beginCoop(friendlyFire);
+        this.replays.begin({ mode: 'co-op', friendlyFire: !!friendlyFire }, seed);
         this.api.web_coop_start(+!!friendlyFire);
     }
     releaseCoopLasers(players) {
@@ -105,6 +115,7 @@ class Runtime {
         players.forEach((p, i) => this.api.web_coop_input(i, 0, 0, 0, 0, 0, +!!p.laser, 0, 0));
     }
     #finishCoop() {
+        this.replays.finish();
         if (this.recorder.finishCoop(this.coop.profiles, this.coopPlayers())) this.coop.finish();
     }
     #stepCoop(inputs) {
@@ -195,11 +206,13 @@ class Runtime {
         if (this.fightLog.current) this.fightLog.end(this.scene());
     }
     #finishRun() {
+        this.replays.finish();
         this.#endFight();
         this.recorder.finishSolo(this.stats(), this.scene());
     }
-    start(practice = false) {
+    start(practice = false, { seed } = {}) {
         this.coop = null;
+        this.replays.begin({ mode: 'solo', practice: !!practice }, seed);
         this.api.web_start(+practice);
         this.#clearHold();
         this.#beginRun(practice);
@@ -211,6 +224,7 @@ class Runtime {
         else {
             this.#endFight();
             this.recorder.discardRun();
+            this.replays.discard();
         }
         this.api.web_menu();
         this.#clearHold();
@@ -219,6 +233,7 @@ class Runtime {
     }
     abandon() {
         this.coop = null;
+        this.replays.discard();
         this.#endFight();
         this.recorder.discardRun();
         this.recorder.discardResult();
@@ -335,8 +350,17 @@ export async function createRuntime(
     bytes,
     { storage, random, tone = () => {}, scoreKey = SCORE_KEY, profile = () => 0 } = {},
 ) {
-    const host = await WasmHost.load(bytes, { storage, random, tone, scoreKey });
-    const runtime = new Runtime(host, { storage, scoreKey, profile });
+    // Without injected randomness the engine draws from a seeded generator that every run
+    // reseeds, so runs can be replayed.
+    const rng = random ? null : new SeededRandom();
+    const host = await WasmHost.load(bytes, {
+        storage,
+        random: random || (() => rng.next()),
+        tone,
+        scoreKey,
+    });
+    const fingerprint = engineFingerprint(bytes);
+    const runtime = new Runtime(host, { storage, scoreKey, profile, rng, fingerprint });
     host.api.web_init();
     return runtime;
 }
