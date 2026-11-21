@@ -160,3 +160,33 @@ test('the cross-runtime check agrees with itself in Node (compare with dev/repla
     assert.equal(result.live, result.replay);
     assert.equal(result.ticks, 3000);
 });
+
+test('the compact replay file round-trips exactly and is far smaller than JSON', async () => {
+    const { encodeReplay, decodeReplay } = await import('../src/runtime/replay-codec.mjs');
+    const g = await usedEngine();
+    g.ascendant(7);
+    g.start(true);
+    g.bossPractice(5, 0, 1);
+    const input = pilot(9);
+    for (let i = 0; i < 3000; i++) g.step(input());
+    const live = hashOf(g);
+    g.menu();
+    const file = encodeReplay(g.replay);
+    const back = decodeReplay(file);
+    assert.deepEqual(back, JSON.parse(JSON.stringify(g.replay)));
+    assert(
+        Object.is(
+            decodeReplay(encodeReplay({ ...g.replay, ticks: [[1, [[2, -0, 0.5]]]] }))
+                .ticks[0][1][0][1],
+            -0,
+        ),
+    );
+    const json = JSON.stringify(g.replay).length;
+    assert(file.length * 3 < json, `${file.length} bytes vs ${json} as JSON`);
+    const played = await playReplay(bytes, back);
+    assert.equal(played.final, live);
+    // Not a replay, cut short, or with junk after it: refused.
+    assert.throws(() => decodeReplay(new Uint8Array([1, 2, 3, 4, 5])), /Not a replay/);
+    assert.throws(() => decodeReplay(file.slice(0, file.length - 3)), /cut short|trailing|bad/);
+    assert.throws(() => decodeReplay(new Uint8Array([...file, 0])), /trailing/);
+});

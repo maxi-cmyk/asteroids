@@ -1,5 +1,6 @@
 import { element } from '../app/dom.mjs';
 import { readSave, parseSave, mergeSaves, writeSave, saveFileText } from '../state/save.mjs';
+import { buildInfo } from '../version.mjs';
 export function createRecordsActions({ getRuntime, profileStore, draw, storage }) {
     let resetRecordsArmed = false;
     function disarmRecordsReset() {
@@ -65,7 +66,7 @@ export function createRecordsActions({ getRuntime, profileStore, draw, storage }
     element('exportSave').addEventListener('click', () => {
         const save = readSave(storage);
         const url = URL.createObjectURL(
-            new Blob([saveFileText(save)], { type: 'application/json' }),
+            new Blob([saveFileText(save, buildInfo().id)], { type: 'application/json' }),
         );
         const link = document.createElement('a');
         link.href = url;

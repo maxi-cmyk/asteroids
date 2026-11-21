@@ -31,7 +31,7 @@ def thin(m, path, width=1):
 
 
 # ------------------------------------------------------------------ Zodiarch
-def dragon_head(size=(120, 84), open_mouth=False, seed=11):
+def dragon_head(size=(120, 84), open_mouth=False, seed=11, whiskers=True):
     """Facing left. The eye is the key star; horns, whiskers and teeth are rim detail."""
     S = size
     skull = ellipse(mask(S), 70, 40, 20, 18)
@@ -50,8 +50,9 @@ def dragon_head(size=(120, 84), open_mouth=False, seed=11):
     for dy, length in ((0, 1.0), (6, .8)):
         stroke(horn, bezier([(70, 24 + dy), (88, 4 + dy), (104, 0 + dy), (116 * length + 6, 6 + dy)], 30), 3.2, 1)
     detail = mask(S)
-    thin(detail, bezier([(14, 40), (8, 56), (24, 70), (46, 74)], 24))  # whiskers
-    thin(detail, bezier([(20, 41), (22, 58), (40, 66), (58, 70)], 24))
+    if whiskers:  # in the game they are drawn live, trailing the head (src/boss/zodiarch/dragon.mjs)
+        thin(detail, bezier([(14, 40), (8, 56), (24, 70), (46, 74)], 24))
+        thin(detail, bezier([(20, 41), (22, 58), (40, 66), (58, 70)], 24))
     teeth = mask(S)
     for x in range(20, 48, 6):
         poly(teeth, [(x, 42), (x + 3, 42), (x + 1.5, 46)])
@@ -454,8 +455,8 @@ SEGMENT_RADII = (20, 18, 16, 14, 12, 10)
 
 def dragon_cells():
     cells = {
-        'zod-head-0': dragon_head(open_mouth=False),
-        'zod-head-1': dragon_head(open_mouth=True),
+        'zod-head-0': dragon_head(open_mouth=False, whiskers=False),
+        'zod-head-1': dragon_head(open_mouth=True, whiskers=False),
     }
     for r in SEGMENT_RADII:
         for spine in (0, 1):

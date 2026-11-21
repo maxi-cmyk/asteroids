@@ -5,6 +5,7 @@
 import { pixelGlow as glow } from '../../render/fx.mjs';
 import { ATTACK, PART } from '../scene.mjs';
 import { FOX_POSES, FOX_POSE, FOX_SWAY, FOX_SMALL } from './poses.mjs';
+import { BLOCKS } from '../../runtime/scene-layout.mjs';
 
 const TAU = Math.PI * 2;
 const SIT_SET = FOX_POSES[FOX_POSE.sit].set;
@@ -20,7 +21,10 @@ function drawFox(ctx, art, pose, x, y, o) {
     if (set === SIT_SET && sway) set = [SIT_SET, FOX_SWAY[0], FOX_SWAY[1], FOX_SWAY[0]][sway % 4];
     ctx.save();
     ctx.translate(Math.round(x), Math.round(y));
-    ctx.scale(face > 0 ? -k : k, k);
+    // `face` runs continuously through 0 while it turns on the spot (a lost tail): drawn
+    // squeezed side-on, never thinner than a sliver.
+    const turn = Math.abs(face) < 1 ? Math.sign(face || 1) * Math.max(0.12, Math.abs(face)) : face;
+    ctx.scale(-turn * k, k);
     for (let i = 0; i < 9; i++)
         if (!tails || tails.has(i))
             art.draw(ctx, 'rift', `${pre}t${set}-${i}`, 0, 0, { alpha, flash });
@@ -102,17 +106,78 @@ function drawDecoys(ctx, art, parts, alpha, time) {
     }
 }
 
+// A decoy popped (nextSteps.md R2): it bursts into wisps of foxfire that stream back to the
+// real fox, so the player sees which one was real. A decoy that runs back into the fox at the
+// end of the illusion vanishes beside it and makes no wisps.
+const decoysSeen = new Map(),
+    streams = [];
+function decoyStreams(ctx, parts, fx, fy, time) {
+    const now = new Map(parts.filter((d) => d.kind === PART.decoy).map((d) => [d.index, d]));
+    for (const [index, last] of decoysSeen)
+        if (!now.has(index) && time - last.time < 200 && Math.hypot(last.x - fx, last.y - fy) > 30)
+            streams.push({ x: last.x, y: last.y, at: time, seed: index * 7 + (time % 97) });
+    decoysSeen.clear();
+    for (const [index, d] of now) decoysSeen.set(index, { x: d.x, y: d.y, time });
+    for (let i = streams.length - 1; i >= 0; i--) {
+        const w = streams[i],
+            u = (time - w.at) / 800;
+        if (u >= 1 || u < 0) {
+            streams.splice(i, 1);
+            continue;
+        }
+        if (u < 0.2) glow(ctx, w.x, w.y, 10 + 30 * u, '120,200,255', 0.7 * (1 - u * 4));
+        for (let k = 0; k < 9; k++) {
+            // Each wisp leaves a little later and bows out to its own side on the way.
+            const v = Math.max(0, Math.min(1, (u - k * 0.04) / 0.7));
+            if (v <= 0 || v >= 1) continue;
+            const e = v * v * (3 - 2 * v),
+                bow = Math.sin(v * Math.PI) * (((w.seed + k * 5) % 9) - 4) * 9;
+            const dx = fx - w.x,
+                dy = fy - w.y,
+                n = Math.hypot(dx, dy) || 1;
+            const X = w.x + dx * e - (dy / n) * bow,
+                Y = w.y + dy * e + (dx / n) * bow;
+            glow(ctx, X, Y, 5, '120,200,255', 0.5 * (1 - v * 0.5));
+            ctx.fillStyle = k % 3 ? '#96e6ff' : '#ffffff';
+            ctx.fillRect(Math.round(X) - 1, Math.round(Y) - 1, 2, 2);
+            ctx.fillStyle = '#3aa8e0';
+            ctx.fillRect(Math.round(X - (dx / n) * 3), Math.round(Y - (dy / n) * 3), 1, 1);
+        }
+    }
+}
+
+// Ear flick (nextSteps.md R2): a shot going by close to its head while it sits idle flicks
+// its ears back for 160 ms (drawn only: the tails, and so the hit circles, do not move).
+const IDLE = new Set(['sit', 'sit-blink', 'sit-up', 'sit-down', 'sit-shift']);
+let flickAt = -1e9;
+function shotNear(scene, hx, hy) {
+    const { at, stride, count } = BLOCKS.BULLETS;
+    for (let i = 0; i < count; i++) {
+        const k = at + i * stride;
+        if (scene[k] && Math.hypot(scene[k + 1] - hx, scene[k + 2] - hy) < 34) return true;
+    }
+    return false;
+}
+
 export const lensimp = (b) => {
     const { ctx, art, state, x, y, time, aux, parts, alpha, flash, A } = b;
     const s = aux[A.scale] > 0 ? aux[A.scale] : 1,
-        pose = FOX_POSES[aux[A.pose] | 0] ?? FOX_POSES[0],
-        face = aux[A.face] > 0 ? 1 : -1,
+        engine = FOX_POSES[aux[A.pose] | 0] ?? FOX_POSES[0],
+        turning = aux[A.face],
+        face = turning > 0 ? 1 : -1,
         fade = aux[A.alpha];
+    let pose = engine;
+    if (IDLE.has(engine.name)) {
+        const head = at(x, y, engine.head, face, s);
+        if (time - flickAt > 400 && shotNear(b.scene, head[0], head[1])) flickAt = time;
+        if (time - flickAt < 160 && time >= flickAt) pose = FOX_POSES[FOX_POSE['sit-flick']];
+    }
     const tails = new Set(parts.filter((q) => q.kind === PART.tail).map((q) => q.slot));
     const seated = pose.name.startsWith('sit') || pose.name.startsWith('toss');
     const moving = pose.name.startsWith('walk') || pose.name.startsWith('run');
     footfalls(ctx, x, y, s, aux[A.step] | 0, moving, time);
     drawDecoys(ctx, art, parts, alpha, time);
+    decoyStreams(ctx, parts, x, y - 20 * s, time);
     const ms = state.attackMs;
     // Light gathering where the attack comes from: over the arched tails, in the jaws.
     if (state.attack === ATTACK.comets && ms < 700)
@@ -132,7 +197,7 @@ export const lensimp = (b) => {
     const a = alpha * Math.max(0, Math.min(1, fade));
     if (a > 0.02)
         drawFox(ctx, art, pose, x, y + bob, {
-            face,
+            face: turning,
             scale: s,
             alpha: a,
             flash,

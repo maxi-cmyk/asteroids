@@ -10,7 +10,6 @@ static unsigned bs_density(unsigned n) {
 static float bs_angle_to(float x, float y, float tx, float ty) {
     return bs_atan2(ty - y, tx - x);
 }
-static const unsigned BOSS_BODY_MAX = 32; // contact circles a fight may report
 static void bs_guard_body(float *out, unsigned& n, float x, float y, float r) {
     if (n >= BOSS_BODY_MAX) {
         return;

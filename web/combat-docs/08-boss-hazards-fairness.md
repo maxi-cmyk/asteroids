@@ -98,8 +98,8 @@ shot-down lob (r 13, 3 s, 900 ms visible warning), geyser base (r 12, 4.5 s).
 | 3 | A safe path ≥ 42 px wide always exists | design of attacks; `bs_corridor()` measures it | `min_corridor ≥ 42` (test build) |
 | 4 | At most 48 shots, 6 lethal hazards | pool sizes and `BOSS_LETHAL_CAP` | `max_shots ≤ 48`, `max_hazards ≤ 6` |
 | 5 | First attack of a fight is the simplest | `SEQ_*` rows start with the easiest attack | review |
-| 6 | Dying never resets the boss | `combat_ship_hit` clears threats only | `boss.test.mjs` |
-| 7 | Body stays in the right 55% | each `home_x` and motion range | `boss.test.mjs`: body left edge ≥ x 215 (the left 45% of 480) |
+| 6 | Dying never resets the boss | `combat_ship_hit` clears threats only | `tests/boss/rules.test.mjs` |
+| 7 | Body stays in the right 55% | each `home_x` and motion range | `tests/boss/rules.test.mjs`: body left edge ≥ x 215 (the left 45% of 480) |
 
 ### The corridor metric — `bs_corridor()`
 

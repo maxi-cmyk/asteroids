@@ -33,7 +33,7 @@ createRuntime(bytes, { random: () => (state = (Math.imul(state, 1664525) + 10139
 
 Different seeds explore different attack orders (the boss tests run kinds with seeds `100 + kind`).
 
-## `tests/boss.test.mjs` — what is asserted
+## `tests/boss/` — what is asserted (one file per boss, `rules.test.mjs` for what they share, `harness.mjs` for set-up)
 
 | Test | Rule |
 | --- | --- |
@@ -92,6 +92,6 @@ the same on bullet impact points on a boss for the aim spread. Predict the axis 
 
 ```bash
 cd web && npm run build && npm test            # builds both wasm files, runs every suite
-cd web && node --test tests/boss.test.mjs      # one suite
+cd web && node --test tests/boss/zodiarch.test.mjs   # one boss
 sh tests/run_host.sh                           # portable C17 core + firmware host tests (UBSan)
 ```

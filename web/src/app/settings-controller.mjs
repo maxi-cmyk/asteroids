@@ -1,6 +1,7 @@
 import { defaults, saveProfiles, sanitizeSettings } from '../state/settings.mjs';
 import { element, setHidden } from './dom.mjs';
 import { prefersReducedMotion } from './motion.mjs';
+import { ascendantSign } from '../boss/zodiarch/ascendant.mjs';
 
 // Keeps the saved settings, the live engine/audio/renderer and the header toggles in step.
 export class SettingsController {
@@ -30,6 +31,7 @@ export class SettingsController {
             longWarnings: settings.bossLongWarnings,
             calm: settings.bossCalm,
         });
+        app.runtime?.ascendant(ascendantSign());
         if (app.runtime) app.runtime.fightLog.enabled = settings.fightLog;
         const sound = element('sound'),
             music = element('music');

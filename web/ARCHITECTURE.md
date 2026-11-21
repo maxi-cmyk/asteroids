@@ -8,9 +8,11 @@ play see [COMBAT.md](COMBAT.md) and, for engine internals, [combat/README.md](co
 web/
   src/                 browser code (copied as-is to dist/src)
     main.mjs           boots the App
+    version.mjs        this build's version and commit, read from <meta name="build">
     app/               composition root, game loop, input, menus, routing
     runtime/           the engine as the UI sees it: WASM host, runs, scene layout, seeded
-                       randomness (rng.mjs) and replays (replay.mjs)
+                       randomness (rng.mjs), replays (replay.mjs) and the
+                       compact replay file (replay-codec.mjs)
     render/            canvas rendering: renderer, layers, backgrounds, effects
     boss/              boss presentation: scene decoding, painters, death, sound, UI
     screens/           one module per screen (DOM rendering and wiring)
@@ -24,9 +26,10 @@ web/
   styles/ style.css    CSS (see "Styles" below); theme.css imports the theme files
   dev/                 preview pages and tools (not part of the game)
   tools/               asset generators (Python) and build helpers
-  tests/               node --test suites, goldens and a browser smoke walk
+  tests/               node --test suites (boss fights in tests/boss/), goldens and a
+                       browser smoke walk
   assets/              art, fonts, sprite manifests
-  build.mjs serve.mjs  build to dist/, local static server
+  build.mjs serve.mjs  build to dist/ (the deployable page in dist/site/), local dev server
 ```
 
 ## Dependency direction
@@ -92,11 +95,11 @@ whole pixel.
 
 | Presentation | |
 | --- | --- |
-| `scene.mjs` | `KINDS` (names, regions, sizes, phases, named `aux` slots), decoders |
+| `scene.mjs` | `KINDS` assembled from each boss's `<boss>/kind.mjs` (minis: `minis/kinds.mjs`; names, regions, sizes, phases, named `aux` slots), the Zodiarch's `zodiarch/geometry.mjs` re-exported, decoders |
 | `render.mjs` + `body-painters.mjs`, `hazard-painters.mjs`, `shot-painters.mjs` | One painter per body, hazard kind and shot family |
 | `death.mjs` + `death/` | Death sequences: shared effects in `fx.mjs`, scripts per region |
 | `sound.mjs` + `sound/` | `Synth`, per-group sound books, window cues, `BossSound` observer |
-| `ui.mjs`, `records.mjs`, `unlocks.mjs`, `guide.mjs`, `art.mjs` | Intro card and health bar, defeat counts, hull unlocks, field guide, sprite sheets |
+| `ui.mjs`, `records.mjs`, `unlocks.mjs`, `guide.mjs`, `art.mjs` | Intro card and health bar (with the Zodiarch's pearl), defeat counts, hull unlocks, field guide (one file per boss in `guide/`, dev pages only), sprite sheets |
 
 ## Engine (native)
 

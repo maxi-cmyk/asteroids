@@ -2,6 +2,7 @@
 // the same hashes as Node, and plays a saved replay with the real renderer.
 import { PixelRenderer, loadArt } from '../src/render/renderer.mjs';
 import { ReplayPlayer } from '../src/runtime/replay.mjs';
+import { decodeReplay } from '../src/runtime/replay-codec.mjs';
 import { KINDS } from '../src/boss/scene.mjs';
 import { replayCheck } from './replay-check.mjs';
 
@@ -15,7 +16,14 @@ $('check').onclick = async () => {
     result.browser = navigator.userAgent;
     $('result').textContent = JSON.stringify(result, null, 2);
     window.replayCheckResult = result;
+    return result;
 };
+// replay.html?check=1 runs the check on load and reports it to the dev server's output, so a
+// browser nobody drives (Safari, Firefox) can be checked from the terminal.
+if (new URLSearchParams(location.search).get('check') === '1') {
+    const result = await $('check').onclick();
+    fetch('./dev-report', { method: 'POST', body: JSON.stringify({ replayCheck: result }) });
+}
 
 const art = await loadArt();
 const renderer = new PixelRenderer($('stage'), art);
@@ -34,7 +42,10 @@ $('file').onchange = async () => {
     const file = $('file').files[0];
     if (!file) return;
     try {
-        player = await ReplayPlayer.open(bytes, JSON.parse(await file.text()));
+        // A saved .astr file (Results → Save replay) or a replay object as JSON.
+        const data = new Uint8Array(await file.arrayBuffer());
+        const replay = data[0] === 0x41 ? decodeReplay(data) : JSON.parse(await file.text());
+        player = await ReplayPlayer.open(bytes, replay);
         previous = null;
         accumulator = 0;
     } catch (error) {

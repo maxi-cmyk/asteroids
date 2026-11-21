@@ -133,6 +133,30 @@ const float *web_test_boss_stats() {
 const float *web_test_boss_body() {
     return web_boss_body();
 }
+// Every hit circle this tick, for the dev pages' ?hitboxes=1 overlay: a count,
+// then x, y, r, type (BC_*), index and flags (1 player shots, 2 laser) each.
+const float *web_test_boss_circles() {
+    static float values[1 + 6 * 64];
+    memset(values, 0, sizeof(values));
+#ifdef WEB_HD
+    if (boss.active) {
+        bs_build_circles();
+        unsigned n = boss_circle_count < 64 ? boss_circle_count : 64;
+        values[0] = n;
+        for (unsigned i = 0; i < n; i++) {
+            const BossCircle& c = boss_circles[i];
+            float *v = values + 1 + i * 6;
+            v[0] = c.x;
+            v[1] = c.y;
+            v[2] = c.r;
+            v[3] = c.type;
+            v[4] = c.index;
+            v[5] = c.flags;
+        }
+    }
+#endif
+    return values;
+}
 void web_test_boss_set(int field, float value) {
 #ifdef WEB_HD
     if (field == 0) {

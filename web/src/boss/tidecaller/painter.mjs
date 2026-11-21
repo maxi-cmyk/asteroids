@@ -4,7 +4,7 @@
 // start, and the bubbles drifting round it. Also the Moonjelly, which swims the same way
 // (its own tentacles already trail, so it gets no extra tendrils).
 import { pixelGlow as glow } from '../../render/fx.mjs';
-import { PART } from '../scene.mjs';
+import { PART, bossBlocks } from '../scene.mjs';
 import { px } from '../draw-kit.mjs';
 
 const lerp = (a, b, u) => a + (b - a) * u;
@@ -69,6 +69,101 @@ function bell(b, key, { lean, squeeze, cut, scale = 1 }) {
     ctx.restore();
 }
 
+// The bubble shield (R1 playtest: it was not clear the bubbles must go first). While any
+// bubble stands, a membrane wraps the bell, each bubble feeds it along a tether, a blocked
+// shot ripples it, and it thins as bubbles pop; the last pop bursts it.
+// The membrane is an ellipse round the bell sprite (above its fringe), not the hit circle,
+// so it is never hidden inside the bell.
+const SHIELD = { dy: -46, rx: 124, ry: 92 };
+const shieldState = { count: -1, burstAt: -1e9, formedAt: -1e9, lastTime: 0 };
+function shield(b, bubbles) {
+    const { ctx, x, time } = b,
+        cy = b.y + SHIELD.dy,
+        squeeze = b.aux[b.A.squeeze],
+        s = shieldState,
+        n = bubbles.length;
+    const rx = SHIELD.rx * (1 - 0.12 * squeeze),
+        ry = SHIELD.ry * (1 + 0.06 * squeeze);
+    const at = (a, grow = 1, lift = 0) => [
+        x + Math.cos(a) * (rx * grow + lift),
+        cy + Math.sin(a) * (ry * grow + lift),
+    ];
+    if (time < s.lastTime || time - s.lastTime > 500) s.count = -1; // a new fight or a jump
+    s.lastTime = time;
+    if (s.count > 0 && n === 0) s.burstAt = time;
+    if (s.count === 0 && n > 0) s.formedAt = time;
+    s.count = n;
+    // The burst: the membrane flies apart in droplets.
+    const burst = (time - s.burstAt) / 600;
+    if (burst >= 0 && burst < 1) {
+        glow(ctx, x, cy, 90 + 40 * burst, '150,240,255', 0.45 * (1 - burst));
+        ctx.globalAlpha = (1 - burst) * b.alpha;
+        for (let i = 0; i < 56; i++) {
+            const a = (i / 56) * Math.PI * 2 + (i % 3) * 0.04;
+            const [X, Y] = at(a, 1, burst * (24 + (i % 5) * 10));
+            ctx.fillStyle = i % 4 ? '#bffcff' : '#ffffff';
+            px(ctx, X - 1, Y - 1, 3, 3);
+        }
+        ctx.globalAlpha = 1;
+    }
+    if (!n) return;
+    const grow = 0.7 + 0.3 * Math.min(1, (time - s.formedAt) / 400),
+        fade = Math.min(1, (time - s.formedAt) / 400),
+        flicker = n === 1 && Math.floor(time / 90) % 5 === 0 ? 0.4 : 1;
+    // Ripples where blocked shots struck it (the events sit on the hit circle).
+    const ripples = bossBlocks(b.scene)
+        .filter((k) => k.age < 420)
+        .map((k) => ({ a: Math.atan2((k.y - cy) / ry, (k.x - x) / rx), u: k.age / 420 }));
+    ctx.globalAlpha = b.alpha * fade * flicker;
+    const dots = 96;
+    for (let i = 0; i < dots; i++) {
+        const a = (i / dots) * Math.PI * 2;
+        // Thinner as bubbles pop: a gap in every three dots per bubble lost.
+        if (n < 3 && i % 3 < 3 - n) continue;
+        let lift = 0,
+            hot = 0;
+        for (const p of ripples) {
+            let d = Math.abs(a - p.a) % (Math.PI * 2);
+            if (d > Math.PI) d = Math.PI * 2 - d;
+            const w = Math.max(0, 1 - Math.abs(d - p.u * 0.9) / 0.16) * (1 - p.u);
+            lift += w * 6;
+            hot = Math.max(hot, w);
+        }
+        const [X, Y] = at(a, grow, Math.sin(time / 260 + i * 0.7) * 1.5 + lift);
+        const big = hot > 0.3 || i % 8 === Math.floor(time / 110) % 8;
+        ctx.fillStyle = '#0a2a3a';
+        px(ctx, X - 2, Y - 2, big ? 4 : 3, big ? 4 : 3);
+        ctx.fillStyle = hot > 0.3 ? '#ffffff' : big ? '#e8ffff' : i % 2 ? '#7ae8ff' : '#ff9ae0';
+        px(ctx, X - 1, Y - 1, big ? 2 : 1, big ? 2 : 1);
+    }
+    // A sheen on the upper left so the bell reads as behind glass.
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 12; i++) {
+        const [X, Y] = at(-2.5 + i * 0.07, grow, -9);
+        px(ctx, X, Y, 2, 1);
+    }
+    // Tethers: light runs from each bubble into the membrane.
+    for (const part of bubbles) {
+        const a = Math.atan2((part.y - cy) / ry, (part.x - x) / rx);
+        const [ex, ey] = at(a, grow),
+            len = Math.hypot(part.x - ex, part.y - ey);
+        if (len < 6) continue;
+        const steps = Math.floor(len / 5),
+            run = (time / 450) % 1;
+        for (let k = 1; k < steps; k++) {
+            const u = k / steps,
+                lit = Math.abs(u - run) < 0.12;
+            const X = lerp(part.x, ex, u),
+                Y = lerp(part.y, ey, u);
+            ctx.fillStyle = '#0a2a3a';
+            px(ctx, X - 1, Y - 1, 3, 3);
+            ctx.fillStyle = lit ? '#ffffff' : '#7ae8ff';
+            px(ctx, X, Y, lit ? 2 : 1, lit ? 2 : 1);
+        }
+    }
+    ctx.globalAlpha = 1;
+}
+
 export const tidecaller = (b) => {
     const { ctx, art, x, y, time, aux, parts, A } = b;
     const exposed = aux[A.exposed] > 0.5,
@@ -102,11 +197,12 @@ export const tidecaller = (b) => {
             0.8 * rim,
         );
     }
-    for (const part of parts)
-        if (part.kind === PART.bubble)
-            art.draw(ctx, 'shots', 'bubble', Math.round(part.x), Math.round(part.y), {
-                alpha: 0.9,
-            });
+    const bubbles = parts.filter((part) => part.kind === PART.bubble);
+    shield(b, bubbles);
+    for (const part of bubbles)
+        art.draw(ctx, 'shots', 'bubble', Math.round(part.x), Math.round(part.y), {
+            alpha: 0.9,
+        });
 };
 
 export const moonjelly = (b) => {

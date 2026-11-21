@@ -84,6 +84,7 @@ export class App {
             controls: this.controls,
             unlockAudio: () => this.unlockAudio(),
             calibration: this.calibration,
+            engine: () => this.runtime?.fingerprint,
         });
         this.helpScreen = createHelpScreen(this.settings);
         const activeProfile = () => this.profileStore.activeProfile;

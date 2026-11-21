@@ -42,7 +42,7 @@
                         play.</canvas
                     >
                     <div id="bossIntro" class="boss-intro" hidden aria-hidden="true" data-beat="in"><span class="boss-tier"></span><b></b><span class="boss-region"></span></div>
-                    <div id="bossBar" class="boss-bar" hidden role="progressbar" aria-label="Boss health" aria-valuemin="0" aria-valuemax="100"><span class="boss-name"></span><div class="boss-track"><i></i></div></div>
+                    <div id="bossBar" class="boss-bar" hidden role="progressbar" aria-label="Boss health" aria-valuemin="0" aria-valuemax="100"><span class="boss-name"></span><div class="boss-track"><b class="boss-pearl" hidden aria-hidden="true"></b><i></i></div></div>
                     <div id="unlockToast" class="unlock-toast" role="status" hidden></div>
                     <div id="pauseMenu" class="pause-menu" hidden>
                         <h2>Paused</h2>
@@ -141,6 +141,9 @@
                                 </div>
                             </dl>
                             <p id="resultLaser"></p>
+                            <button id="saveReplay" type="button" hidden>
+                                Save replay
+                            </button>
                             <button id="exportFightLog" type="button" hidden>
                                 Export fight log
                             </button>

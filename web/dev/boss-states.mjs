@@ -14,6 +14,7 @@ import { ringwarden } from './boss-states/ringwarden.mjs';
 import { cinderforge } from './boss-states/cinderforge.mjs';
 import { bastion } from './boss-states/bastion.mjs';
 import { tidecaller, mini } from './boss-states/swimmers.mjs';
+import { HITBOXES, drawHitboxes } from './hitboxes.mjs';
 
 const kind = Number(new URLSearchParams(location.search).get('kind') ?? 5);
 const status = document.getElementById('status');
@@ -62,6 +63,7 @@ async function photo(game, reduced = true) {
     renderer.reduced = reduced;
     await Promise.all([renderer.bossArt.load(KINDS[kind].region), renderer.bossArt.load('shots')]);
     renderer.render(game.scene());
+    if (HITBOXES) drawHitboxes(canvas.getContext('2d'), game, kind);
     return canvas;
 }
 

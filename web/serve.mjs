@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { dirname, resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assembleHtml } from './tools/assemble-html.mjs';
+import { buildInfo } from './tools/build-info.mjs';
 const root = dirname(fileURLToPath(import.meta.url));
 const directory = resolve(root, 'dist');
 // Browser source is served straight from the working tree, so an edit shows on refresh. Only the
@@ -43,6 +44,22 @@ const types = {
 createServer(async (request, response) => {
     try {
         const path = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+        // Dev pages report a result here (replay.html?check=1 in another browser): it is
+        // printed to this server's output. Small JSON only.
+        if (request.method === 'POST' && path === '/dev-report') {
+            let body = '';
+            for await (const chunk of request) {
+                body += chunk;
+                if (body.length > 65536) break;
+            }
+            try {
+                console.log(`[dev-report] ${JSON.stringify(JSON.parse(body))}`);
+                response.writeHead(204).end();
+            } catch {
+                response.writeHead(400).end();
+            }
+            return;
+        }
         const found = locate(path);
         if (
             !found ||
@@ -54,7 +71,7 @@ createServer(async (request, response) => {
         }
         const file = found.page ? 'index.html' : found.file;
         const bytes = found.page
-            ? Buffer.from(assembleHtml(undefined, { developer: true }))
+            ? Buffer.from(assembleHtml(undefined, { developer: true, build: buildInfo() }))
             : await readFile(file);
         const headers = {
             'Content-Type': types[extname(file)] || 'application/octet-stream',

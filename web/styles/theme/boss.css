@@ -93,6 +93,27 @@
     background: #fff4d6;
     text-decoration: none;
 }
+.boss-pearl {
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translateY(-50%);
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, #3a2a5c 0 45%, transparent 47%), #5a3c98;
+    image-rendering: pixelated;
+}
+.boss-pearl[data-state='tell'] {
+    background:
+        radial-gradient(circle at 50% 50%, #ffd6f0 0 22%, #6a3a8c 26% 45%, transparent 47%), #8a5cc8;
+}
+.boss-pearl[data-state='open'] {
+    background:
+        radial-gradient(circle at 40% 38%, #ffffff 0 14%, #ff9ad8 18% 45%, transparent 47%),
+        conic-gradient(#ff5ac0 calc(var(--left, 0) * 360deg), #2a1840 0);
+    box-shadow: 0 0 8px #ff5ac0aa;
+}
 .boss-bar.crossed .boss-track {
     animation: boss-notch 0.42s steps(4, end);
 }

@@ -4,6 +4,7 @@
 import { pixelGlow as glow } from '../../render/fx.mjs';
 import { PART, SIGN_KEY } from '../scene.mjs';
 import { CHAINS, SIGN_RIM, glyphPoints, ringPoint } from './ring.mjs';
+import { creatureMotion, drawMotionFx } from './motion.mjs';
 
 const ease = (u) => u * u * (3 - 2 * u);
 const span = (u, a, b) => Math.max(0, Math.min(1, (u - a) / (b - a)));
@@ -110,6 +111,14 @@ function drawSummon(ctx, art, part, clock, time, alpha, partner) {
 // keeps hp 0 while it fades); a fish with r < 0 while formed is drawn mirrored (the art faces
 // right; the engine sets it while the fish swim left).
 const hurtAt = new Map(); // part index -> { hp, at }
+const startHp = new Map(); // part index -> its hp when it formed
+function mostHp(part) {
+    const was = startHp.get(part.index);
+    if (!was || was.r > Math.abs(part.r))
+        startHp.set(part.index, { hp: part.hp, r: Math.abs(part.r) });
+    else was.r = Math.abs(part.r);
+    return startHp.get(part.index).hp;
+}
 export function drawCreature(ctx, art, part, clock, time, alpha = 1, partner = false) {
     const sign = part.slot,
         key = `sign-${sign}${partner ? 'b' : ''}${part.state === 1 ? '-1' : ''}`;
@@ -122,10 +131,21 @@ export function drawCreature(ctx, art, part, clock, time, alpha = 1, partner = f
     const bob = part.state === 1 ? Math.round(Math.sin(time / 210 + sign * 1.7) * 1.5) : 0;
     const x = part.x + Math.round(2 * Math.sin(Math.min(1, hurt) * Math.PI)),
         y = part.y + bob;
+    // Its own hold, tell and recoil (motion.mjs), from its act time.
+    const motion = creatureMotion(sign, (Math.abs(part.r) - 1) * 1000, time, partner);
     ctx.save();
     if (part.state === 1 && part.r < 0) {
         ctx.translate(x * 2, 0);
         ctx.scale(-1, 1);
+    }
+    {
+        const { dx, dy, rot, sx, sy, pivot } = motion,
+            px = x + pivot[0],
+            py = y + pivot[1];
+        ctx.translate(Math.round(px + dx), Math.round(py + dy));
+        ctx.rotate(rot);
+        ctx.scale(sx, sy);
+        ctx.translate(-px, -py);
     }
     if (fade > 0.02) {
         // Lift the navy figure off the navy dragon behind it: a soft glow and a 1 px starlight
@@ -140,6 +160,7 @@ export function drawCreature(ctx, art, part, clock, time, alpha = 1, partner = f
         });
     }
     ctx.restore();
+    drawMotionFx(ctx, glow, x, y, sign, motion, rgbOf(SIGN_RIM[sign]));
     if (part.state === 1) {
         // The key star pulses as a four-pointed glint, with three pips under it for the hits
         // it can take: shoot it to break the creature (P3.3).
@@ -154,9 +175,11 @@ export function drawCreature(ctx, art, part, clock, time, alpha = 1, partner = f
         ctx.fillRect(sx, sy - n, 1, n * 2 + 1);
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(sx - 1, sy - 1, 3, 3);
-        const left = Math.max(0, Math.min(3, Math.round(part.hp)));
-        for (let k = 0; k < 3; k++) {
-            const x0 = sx - 7 + k * 6,
+        // The Ascendant (thrown first on its own dates) takes four hits: four pips.
+        const most = Math.max(3, mostHp(part)),
+            left = Math.max(0, Math.min(most, Math.round(part.hp)));
+        for (let k = 0; k < most; k++) {
+            const x0 = sx - 3 * most + 2 + k * 6,
                 y0 = sy + 9;
             ctx.fillStyle = '#0a0614';
             ctx.fillRect(x0 - 1, y0 - 1, 4, 4);

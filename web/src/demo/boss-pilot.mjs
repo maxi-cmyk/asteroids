@@ -77,7 +77,7 @@ export class BossPilot {
         this.last = null;
     }
     body() {
-        const v = new Float32Array(this.game.api.memory.buffer, this.game.api.web_boss_body(), 97);
+        const v = new Float32Array(this.game.api.memory.buffer, this.game.api.web_boss_body(), 121);
         return Array.from({ length: v[0] }, (_, i) => ({
             x: v[1 + i * 3],
             y: v[2 + i * 3],

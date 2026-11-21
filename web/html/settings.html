@@ -26,7 +26,9 @@
                         ><button data-category="audio" aria-pressed="false">
                             Audio</button
                         ><button data-category="display" aria-pressed="false">
-                            Display
+                            Display</button
+                        ><button data-category="about" aria-pressed="false">
+                            About
                         </button>
                     </nav>
                     <section data-settings-panel="controls">
@@ -261,6 +263,26 @@
                             brightness dims gameplay scenery. Reduce shake for a
                             calmer playfield. Fullscreen is available in the top
                             bar.
+                        </p>
+                    </section>
+                    <section data-settings-panel="about" hidden inert>
+                        <h2>About</h2>
+                        <dl class="about-build">
+                            <dt>Version</dt>
+                            <dd id="aboutVersion">dev</dd>
+                            <dt>Build</dt>
+                            <dd id="aboutCommit">unknown</dd>
+                            <dt>Engine</dt>
+                            <dd id="aboutEngine">loading</dd>
+                        </dl>
+                        <p>
+                            Quote the version and build when you report a bug. Online
+                            play will only pair players on the same build.
+                        </p>
+                        <p>
+                            <a href="./THIRD-PARTY-LICENSE.txt" target="_blank" rel="noopener"
+                                >Third-party licences</a
+                            >
                         </p>
                     </section>
                     <div class="settings-footer">

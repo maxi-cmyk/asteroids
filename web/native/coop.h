@@ -422,7 +422,7 @@ static void coop_respawn(unsigned p) {
     asteroid_safe_respawn(x, y);
     if (boss.active) {
         float best_clearance = -10000;
-        float body[96];
+        float body[3 * BOSS_BODY_MAX];
         unsigned bodies = bs_kind_body(body);
         for (int candidate_x = SHIP_MIN_X; candidate_x <= 160;
              candidate_x += 24) {

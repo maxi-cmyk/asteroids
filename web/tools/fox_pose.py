@@ -24,6 +24,7 @@ BASE = {
     'fl_far': (0, 0), 'fl_near': (0, 0), 'hl_far': (15, -15), 'hl_near': (15, -15),
     'tails': 'fan', 'tail_a': -60, 'spread': 136, 'tail_len': 1.0, 'curl': 17, 'wave': 0,
     'wrap': 0, 'eye': 'open', 'mouth': 0, 'rot': 0, 'dx': 0, 'dy': 0, 'haunch': 0,
+    'tongue': 0,  # 1 out over the lower lip, 2 curled up to the nose (licking its chops)
 }
 
 
@@ -113,6 +114,9 @@ def skeleton(p):
         'ear_far': [hp(-12, -10), _rot_pt(hp(-18, -38), hp(-12, -10), ear_back), hp(2, -14)],
         'ear_near': [hp(2, -12), _rot_pt(hp(12, -40), hp(2, -12), ear_back), hp(18, -8)],
         'eye': hp(-16, -2), 'mark': hp(2, -14),
+        'tongue': {0: [],
+                   1: [hp(-24, 11), hp(-38, 12), hp(-41, 16), hp(-36, 18), hp(-24, 15)],
+                   2: [hp(-27, 11), hp(-32, 5), hp(-36, 3), hp(-37, 7), hp(-31, 13)]}[p['tongue']],
     }
     base = (hip[0] + 14, hip[1] - 8)
     tails = _tail_paths(p, base)
@@ -200,7 +204,19 @@ def layers(p, k=1.0, seed=21, eyes_lit=True, mark=(255, 120, 170)):
         starfill(head, rim=FOX_RIM, seed=seed + 22, keys=keys),
         starfill(detail, rim=FOX_RIM, seed=seed + 23, density=0),
     ])
+    if parts['tongue']:
+        body_img.alpha_composite(_tongue(parts['tongue']))
     return tails, body_img
+
+
+def _tongue(pts):
+    """A pink tongue with a dark outline, over the head."""
+    from PIL import Image
+    img = Image.new('RGBA', SIZE, (0, 0, 0, 0))
+    d = draw(img)
+    poly = [(round(x), round(y)) for x, y in pts]
+    d.polygon(poly, fill=(255, 120, 170, 255), outline=(60, 20, 50, 255))
+    return img
 
 
 def render(p, seed=21, eyes_lit=True, mark=(255, 120, 170), k=1.0):

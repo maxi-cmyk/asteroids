@@ -64,7 +64,9 @@ bs_sign_spawn(unsigned sign, float stage_x, float stage_y, bool lead) {
     p->exists = true;
     p->kind = PK_SIGN;
     p->slot = sign;
-    p->hp = p->hp_max = 3;
+    // The Ascendant's key star takes one more hit.
+    p->hp = p->hp_max
+            = boss.swim.ascend_spawn && int(sign) == boss_ascendant ? 4 : 3;
     p->state = 0;
     p->r = 0;
     bs_zring_pos(sign, p->sx, p->sy);

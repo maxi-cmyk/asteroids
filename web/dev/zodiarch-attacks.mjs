@@ -6,6 +6,7 @@ import { PixelRenderer, loadArt } from '../src/render/renderer.mjs';
 import { createRuntime } from '../src/runtime/runtime.mjs';
 import { GUIDE } from '../src/boss/guide.mjs';
 import { ATTACK, KINDS } from '../src/boss/scene.mjs';
+import { HITBOXES, drawHitboxes } from './hitboxes.mjs';
 
 const status = document.getElementById('status');
 const root = document.getElementById('tiles');
@@ -25,6 +26,7 @@ async function photo(game) {
     renderer.reduced = true;
     await Promise.all([renderer.bossArt.load(KINDS[5].region), renderer.bossArt.load('shots')]);
     renderer.render(game.scene());
+    if (HITBOXES) drawHitboxes(canvas.getContext('2d'), game, 5);
     return canvas;
 }
 const rows = [];

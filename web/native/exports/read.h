@@ -35,10 +35,12 @@ const float *web_stats() {
 // Contact circles of the boss on screen: a count, then x, y, r for each.
 // Read-only; the Home demo's pilot and the fairness tests steer around them.
 const float *web_boss_body() {
-    static float values[1 + 3 * 32];
+    static float
+            values[1 + 3 * 40]; // BOSS_BODY_MAX (the OLED build has no bosses)
     memset(values, 0, sizeof(values));
 #ifdef WEB_HD
-    float body[96];
+    static_assert(BOSS_BODY_MAX == 40, "web_boss_body's size");
+    float body[3 * BOSS_BODY_MAX];
     unsigned n = boss.active ? bs_kind_body(body) : 0;
     values[0] = n;
     for (unsigned i = 0; i < n * 3; i++) {

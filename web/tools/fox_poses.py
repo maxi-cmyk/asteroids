@@ -90,3 +90,8 @@ for k in range(4):
     POSES[f'cocoon-{k}'] = pose(sho=(104, 120), hip=(132, 124), head=(92, 104), head_a=-30,
                                 ears=1, fl_far=(50, -60), fl_near=(55, -65), hl_far=(60, -80),
                                 hl_near=(65, -85), tails='wrap', wrap=k * 90, haunch=.6)
+# R2 (added last so the earlier FP_* ids keep their numbers): an ear flick at a shot going
+# by, and the foxfire's follow-through, licking its chops.
+POSES['sit-flick'] = pose(**{**SIT, 'ears': .75, 'head_a': 4})
+POSES['lick-0'] = pose(**{**SIT, 'head': (90, 60), 'head_a': 10, 'mouth': .5, 'tongue': 1})
+POSES['lick-1'] = pose(**{**SIT, 'head': (90, 58), 'head_a': 14, 'mouth': .4, 'tongue': 2})

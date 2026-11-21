@@ -118,7 +118,7 @@ static bool bs_entrance() {
     return true;
 }
 static void bs_contact() {
-    float body[3 * 32];
+    float body[3 * BOSS_BODY_MAX];
     unsigned n = bs_kind_body(body);
     for (unsigned p = 0; p < boss_hull_n; p++) {
         if (!bs_alive(p)) {

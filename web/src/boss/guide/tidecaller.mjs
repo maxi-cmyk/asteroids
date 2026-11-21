@@ -1,0 +1,82 @@
+// The field guide: Tidecaller (one entry of GUIDE, src/boss/guide.mjs).
+import { ATTACK, HAZARD, SHOT } from '../scene.mjs';
+
+export default {
+    kind: 4,
+    death: 'The bell deflates, dissolves block by block into bubbles, and ends in a soft sonar ring.',
+    mechanic:
+        'A glassy shield wraps the bell while any of its three bubbles stands: shots glance off it, and each bubble feeds it along a tether. Pop the bubbles (the laser through the bell pops them all), the shield bursts, then shoot the bell. It fires fast and from all over the bell: no two streams start from the same place.',
+    attacks: [
+        {
+            id: ATTACK.sine,
+            name: 'Sine stream',
+            phase: 1,
+            at: 1500,
+            tell: 'Wide dotted wedge, 600 ms',
+            text: '13 bulbs (16 from phase 2, in two interleaved streams) ride a wave toward you. Each stream leaves from a random height with a random aim error, and every bulb has its own speed, wave size and gap.',
+            counter:
+                'Read the dotted wedge, then stay in a trough; do not trust the straight line.',
+            release: ['shot', SHOT.sine],
+        },
+        {
+            id: ATTACK.tendril,
+            name: 'Tendril sweep',
+            phase: 2,
+            at: 2300,
+            tell: 'Pink arcs, 900 ms',
+            text: 'Two 190 px tendrils sweep 150° from opposite sides.',
+            counter: 'Wait for the gap between them to reopen.',
+            release: ['live', HAZARD.arm],
+        },
+        {
+            id: ATTACK.spore,
+            name: 'Spore cloud',
+            phase: 2,
+            at: 1100,
+            tell: 'Slow cloud, shootable',
+            text: 'A radius-18 cloud that splits into four spores when shot or after 2 s.',
+            counter: 'Pop it far from you.',
+            release: ['shot', SHOT.spore],
+        },
+        {
+            id: ATTACK.pulse,
+            name: 'Bell pulse',
+            phase: 3,
+            at: 760,
+            tell: 'Sonar ring, 700 ms',
+            text: 'A ring wave from the bell with a 60° gap, every third attack in the final phase.',
+            counter: 'Find the gap and slide through.',
+            release: ['live', HAZARD.ring],
+        },
+        {
+            id: ATTACK.wall,
+            name: 'Tidal wall',
+            phase: 1,
+            at: 1100,
+            tell: 'Two dotted lines mark the gap, 700 ms',
+            text: 'A wall of pellets across the whole field with one 68 px gap, twice (three times in phase 3). Every gap is somewhere new.',
+            counter: 'Fly to the gap between the dotted lines and hold still.',
+            release: ['shot', SHOT.pellet],
+        },
+        {
+            id: ATTACK.rain,
+            name: 'Spore rain',
+            phase: 1,
+            at: 1500,
+            tell: 'Spores appear at the top edge',
+            text: 'Five to seven spores fall from random columns and burst into needles after 2.3 s.',
+            counter: 'Shoot them early, far from you, or slide under the gaps.',
+            release: ['shot', SHOT.spore],
+        },
+        {
+            id: ATTACK.whirl,
+            name: 'Whirlpools',
+            phase: 2,
+            at: 1700,
+            tell: 'Pink rings, 1.1 s',
+            text: 'Two closing rings with a turning gap open anywhere except on top of you.',
+            counter: 'Stay out of the rings or step through a gap as it passes.',
+            release: ['live', HAZARD.ring],
+        },
+    ],
+};

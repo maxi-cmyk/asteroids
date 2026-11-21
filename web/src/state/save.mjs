@@ -254,8 +254,8 @@ function betterAccuracy(x, y) {
     return y.hits / y.shots > x.hits / x.shots ? y : x;
 }
 
-// A save as a downloadable file's text.
-export function saveFileText(save) {
+// A save as a downloadable file's text; `build` (src/version.mjs) records which build wrote it.
+export function saveFileText(save, build = null) {
     const { hasSettings, ...rest } = save; // eslint-disable-line no-unused-vars
-    return JSON.stringify(rest, null, 1);
+    return JSON.stringify(build ? { ...rest, build } : rest, null, 1);
 }

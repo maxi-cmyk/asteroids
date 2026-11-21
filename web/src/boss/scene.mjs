@@ -2,7 +2,27 @@
 // 512..524 and the detail block at BOSS_AT; everything the UI knows about a fight
 // is decoded here so no other module carries magic offsets.
 import { S, BOSS, BOSS_AT, SCENE_FLOATS } from '../runtime/scene-layout.mjs';
-import { FOX_POSES, FOX_SMALL } from './ninefold/poses.mjs';
+import sentinel from './sentinel/kind.mjs';
+import ringwarden from './ringwarden/kind.mjs';
+import cinderforge from './cinderforge/kind.mjs';
+import bastion from './bastion/kind.mjs';
+import tidecaller from './tidecaller/kind.mjs';
+import zodiarch from './zodiarch/kind.mjs';
+import ninefold from './ninefold/kind.mjs';
+import { picket, shardling, cinderling, gunnery, moonjelly } from './minis/kinds.mjs';
+export {
+    SIGNS,
+    SIGN_KEY,
+    SIGN_EMIT,
+    SIGN_CHARGE,
+    ZOD_STYLE,
+    ZODIARCH,
+    zodiarchPath,
+    ZOD_HEAD,
+    zodLocal,
+} from './zodiarch/geometry.mjs';
+export { RAM_LANE } from './bastion/kind.mjs';
+export { NINEFOLD } from './ninefold/kind.mjs';
 export { BOSS_AT, SCENE_FLOATS };
 const PARTS_AT = BOSS_AT + BOSS.PARTS.at,
     PART_STRIDE = BOSS.PARTS.stride,
@@ -55,113 +75,6 @@ export const PART = Object.freeze({
     decoy: 8, // one of Ninefold's illusions
     plate: 9, // one of the Sentinel's plates (slot = plate); state 1 warned, 2 thrown, 3 shed
     engine: 10, // one of the Bastion's engines (slot 0 top, 1 bottom); state 1 dead
-});
-// The zodiac, in ring order (the Zodiarch's sign index = slot of a sign part).
-export const SIGNS = Object.freeze([
-    'Aries',
-    'Taurus',
-    'Gemini',
-    'Cancer',
-    'Leo',
-    'Virgo',
-    'Libra',
-    'Scorpio',
-    'Sagittarius',
-    'Capricorn',
-    'Aquarius',
-    'Pisces',
-]);
-// Each creature's key star (its weak point), from its centre; mirrors SIGN_KEY in warden.h.
-export const SIGN_KEY = Object.freeze([
-    [-34, -7],
-    [-38, 5],
-    [1, -33],
-    [4, 17],
-    [-20, -6],
-    [-48, -42],
-    [-45, 17],
-    [-2, 14],
-    [-54, -26],
-    [55, 4],
-    [17, -21],
-    [10, 2],
-]);
-// Where each creature's attacks come out, from its centre in the strike frame (mirrors
-// SIGN_EMIT in warden.h; from tools/zodiac_myth.py EMIT_POINTS).
-export const SIGN_EMIT = Object.freeze([
-    { horns: [-48, 4], hooves: [-34, 38] },
-    { eye: [-38, 5], muzzle: [-52, 14] },
-    { hand: [-18, -58], bHand: [-28, -24] },
-    { clawNear: [-50, -26], clawFar: [32, -34] },
-    { mouth: [-58, -15], eye: [-48, -23], mane: [-32, -20] },
-    { wheat: [-48, -42], hand: [-42, -28] },
-    { panNear: [-45, 14], panFar: [45, -8] },
-    { sting: [16, -25], tail: [62, 10] },
-    { arrow: [-54, -26] },
-    { mouth: [-52, 2], tail: [54, 4] },
-    { urn: [-5, -42] },
-    { mouth: [26, -2] }, // the fish art faces right
-]);
-// The colour each sign's charge and muzzle flash burn with (r,g,b).
-export const SIGN_CHARGE = Object.freeze([
-    '255,200,110',
-    '255,90,70',
-    '140,220,255',
-    '180,232,210',
-    '255,210,90',
-    '200,240,140',
-    '230,230,255',
-    '255,96,90',
-    '255,170,210',
-    '160,200,255',
-    '110,200,255',
-    '170,160,255',
-]);
-// Hazard styles the Zodiarch writes into `e` (mirrors ZS_* in warden.h).
-export const ZOD_STYLE = Object.freeze({
-    plain: 0,
-    tether: 2,
-    cord: 3,
-    seed: 5,
-    swirl: 8,
-    splash: 9,
-    fish: 11,
-});
-// The Bastion's ramming run marks its lane with this `e` (native/boss/fights/bastion.h).
-export const RAM_LANE = 20;
-// The Zodiarch's ring (centre and radii) and, for the storyboards' before-and-after, the old
-// figure-of-eight swim it had before it steered itself (nextSteps.md P3.1).
-export const ZODIARCH = Object.freeze({
-    cx: 372,
-    cy: 135,
-    ax: 92,
-    ay: 80,
-    period: 16,
-    rx: 118,
-    ry: 100,
-});
-export const zodiarchPath = (clock) => {
-    const w = (2 * Math.PI) / ZODIARCH.period;
-    return [
-        ZODIARCH.cx + ZODIARCH.ax * Math.sin(w * clock),
-        ZODIARCH.cy + ZODIARCH.ay * Math.sin(2 * w * clock),
-    ];
-};
-// Points on the Zodiarch's head in its left-facing frame, from its point on the trail (mirrors
-// ZOD_EYE / ZOD_JAW / ZOD_BROW in zodiarch/data.h); the frame turns with `aux.heading`.
-export const ZOD_HEAD = Object.freeze({ eye: [-38, -12], jaw: [-72, 3], brow: [-27, -17] });
-export function zodLocal(x, y, heading, [dx, dy]) {
-    const right = Math.cos(heading) > 0,
-        r = right ? heading : heading - Math.PI,
-        lx = right ? -dx : dx;
-    return [x + lx * Math.cos(r) - dy * Math.sin(r), y + lx * Math.sin(r) + dy * Math.cos(r)];
-}
-// Ninefold sitting, from its centre (every pose's points: src/boss/ninefold/poses.mjs).
-export const NINEFOLD = Object.freeze({
-    mark: FOX_POSES[0].mark,
-    head: FOX_POSES[0].head,
-    body: FOX_POSES[0].body,
-    illusionScale: FOX_SMALL, // the three foxes of an illusion
 });
 export const ATTACK = Object.freeze({
     lance: 1,
@@ -238,184 +151,20 @@ export const ATTACK = Object.freeze({
 // `phases` are the health fractions at which a new phase begins (for bar notches).
 // `aux` names the slots of boss.aux the engine fills for this kind (see AUX_* in
 // native/boss/fights/*.h): the painters and sound cues read them by name.
+// Per-boss entries live beside each boss (`<boss>/kind.mjs`, `minis/kinds.mjs`).
 export const KINDS = Object.freeze([
-    {
-        id: 'sentinel',
-        name: 'Sentinel',
-        region: 'frontier',
-        mini: false,
-        size: [220, 220],
-        phases: [0.6, 0.3],
-        hull: null,
-        aux: {
-            open: 0,
-            busy: 1,
-            tell: 2,
-            seam: 3,
-            roll: 4,
-            gazeX: 5,
-            gazeY: 6,
-            shed: 7,
-            bare: 8,
-        },
-    },
-    {
-        id: 'ringwarden',
-        name: 'Ringwarden',
-        region: 'violet',
-        mini: false,
-        size: [270, 270],
-        phases: [0.66, 0.33],
-        hull: null,
-        aux: {
-            scale: 0,
-            outerSpin: 1,
-            innerSpin: 2,
-            charging: 3,
-            outerTilt: 4,
-            outerAxis: 5,
-            innerTilt: 6,
-            innerAxis: 7,
-            eclipse: 8,
-            halo: 9,
-            haloGap: 14,
-        },
-    },
-    {
-        id: 'cinderforge',
-        name: 'Cinderforge',
-        region: 'ember',
-        mini: false,
-        size: [300, 300],
-        phases: [0.66, 0.33],
-        hull: null,
-        aux: {
-            heat: 0,
-            open: 1,
-            breath: 2,
-            hammer: 3,
-            ladle: 4,
-            core: 5,
-            steam: 6,
-            lamps: 7,
-            flame: 9,
-        },
-    },
-    {
-        id: 'bastion',
-        name: 'Bastion',
-        region: 'ruins',
-        mini: false,
-        size: [340, 196],
-        phases: [0.5],
-        hull: null,
-        aux: { cannon: 0, pods: 1, armour: 2, roll: 3, thrust: 4, lock: 6, lane: 7 },
-    },
-    {
-        id: 'tidecaller',
-        name: 'Tidecaller',
-        region: 'lunar',
-        mini: false,
-        size: [230, 290],
-        phases: [0.7, 0.35],
-        hull: null,
-        aux: { clock: 0, exposed: 2, squeeze: 3, lean: 4, rim: 5, rimTo: 6 },
-    },
-    {
-        id: 'warden', // internal id kept from the Horizon Warden, so saves carry over
-        name: 'Zodiarch',
-        region: 'rift',
-        mini: false,
-        size: [120, 84],
-        phases: [0.7, 0.35],
-        hull: null,
-        aux: {
-            clock: 0,
-            coreOpen: 1,
-            section: 2,
-            out: 3,
-            pearlX: 4,
-            pearlY: 5,
-            mouth: 6,
-            breath: 7,
-            hold: 8,
-            heading: 12,
-            speed: 13,
-            pearl: 14,
-            mode: 15,
-        },
-    },
-    {
-        id: 'picket',
-        name: 'Picket',
-        region: 'frontier',
-        mini: true,
-        size: [150, 150],
-        phases: [],
-        hull: 'dart',
-        aux: { open: 0, busy: 1 },
-    },
-    {
-        id: 'shardling',
-        name: 'Shardling',
-        region: 'violet',
-        mini: true,
-        size: [170, 170],
-        phases: [],
-        hull: 'lancer',
-        aux: { spin: 2, tilt: 5, axis: 6 },
-    },
-    {
-        id: 'cinderling',
-        name: 'Cinderling',
-        region: 'ember',
-        mini: true,
-        size: [150, 150],
-        phases: [],
-        hull: 'wasp',
-        aux: { glow: 0, open: 1 },
-    },
-    {
-        id: 'gunnery',
-        name: 'Gunnery',
-        region: 'ruins',
-        mini: true,
-        size: [200, 108],
-        phases: [],
-        hull: 'hammer',
-        aux: { firing: 0 },
-    },
-    {
-        id: 'moonjelly',
-        name: 'Moonjelly',
-        region: 'lunar',
-        mini: true,
-        size: [150, 190],
-        phases: [],
-        hull: 'moth',
-        aux: { clock: 0, squeeze: 1, lean: 2 },
-    },
-    {
-        id: 'lensimp', // internal id kept from the Lens Imp, so saves carry over
-        name: 'Ninefold',
-        region: 'rift',
-        mini: true,
-        size: [250, 196],
-        phases: [],
-        hull: 'comet',
-        aux: {
-            clock: 0,
-            blink: 1,
-            open: 2,
-            tails: 3,
-            illusion: 4,
-            scale: 5,
-            pose: 6,
-            face: 7,
-            alpha: 8,
-            step: 9,
-        },
-    },
+    sentinel,
+    ringwarden,
+    cinderforge,
+    bastion,
+    tidecaller,
+    zodiarch,
+    picket,
+    shardling,
+    cinderling,
+    gunnery,
+    moonjelly,
+    ninefold,
 ]);
 export const REGION_SHEETS = Object.freeze([
     'frontier',

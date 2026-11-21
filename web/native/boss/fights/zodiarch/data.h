@@ -26,13 +26,13 @@ enum {
     AUX_ZOD_OUT = 3,       // bit k set while sign k is out of the ring
     AUX_ZOD_PEARL_X = 4,
     AUX_ZOD_PEARL_Y = 5,
-    AUX_ZOD_MOUTH = 6,      // 1 while the jaw is open (throwing, breathing,
-                            // spitting, lunging)
-    AUX_ZOD_BREATH = 7,     // 1 while the starfire breath is warned or live
-    AUX_ZOD_HOLD = 8,       // 1 while it holds still for one of its own attacks
-    AUX_ZOD_NEXT = 9,       // the next sign in its rotation
-    AUX_ZOD_LAST_SIGN = 10, // signs thrown in a row since its last own attack
-    AUX_ZOD_OWN_NEXT = 11,  // the next of its own attacks in its rotation
+    AUX_ZOD_MOUTH = 6,    // 1 while the jaw is open (throwing, breathing,
+                          // spitting, lunging)
+    AUX_ZOD_BREATH = 7,   // 1 while the starfire breath is warned or live
+    AUX_ZOD_HOLD = 8,     // 1 while it holds still for one of its own attacks
+    AUX_ZOD_PATH_X = 9,   // where the head will be in 0.6 s (-1: hidden)
+    AUX_ZOD_PATH_Y = 10,  // (the path dots; the rotations live in boss.swim)
+    AUX_ZOD_PATH_TH = 11, // and its heading then
     AUX_ZOD_HEADING = 12, // the way the head points as drawn (radians; mirrored
                           // past 90°)
     AUX_ZOD_SPEED = 13,   // swim speed, px per tick (the renderer paddles the

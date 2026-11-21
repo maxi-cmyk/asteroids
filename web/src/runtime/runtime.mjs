@@ -41,6 +41,7 @@ class Runtime {
     constructor(host, { storage, scoreKey, profile, rng, fingerprint }) {
         this.host = host;
         // Every state-changing engine call goes through the replay recorder (nextSteps.md R3).
+        this.fingerprint = fingerprint;
         this.replays = new ReplayRecorder(host.api, { fingerprint, rng, storage, scoreKey });
         this.api = this.replays.api;
         this.storage = storage;
@@ -298,6 +299,11 @@ class Runtime {
         this.api.web_boss_practice(kind, tier, phase);
     }
     // Assists change telegraph length and forces only; scoring is unaffected.
+    // The Zodiarch throws this sign first, a little stronger (-1: none). The page passes the
+    // date's sign (src/boss/zodiarch/ascendant.mjs); tests leave it off.
+    ascendant(sign = -1) {
+        this.api.web_ascendant?.(sign);
+    }
     bossAssist({ longWarnings = false, calm = false } = {}) {
         this.api.web_boss_assist(+longWarnings, +calm);
     }

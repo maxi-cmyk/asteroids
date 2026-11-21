@@ -20,13 +20,13 @@
 <body>
 <main>
   <h1>Replays</h1>
-  <p class="note">A run is its seed plus every engine call from its start (nextSteps.md R3). <b>Check this browser</b> records a scripted Zodiarch fight and replays it on a fresh engine; the hashes must match each other and the ones Node prints (<code>node --test tests/replay.test.mjs</code>) for the same <code>game.wasm</code>. <b>Watch</b> plays a saved replay (<code>.json</code>) with the game's renderer.</p>
+  <p class="note">A run is its seed plus every engine call from its start (nextSteps.md R3). <b>Check this browser</b> records a scripted Zodiarch fight and replays it on a fresh engine; the hashes must match each other and the ones Node prints (<code>node --test tests/replay.test.mjs</code>) for the same <code>game.wasm</code>. <b>Watch</b> plays a saved replay (Results → <b>Save replay</b> writes an <code>.astr</code> file; a <code>.json</code> replay object works too) with the game's renderer.</p>
   <h2>Check this browser</h2>
   <div class="row"><button id="check">Check this browser</button></div>
   <pre id="result">Not run yet.</pre>
   <h2>Watch a replay</h2>
   <div class="row">
-    <input id="file" type="file" accept=".json,application/json">
+    <input id="file" type="file" accept=".astr,.json,application/json">
     <button id="pause">Pause</button>
     <span id="status"></span>
   </div>

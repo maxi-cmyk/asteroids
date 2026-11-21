@@ -151,6 +151,10 @@ struct BossSwim {
     int mode = 0, last = 0;
     unsigned long until = 0;
     float pull = 0, coil = 0, ext = 0, ext_a = 0;
+    // The rotations: next sign, signs thrown in a row, next own attack.
+    float next_sign = 0, sign_streak = 0, own_next = 0;
+    // Ascendant: thrown already this fight; the next spawn of it is stronger.
+    bool ascended = false, ascend_spawn = false;
     float trail[SWIM_TRAIL][2] = {};
     unsigned at = 0, n = 0;
 };
@@ -198,6 +202,7 @@ struct BossPart {
     int8_t link = -1, hz0 = -1, hz1 = -1;
     bool lead = false;
 };
+static const unsigned BOSS_BODY_MAX = 40; // contact circles a fight may report
 struct BossCircle {
     float x, y, r;
     uint8_t type, index, flags; // flags: 1 player shots, 2 laser
@@ -267,7 +272,8 @@ static BossCircle boss_circles[BOSS_CIRCLES];
 static unsigned boss_circle_count = 0;
 static bool boss_assist_long = false; // +30% telegraphs
 static bool boss_assist_calm = false; // no pull, straight lens shots
-static unsigned boss_force_tier = 0;  // practice picks a tier directly
+static int boss_ascendant = -1; // the date's sign, thrown first (web_ascendant)
+static unsigned boss_force_tier = 0; // practice picks a tier directly
 
 static void combat_ship_hit();
 static void combat_award(uint32_t points);

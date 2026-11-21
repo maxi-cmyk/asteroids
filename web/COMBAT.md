@@ -310,7 +310,7 @@ once, its own attacks) and after the pilot learned to keep out of a sweeping bea
 as a person reads it (that moved the Ringwarden, Cinderforge and Tidecaller hit counts a little;
 no fairness faults); the Zodiarch row again on 2026-11-18 after P3 (steered swim, forehead pearl,
 coil-spit, lunge) and again after the pearl moved to the attacking body part and the signs out
-were capped at two (its health is 2 sub-hits per design hit, a break costs it 3). Ninefold again on 2026-11-19 after P2.1 (it moves between perches and sits before each attack, about 5 s longer). The Sentinel on 2026-11-19 after P4.1 (the plate throw and a third phase with its eye always open: 1 to 5 s shorter). The Ringwarden on 2026-11-19 after P4.2 (tilting rings with gaps, prism splits, the halo lock: 1 to 2 s longer; most of its hits are the repel ring and the beam, not the halo lock). The Cinderforge on 2026-11-19 after P4.3 (redesigned as a furnace golem: it can only be hurt while it vents, so tier I is 5 s longer and tiers II and III 3 to 5 s shorter; its health is now 2 sub-hits per design hit, and the bare core takes double). The Bastion on 2026-11-19 after P4.4 (engines as its weak point, the ramming run instead of the mines: 2 to 8 s longer; the scripted pilot now looks further ahead in a lane wider than it can cross in 22 ticks, as it already did for sweeping wedges). The Tidecaller and the minis on 2026-11-19 after P4.5 and P4.6 (the bell swims in pulses with drifting bubbles; the Shardling's tilting ring and the Cinderling's golem shape changed their times by up to 9 s). The pilot keeps out of the space level with or behind a boss, as a sensible player
+were capped at two (its health is 2 sub-hits per design hit, a break costs it 3). Ninefold again on 2026-11-19 after P2.1 (it moves between perches and sits before each attack, about 5 s longer). The Sentinel on 2026-11-19 after P4.1 (the plate throw and a third phase with its eye always open: 1 to 5 s shorter). The Ringwarden on 2026-11-19 after P4.2 (tilting rings with gaps, prism splits, the halo lock: 1 to 2 s longer; most of its hits are the repel ring and the beam, not the halo lock). The Cinderforge on 2026-11-19 after P4.3 (redesigned as a furnace golem: it can only be hurt while it vents, so tier I is 5 s longer and tiers II and III 3 to 5 s shorter; its health is now 2 sub-hits per design hit, and the bare core takes double). The Bastion on 2026-11-19 after P4.4 (engines as its weak point, the ramming run instead of the mines: 2 to 8 s longer; the scripted pilot now looks further ahead in a lane wider than it can cross in 22 ticks, as it already did for sweeping wedges). The Tidecaller and the minis on 2026-11-19 after P4.5 and P4.6 (the bell swims in pulses with drifting bubbles; the Shardling's tilting ring and the Cinderling's golem shape changed their times by up to 9 s). Every fight again on 2026-11-20 after R2: unchanged except the Zodiarch, whose head contact now follows its turned head frames (the pilot, which steers around contact, is touched less: 0.2 to 0.4 times), and Ninefold, 1 to 2 s quicker. The pilot keeps out of the space level with or behind a boss, as a sensible player
 would. Times are seconds from the start of the fight (the 1.4 s entrance included) to the defeat,
 averaged over the seeds; **hits** is how often the pilot was touched (practice loses no lives).
 People are expected to take about 1.5× the bot time; that figure is an estimate until the S0.2
@@ -323,13 +323,13 @@ playtest records real ones.
 | Cinderforge | 41 | 39 | 40 | 0 / 0 / 0 | 62 s |
 | Bastion | 46 | 58 | 59 | 0 / 0 / 0 | 69 s |
 | Tidecaller | 40 | 47 | 46 | 1 / 2 / 2 | 60 s |
-| Zodiarch | 48 | 55 | 54 | 0.8 / 1.2 / 1.2 | 81 s |
+| Zodiarch | 48 | 55 | 55 | 0.2 / 0.4 / 0.4 | 72 s |
 | Picket | 18 | 24 | 24 | 0 | 27 s |
 | Shardling | 17 | 20 | 20 | 0 | 26 s |
 | Cinderling | 11 | 14 | 14 | 0 | 17 s |
 | Gunnery | 19 | 23 | 23 | 0 | 29 s |
 | Moonjelly | 19 | 22 | 22 | 0 | 29 s |
-| Ninefold | 26 | 35 | 35 | 0 | 39 s |
+| Ninefold | 24 | 34 | 34 | 0 | 36 s |
 
 Fairness counters over the same 36 fights (tiers I to III): no lethal hazard without its warning,
 no entrance hit, shots never above the cap of 48 (the Tidecaller reaches it), hazards never above

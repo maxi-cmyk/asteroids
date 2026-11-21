@@ -79,3 +79,20 @@ with clearly labeled synthetic pads and does not prove hardware connection.
 - [ ] Playtest sessions per `docs/PLAYTEST-PROTOCOL.md` (2 to 4 testers) and tuning from the logs.
 - [ ] Listening pass over every boss (entrance sting, track, tell tick, defeat sound; track loop
       clicks) and confirmation of the rights to the supplied tracks.
+
+## v0.3 release checks (R3, R6) — 2026-11-20
+
+Device: the developer's MacBook Pro (Apple M4, 16 GB), Safari 27.0.1 and the app's built-in
+Chromium 156 pane. This is a fast laptop, **not** a mid one: a mid-laptop run is still open.
+Both pages report to the dev server's output when opened with `?check=1` / `?auto=1`.
+
+| Check | Evidence / status |
+| --- | --- |
+| Replays are the same on every runtime (R3) | `replay.html?check=1`, a 60 s Zodiarch fight replayed on a fresh engine: `1c1ff5e4` for engine `372ef46734400` in Node, Chromium 156 and Safari 27, live and replayed alike. Firefox is not installed on this Mac: **not checked** |
+| Compact replay file (R3) | `tests/replay.test.mjs`: the `.astr` file round-trips exactly and replays to the live hash; 60 s of noisy scripted input is 77 kB (242 kB as JSON) |
+| Render stress, Zodiarch phase 2 (R6) | `stress.html?auto=1&boss=5&phase=2&seconds=60`, 48 shots and 6 hazards. Chromium at 624×351: 120 fps, interval p99 9.3 ms, frame work p99 2.6 ms, **no frame over 25 ms after the first**. Safari at 1440×810: 165 fps, p99 7 ms, work p99 1 ms; clean until the tab was paused 40 s in, when another page was opened (that pause is the only "over" entry). Pass |
+| First frame | The first boss frame takes 31 to 36 ms in both browsers (it builds the glow and outline caches). It happens once, during the boss's entrance, so the stress budget now counts from the second frame and reports the first apart (`firstFrame`) |
+| Deploy contents (R6) | `node build.mjs` writes `dist/site/` with only the page, styles, `src/`, assets, `game.wasm` and the licence file; the build fails if a test engine, object file, generated header or dev page would land in it |
+
+- [ ] Stress run on a mid laptop.
+- [ ] Replay check in Firefox (`replay.html?check=1`).

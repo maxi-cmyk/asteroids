@@ -33,6 +33,17 @@ test('the release page has no developer tools; the dev server page does', async 
     assert.doesNotMatch(dev, /@dev|@include/);
 });
 
+test('the page carries its build id (version and commit) from package.json and git', async () => {
+    const { assembleHtml } = await import('../tools/assemble-html.mjs');
+    const { buildInfo } = await import('../tools/build-info.mjs');
+    const build = buildInfo();
+    assert.equal(build.version, '0.3.0');
+    assert.match(build.id, /^0\.3\.0\+[0-9a-f]{7,}(-dirty)?$|^0\.3\.0\+unknown$/);
+    const page = assembleHtml(undefined, { build });
+    assert.match(page, new RegExp(`<meta name="build" content="${build.id.replace('+', '\\+')}"`));
+    assert.doesNotMatch(assembleHtml(), /@build/);
+});
+
 test('Pause → Settings/Help → Back retains exact runtime snapshot, bullets and effect deadlines', async () => {
     const { runtime, nav } = await setup();
     nav.start(true);

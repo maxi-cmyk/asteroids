@@ -286,22 +286,17 @@ static void bs_zod_choose() {
                   : m == ZM_DIVE  ? 1300
                                   : 2200);
 }
-static void bs_zod_steer() {
-    BossSwim& s = boss.swim;
-    bool free = !boss.atk || (boss.atk >= ZA_SIGN && boss.atk <= ZA_CONJ);
-    if (free && (s.mode >= ZM_FACE || game_ms >= s.until)) {
-        bs_zod_choose();
-    }
-    float hx, hy;
-    bs_swim_head(hx, hy);
-    if (s.mode == ZM_STALK) {
-        s.gy = bs_clamp(boss.target_y, ZOD_BOX_Y0 + 10, ZOD_BOX_Y1 - 10);
-    }
-    if (s.mode == ZM_FACE) {
-        float a = bs_atan2(boss.target_y - hy, boss.target_x - hx);
-        s.gx = hx + cosf(a) * 100;
-        s.gy = hy + sinf(a) * 100;
-    }
+// The steering's motion for one tick, on a copy of the swim's state, so the
+// same code runs the swim and its look-ahead (the path dots).
+struct ZodMove {
+    float bx, by, th, v, wave, amp, spin, gx, gy;
+    int mode;
+};
+static ZodMove bs_zod_move_of(const BossSwim& s) {
+    return {s.bx, s.by, s.th, s.v, s.wave, s.amp, s.spin, s.gx, s.gy, s.mode};
+}
+// Moves `s` one tick toward its goal; returns how far the goal was.
+static float bs_zod_move(ZodMove& s) {
     // A soft wall: heading toward an edge of the box and within a turn of it,
     // it turns back (it starts 35 to 55 px out, inside its 48 px turn at speed;
     // the snout stays right of x = 216).
@@ -379,6 +374,53 @@ static void bs_zod_steer() {
     s.by += sinf(s.th) * s.v;
     s.wave += s.v * TWO_PI / ZOD_WAVE_LEN;
     s.amp += ((s.mode == ZM_COIL ? 1.5f : ZOD_WAVE) - s.amp) * .05f;
+    return d;
+}
+// Where the head will be in 0.6 s if it keeps its goal (nextSteps.md R2: the
+// path dots), as aux x, y and heading; x is -1 while it holds still or turns
+// on the spot, so the dots hide.
+static void bs_zod_lookahead() {
+    BossSwim& s = boss.swim;
+    if (s.mode >= ZM_FACE || s.v < .3f) {
+        boss.aux[AUX_ZOD_PATH_X] = -1;
+        return;
+    }
+    ZodMove m = bs_zod_move_of(s);
+    for (unsigned i = 0; i < 30; i++) {
+        bs_zod_move(m);
+    }
+    float w = m.amp * sinf(m.wave);
+    boss.aux[AUX_ZOD_PATH_X] = m.bx - sinf(m.th) * w;
+    boss.aux[AUX_ZOD_PATH_Y] = m.by + cosf(m.th) * w;
+    boss.aux[AUX_ZOD_PATH_TH] = m.th;
+}
+static void bs_zod_steer() {
+    BossSwim& s = boss.swim;
+    bool free = !boss.atk || (boss.atk >= ZA_SIGN && boss.atk <= ZA_CONJ);
+    if (free && (s.mode >= ZM_FACE || game_ms >= s.until)) {
+        bs_zod_choose();
+    }
+    float hx, hy;
+    bs_swim_head(hx, hy);
+    if (s.mode == ZM_STALK) {
+        s.gy = bs_clamp(boss.target_y, ZOD_BOX_Y0 + 10, ZOD_BOX_Y1 - 10);
+    }
+    if (s.mode == ZM_FACE) {
+        float a = bs_atan2(boss.target_y - hy, boss.target_x - hx);
+        s.gx = hx + cosf(a) * 100;
+        s.gy = hy + sinf(a) * 100;
+    }
+    ZodMove m = bs_zod_move_of(s);
+    float d = bs_zod_move(m);
+    s.bx = m.bx;
+    s.by = m.by;
+    s.th = m.th;
+    s.v = m.v;
+    s.wave = m.wave;
+    s.amp = m.amp;
+    s.spin = m.spin;
+    s.gx = m.gx;
+    s.gy = m.gy;
     // Done with a goal: pick the next move (a stalk lingers on the pilot's row
     // until its time).
     if (free && d < 14 && s.mode != ZM_STALK && s.mode < ZM_FACE) {

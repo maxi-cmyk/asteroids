@@ -144,7 +144,7 @@ tick before P3 and P4; **re-measure before S3.3**, the bosses added aux slots an
 | S6 | Display names | free text / initials only | Initials (three letters, already in the game): nothing to moderate, on boards too |
 | S7 | Log retention | none / 7 days / 30 days | 7 days; IPs hashed; no message contents |
 | S9 | Cost guard | spend cap / room caps | Both: usage limits on Railway and Vercel, `MAX_ROOMS`, `MAX_ROOMS_PER_IP` |
-| S11 | Version compatibility | strict / minor tolerance | Strict equal build id; a mismatch says "refresh the page" |
+| S11 | Version compatibility | strict / minor tolerance | Strict equal build id (`buildInfo().id` in `web/src/version.mjs`, e.g. `0.3.0+5323271`, from `<meta name="build">`); a mismatch says "refresh the page". A `-dirty` build only pairs with itself |
 | S13 | TLS | platform / Caddy | Platform-provided on Railway and Vercel |
 | S14 | Voice or text chat | none / preset emotes | None |
 | S15 | ~~Room server host~~ **Settled 2026-11-19:** Railway (with Redis and Postgres in the same project). Still measure tick cost in S3.1 to size the service and the room cap | — | Done |

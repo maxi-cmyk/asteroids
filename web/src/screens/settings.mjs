@@ -7,6 +7,7 @@ import {
     sanitizeSettings,
     keyLabel,
 } from '../state/settings.mjs';
+import { buildInfo } from '../version.mjs';
 
 // The numeric settings with a range input and a readout, in screen order.
 const SLIDERS = [
@@ -54,6 +55,11 @@ class SettingsScreen {
         }
         this.#renderKeyBindings();
         this.#renderPadBindings();
+        // About (nextSteps.md R5): this build's version, commit and engine fingerprint.
+        const build = buildInfo();
+        element('aboutVersion').textContent = build.version;
+        element('aboutCommit').textContent = build.commit;
+        element('aboutEngine').textContent = this.engine?.() ?? 'not loaded';
     }
     select(category) {
         const { settingsUi } = this;

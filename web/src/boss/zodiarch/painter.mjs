@@ -6,7 +6,13 @@ import { pixelGlow as glow } from '../../render/fx.mjs';
 import { ATTACK, ZOD_HEAD, bossHazards, bossShots, zodLocal } from '../scene.mjs';
 import { drawRing, ringPoint } from './ring.mjs';
 import { creatures, drawCreature, partners } from './creatures.mjs';
-import { drawDragonBody, drawDragonHead, drawPearl } from './dragon.mjs';
+import {
+    drawDragonBody,
+    drawDragonHead,
+    drawPathDots,
+    drawPearl,
+    drawWhiskers,
+} from './dragon.mjs';
 import { drawZodiacFx } from './fx.mjs';
 
 const PINK = '#ff8ad0';
@@ -51,6 +57,20 @@ export const warden = (b) => {
     });
     const jaw = zodLocal(x, y, heading, ZOD_HEAD.jaw),
         eye = zodLocal(x, y, heading, ZOD_HEAD.eye);
+    // The head's path ahead, starting from the snout, under the head.
+    const tip = zodLocal(x, y, heading, [-80, 0]),
+        th = aux[A.pathHeading];
+    drawPathDots(
+        ctx,
+        tip,
+        heading,
+        aux[A.pathX] < 0
+            ? null
+            : [aux[A.pathX] + Math.cos(th) * 80, aux[A.pathY] + Math.sin(th) * 80],
+        th,
+        time,
+        alpha,
+    );
     // The throat swells with fire through the coil-spit's charge and spit; the breath glows.
     if (state.attack === ATTACK.coilSpit && ms >= 1400 && ms < 2700)
         glow(ctx, jaw[0], jaw[1], 14 + 18 * Math.min(1, (ms - 1400) / 900), '255,150,60', 0.7);
@@ -61,6 +81,7 @@ export const warden = (b) => {
         damage: state.damage,
         rim: open ? PINK : null,
     });
+    drawWhiskers(ctx, x, y, (p) => zodLocal(x, y, heading, p), time, alpha);
     if (aux[A.breath] > 0.5)
         glow(ctx, jaw[0], jaw[1], 26, '255,210,140', 0.5 + 0.2 * Math.sin(time / 60));
     const px = aux[A.pearlX],

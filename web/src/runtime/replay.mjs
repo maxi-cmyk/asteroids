@@ -30,9 +30,10 @@ export const RECORDED_CALLS = [
     'web_demo',
     'web_demo_lives',
     'web_set_clock',
+    'web_ascendant',
 ];
 // Settings that persist across runs: their latest values open every replay.
-const SETTINGS = ['web_boss_assist'];
+const SETTINGS = ['web_boss_assist', 'web_ascendant'];
 const LIMIT_TICKS = 50 * 60 * 60; // an hour of play; longer runs are not kept
 
 // A short fingerprint of the engine build (FNV-1a over the WASM bytes). A replay only plays on
@@ -83,6 +84,7 @@ export class ReplayRecorder {
     // Starts a tape: a fresh seed for the run, then every state-changing call. Call it before
     // the engine call that starts the run; `rules` describe the run.
     begin(rules, seed) {
+        this.fresh = false; // true once this run finishes with a replay (Results offers it)
         if (!this.rng) return; // a test supplied its own randomness: nothing to replay
         this.rng.reseed(seed ?? randomSeed());
         let scores = null;
@@ -126,6 +128,7 @@ export class ReplayRecorder {
         if (this.group.length) this.tape.ticks.push([1, this.group]);
         this.last = this.tape;
         this.tape = null;
+        this.fresh = true;
         return this.last;
     }
     discard() {

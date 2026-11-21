@@ -150,3 +150,96 @@ export function drawPearl(ctx, x, y, heading, pearl, time, alpha = 1, slit = tru
         ctx.restore();
     }
 }
+
+// Whiskers (nextSteps.md R2): two long barbels from the upper lip that droop under the jaw
+// and stream back (the shape the head art used to bake in), drawn live so their far ends
+// lag the head's motion from its last positions and sway: a turn or a surge sweeps them out.
+const WHISKERS = [
+    [
+        [-62, -2],
+        [-70, 14],
+        [-54, 30],
+        [-30, 34],
+    ],
+    [
+        [-56, 1],
+        [-56, 17],
+        [-40, 26],
+        [-20, 30],
+    ],
+];
+const whiskerState = { x: 0, y: 0, vx: 0, vy: 0, time: -1 };
+export function drawWhiskers(ctx, x, y, root, time, alpha = 1) {
+    const s = whiskerState;
+    if (s.time < 0 || time < s.time || time - s.time > 200)
+        Object.assign(s, { x, y, vx: 0, vy: 0 });
+    // Smoothed head velocity (px per frame) from its last positions.
+    s.vx += (x - s.x - s.vx) * 0.25;
+    s.vy += (y - s.y - s.vy) * 0.25;
+    s.x = x;
+    s.y = y;
+    s.time = time;
+    const lagX = Math.max(-10, Math.min(10, -s.vx * 5)),
+        lagY = Math.max(-10, Math.min(10, -s.vy * 5));
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    WHISKERS.forEach((points, w) => {
+        const sway = Math.sin(time / 420 + w * 1.7) * 2.5;
+        const [p0, p1, p2, p3] = points.map((p, i) => {
+            const [X, Y] = root(p),
+                lag = i / 3;
+            return [X + lagX * lag * lag, Y + lagY * lag * lag + sway * lag];
+        });
+        for (let i = 0; i <= 28; i++) {
+            const u = i / 28,
+                v = 1 - u;
+            const X =
+                    v * v * v * p0[0] +
+                    3 * v * v * u * p1[0] +
+                    3 * v * u * u * p2[0] +
+                    u * u * u * p3[0],
+                Y =
+                    v * v * v * p0[1] +
+                    3 * v * v * u * p1[1] +
+                    3 * v * u * u * p2[1] +
+                    u * u * u * p3[1];
+            ctx.fillStyle = u > 0.8 ? '#ffe9a8' : '#f2c060';
+            ctx.fillRect(Math.round(X), Math.round(Y), 1, 1);
+        }
+    });
+    ctx.restore();
+}
+
+// Path dots (nextSteps.md R2): faint dots ahead of the head along the engine's 0.6 s
+// look-ahead of its steering (a curve from the snout, leaving along the heading and arriving
+// along the predicted one). Hidden while it holds still or turns to face the pilot.
+export function drawPathDots(ctx, from, heading, to, toHeading, time, alpha = 1) {
+    if (!to || to[0] < 0) return;
+    const len = Math.hypot(to[0] - from[0], to[1] - from[1]);
+    if (len < 16) return;
+    const k = len * 0.45;
+    const c1 = [from[0] + Math.cos(heading) * k, from[1] + Math.sin(heading) * k],
+        c2 = [to[0] - Math.cos(toHeading) * k, to[1] - Math.sin(toHeading) * k];
+    const n = Math.max(3, Math.floor(len / 9)),
+        drift = (time / 600) % 1;
+    ctx.save();
+    for (let i = 1; i <= n; i++) {
+        const u = Math.min(1, (i - drift) / n);
+        if (u <= 0.08) continue;
+        const v = 1 - u;
+        const X =
+                v * v * v * from[0] +
+                3 * v * v * u * c1[0] +
+                3 * v * u * u * c2[0] +
+                u * u * u * to[0],
+            Y =
+                v * v * v * from[1] +
+                3 * v * v * u * c1[1] +
+                3 * v * u * u * c2[1] +
+                u * u * u * to[1];
+        ctx.globalAlpha = alpha * 0.55 * (1 - u * 0.7);
+        ctx.fillStyle = '#ffe6a8';
+        ctx.fillRect(Math.round(X), Math.round(Y), 1, 1);
+    }
+    ctx.restore();
+}

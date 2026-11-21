@@ -22,12 +22,12 @@ S7 Modifiers · S8 ESP32 handheld · Standing rules · Open decisions · Tools
 | Version | Stage | Goal | Depends on | Size |
 | --- | --- | --- | --- | --- |
 | **v0.3** | R1 | Playtest the upgraded bosses and tune from the logs | people | M |
-| v0.3 | R2 | Boss leftovers that playtesting asks for (P3, P2.1, P2.2 remainders) | R1 | S to L |
-| v0.3 | R3 | **Built 2026-11-19.** Deterministic engine: own `sinf`/`cosf`, seeded runs, replays | none | M |
+| v0.3 | R2 | Boss leftovers (P3, P2.1, P2.2 remainders, Ascendant): **built 2026-11-20** | R1 | done |
+| v0.3 | R3 | **Built 2026-11-19/20.** Deterministic engine, replays, compact replay file, Save replay; left: Firefox check | none | done |
 | v0.3 | R4 | **Built 2026-11-19.** One save format: versioned, exportable, mergeable | none | S |
-| v0.3 | R5 | Version, build id and changelog | none | S |
-| v0.3 | R6 | Release checks: music rights, shipped files, Safari and mid-laptop stress, accessibility | none | M |
-| v0.3 | R7 | Modularise leftovers that the network code will touch (M2, M6, M7) | none | M |
+| v0.3 | R5 | Version, build id and changelog: **built 2026-11-20** | none | done |
+| v0.3 | R6 | Release checks: shipped files, Safari stress, accessibility, first run **done 2026-11-20**; left: music rights, licence, mid-laptop stress | you | S |
+| v0.3 | R7 | Modularise leftovers that the network code will touch (M2, M6, M7): **built 2026-11-20** | none | done |
 | v0.3 | R8 | Tag `v0.3.0` | R1 to R7 | S |
 | v0.3.x | S2 | Maximum-combo bonuses (in the engine before the protocol is frozen) | R3 recommended | M |
 | **v0.4** | S3 | Network foundation: headless engine, snapshot codec, protocol | R3, R4 | L |
@@ -53,15 +53,19 @@ network and the cloud would otherwise freeze) are built.
 
 ### R1. Playtest and tune (was S0)
 
-- [ ] **Playtest sessions** (2–4 people; follow `docs/PLAYTEST-PROTOCOL.md`; the fight log
+- [x] **Playtest sessions** (2–4 people; follow `docs/PLAYTEST-PROTOCOL.md`; the fight log
   exports JSON). Targets:
   - Sentinel cleared first try by a new player with 3 lives.
   - The Zodiarch takes most players several attempts.
   - Fight lengths inside the COMBAT.md table, with people taking about 1.5× the bot.
 - [ ] **Questions to answer in play** (all came up while building P3 and P4):
-  - **Tidecaller:** is it clear that the bubbles must go first? If not, show a visible shield
-    over the bell while any bubble remains. Should the bell take damage only while it
-    contracts (built: any time)?
+  - **Tidecaller:** answered 2026-11-20: it was not clear that the bubbles go first. **Built:**
+    a glassy shield wraps the bell while any bubble stands. Each bubble feeds it along a
+    tether, a blocked shot ripples it, it thins as bubbles pop, and the last pop bursts it
+    (`src/boss/tidecaller/painter.mjs`; the field guide says so). Re-check in the next
+    playtest. Still open: should the bell take damage only while it contracts (built: any
+    time)?
+  - **The other bosses** read fine in the 2026-11-20 playtest.
   - **Bastion:** it still never hits the bot. Does the ramming run feel threatening to a
     person? Its outriggers (±98 px) reach past the lane (±70 px) without hurting: widen the
     lane or let the engines hurt.
@@ -75,23 +79,54 @@ network and the cloud would otherwise freeze) are built.
 - [ ] **Tune from the logs:** `BOSS_K`, rest lengths, window lengths, per-attack frequency,
   pickup drops at phases 2 and 3. One change per commit, with the evidence in the message.
 - [ ] **Re-verify after tuning:** every boss is beatable without pickups or laser at 1×
-  multiplier, and each has a faster mechanic route.
+  multiplier, and each has a faster mechanic route. **Pre-tuning baseline re-run
+  2026-11-20** (`node tests/boss-baseline.mjs 5 0,1,2`): all 36 fights beaten, no faults.
+  Unchanged except the Zodiarch (0.2 to 0.4 hits, from its new head contact) and Ninefold
+  (1 to 2 s quicker); `COMBAT.md` updated. Run it again after any tuning.
 - [ ] **Design questions:**
   - Event pull: keep or cut (decide after the playtest; calm forces already removes it).
   - Mini-boss on first runs: strictly on wave 3 (proposed), or an earlier one too?
   - Boss practice picker: bosses and mini-bosses together, tagged (proposed)?
 
-### R2. Boss leftovers (build only what the playtest asks for)
+### R2. Boss leftovers (built 2026-11-20)
 
-- [ ] **Zodiarch (P3):** boss-bar pearl icon (lit while the pearl is open, with a timer);
-  whiskers; path dots (needs a cheap look-ahead from the steering); `?hitboxes=1` on the state
-  and attack sheets; contact measured against the turned head frames.
-- [ ] **Ninefold (P2.1):** a popped decoy streams foxfire back to the real fox; ears flick at
-  shots; it licks its chops; a lost tail makes it turn a full circle; the optional fox run.
-- [ ] **Zodiarch creatures (P2.2):** each sign's own hold, tell and recoil motion (the table
-  is in the archive, "P2.2"). Needs two or three hold frames per sign or a part-animated layer.
-- [ ] **Optional, unscheduled (P2.3):** Ascendant (the sign of today's date is thrown first);
-  a boss backstop barrier, only if playtesting still finds a safe spot behind a boss.
+- [x] **Zodiarch (P3):**
+  - **Boss-bar pearl icon:** dark while shut, glinting in the tell, lit with a draining ring
+    while open (`src/boss/ui.mjs`).
+  - **Whiskers:** drawn live from the lip, drooping under the jaw, trailing the head's
+    motion. The static whiskers are gone from the head art.
+  - **Path dots:** a 0.6 s look-ahead of the steering. The engine runs the same move step on
+    a copy of the swim state (`ZodMove` in `swim.h`) and reports where the head will be (aux
+    9 to 11; the sign rotations moved into `BossSwim`). Hidden while it holds or turns.
+  - **`?hitboxes=1`** on `boss-states.html` and `zodiarch-attacks.html`
+    (`dev/hitboxes.mjs`, test-only export `web_test_boss_circles`): pink hurts, gold stops
+    shots, cyan key star, orange shootable shot, red outline contact.
+  - **Contact measured against the turned head frames:** the old two circles missed the
+    eye, throat and lower jaw by up to 19 px. Now skull, eye, snout, throat and jaw (shut or
+    dropped), within 3 px of the drawn edge, except the last 12 px of the snout tip, which
+    keeps contact right of x 216. `BOSS_BODY_MAX` is now 40 circles (was 32).
+- [x] **Ninefold (P2.1):**
+  - **Popped decoy:** it bursts into foxfire wisps that stream back to the real fox. A decoy
+    running home at the end makes none.
+  - **Ear flick:** a shot passing its head while it sits idle (new pose `sit-flick`; drawn
+    only, so its hit circles do not move).
+  - **Licks its chops** after foxfire (new poses `lick-0` and `lick-1`, with a tongue), then
+    shakes its head.
+  - **Lost tail:** a yelp, then a full turn on the spot (squeezed side-on through the turn),
+    then a glare.
+- [x] **Zodiarch creatures (P2.2):** every sign's hold, tell and recoil from the table
+  (`src/boss/zodiarch/motion.mjs`). It moves the one strike frame (lean, lift, squash,
+  shuffle) and adds touches at its emitters: kindling glows, dust, snorts, drips, robe
+  stars, spray. It is keyed to the creature's act time, which the engine now reports as
+  `|r| - 1` seconds; the sign of `r` stays the fish's facing. No new art was needed. The
+  hit circles do not move.
+- [x] **Ascendant (P2.3):** the sign of today's date is thrown first, and its key star takes
+  four hits (four pips). The page passes the sign in (`web_ascendant`, recorded in replays as
+  a setting), so the engine never reads a clock. Tests leave it off.
+- [ ] **Not built, on purpose:**
+  - **The fox run:** only if the Ninefold fight needs more variety. The playtest found the
+    other bosses fine.
+  - **The boss backstop barrier:** only if a playtest finds a safe spot behind a boss.
 
 ### R3. Deterministic engine (built 2026-11-19)
 
@@ -119,14 +154,18 @@ network and the cloud would otherwise freeze) are built.
   real renderer.
 
 Still open:
-- [ ] Run the check once in Safari itself and in Firefox (`replay.html`), and note it in
-  `docs/ACCEPTANCE.md`.
-- [ ] **Replay size:** 60 s of constant stick movement is about 240 kB of JSON (every tick
-  differs). Before replays are uploaded (W3), store per-tick deltas in a compact binary form
-  and cap the length.
-- [ ] A way for players to keep a replay (a "Save replay" button on Results) once there is a
-  use for it (sharing, W3 leaderboards).
-- [ ] The ESP32 build keeps its own `sinf` (nothing shared changed; `tests/run_host.sh` passes).
+- [x] **Safari (2026-11-20):** `replay.html?check=1` gives `1c1ff5e4` for engine
+  `372ef46734400` in Safari 27, Chromium 156 and Node alike (in `docs/ACCEPTANCE.md`).
+- [ ] **Firefox:** not installed on the dev Mac; open `replay.html?check=1` in it once (the
+  page reports to the dev server's output).
+- [x] **Compact file (2026-11-20):** `src/runtime/replay-codec.mjs` packs a replay as "ASTR",
+  a JSON header and the ticks, each argument coded against the last in its slot (integers as
+  zigzag varints of the difference, floats as the XOR of their bits). 60 s of noisy scripted
+  input is 77 kB (242 kB as JSON); real play repeats far more. Files over 4 MB are refused
+  both ways, on top of the one-hour tick cap. Round-trip and replay tested.
+- [x] **Save replay** on Results: downloads the finished run as `.astr`; `replay.html`
+  watches `.astr` or `.json`.
+- [x] The ESP32 build keeps its own `sinf` (nothing shared changed; `tests/run_host.sh` passes).
 
 ### R4. One save format (built 2026-11-19)
 
@@ -150,10 +189,14 @@ The parts keep their own storage keys, so no module changed how it loads.
 
 ### R5. Version and build id
 
-- [ ] `package.json` version `0.3.0`; the build writes the version and the short git hash into
-  the page; shown in Settings → About and on the Records export.
-- [ ] `CHANGELOG.md` with v0.1 to v0.3 summarised from the git history and the archives.
-- [ ] The same build id becomes the network handshake's compatibility check (S3.5, S11).
+- [x] **Version (2026-11-20):** `package.json` is `0.3.0`. The build and the dev server write
+  `<meta name="build" content="0.3.0+<commit>[-dirty]">` (`tools/build-info.mjs`). Settings →
+  **About** shows the version, commit and engine fingerprint, and Records → Export save
+  stamps the file with the build id.
+- [x] `CHANGELOG.md` with v0.1 to v0.3, from the git history and the archives (nothing was
+  tagged before, so the earlier boundaries are dates).
+- [x] **Ready for the handshake:** `buildInfo().id` (`src/version.mjs`) is the value S11
+  compares (`docs/NETWORK-AND-SECURITY.md`). Using it is part of S3.5.
 
 ### R6. Release checks (needed before anything is public)
 
@@ -164,16 +207,27 @@ The parts keep their own storage keys, so no module changed how it loads.
   files older layouts left in `dist/`, and fails if a dev page, `assets/inspo/`,
   `assets/bosses/draft-*` or the developer screen would ship. Developer tools exist only on
   the local dev server (`serve.mjs`, bound to 127.0.0.1).
-- [ ] **Test engines stay out of a deploy:** `dist/` also holds `test.wasm`, `oled-test.wasm`
-  (state-editing hooks), `*.o` and `gen/` for the tests. The W1 deploy must upload only
-  `index.html`, `style.css`, `theme.css`, `src/`, `styles/`, `assets/`, `game.wasm` and the
-  licence file (or the build writes those to their own folder).
-- [ ] **Stress run on a mid laptop and in Safari** (`npm run stress`). Budget: 60 fps, no
-  frame over 25 ms. Record the result in `docs/ACCEPTANCE.md`.
-- [ ] **Accessibility pass:** reduced motion, colour-blind readability of every boss warning
-  (warnings must not rely on colour alone), keyboard and controller reach every screen.
-- [ ] **First-run experience:** someone new reaches a game in two clicks, and Help explains
-  the boss rules (weak points, warnings) in a sentence each.
+- [x] **Test engines stay out of a deploy (2026-11-20):** `node build.mjs` writes
+  `dist/site/` with only the page, styles, `src/`, `assets/`, `game.wasm` and the licence
+  file, and fails if a test engine, object file, generated header or dev page would land in
+  it. W1 uploads `dist/site/`.
+- [x] **Stress in Safari (2026-11-20):** Zodiarch phase 2, 60 s. Safari 27 ran at 165 fps
+  (p99 7 ms) and Chromium at 120 fps (p99 9 ms), with no frame over 25 ms after the first.
+  The first boss frame takes 31 to 36 ms to build its caches, once, during the entrance; the
+  page now reports it apart (`firstFrame`). Details in `docs/ACCEPTANCE.md`.
+- [ ] **Stress on a mid laptop:** the only machine so far is an M4 MacBook Pro.
+- [x] **Accessibility pass (2026-11-20):**
+  - Warnings never rely on colour alone: every telegraph is dotted (live hazards are
+    solid) and blinks for its last 260 ms. Hit feedback differs in shape too (a burst
+    against glancing sparks). The new Tidecaller shield and Zodiarch pearl state show by
+    shape (membrane and tethers; a draining ring on the bar).
+  - Menu focus is collected per screen, so the new About tab (L1/R1 and arrows) and Save
+    replay are reachable by keyboard and controller.
+  - Reduced motion is unchanged.
+  - Not done: a check with colour-blind simulation on real screenshots.
+- [x] **First run (2026-11-20):** Play → Solo flight starts the launch (two clicks, checked
+  with cleared storage). Help has a new **Bosses** card: weak points, warnings and hit
+  feedback, a sentence each.
 - [ ] **Licence:** choose one for the code (or "all rights reserved") before the repo or site
   is public; list third-party fonts and sounds with their licences.
 
@@ -181,10 +235,15 @@ The parts keep their own storage keys, so no module changed how it loads.
 
 From M (archive): only the splits that S3 and W3 will edit, so the network diffs stay
 readable. The rules for splitting are unchanged (no behaviour change in a split commit).
-- [ ] **M2 Boss tests** (`web/tests/boss.test.mjs`, now 1625 lines) into `tests/boss/`.
-- [ ] **M6 Guide data** (`guide.mjs`, 670 lines) into per-boss data files.
-- [ ] **M7 Scene mirror** (`scene.mjs`, 568 lines): per-boss constants beside each boss. S3
-  builds its snapshot codec on this file.
+- [x] **M2 Boss tests (2026-11-20):** `tests/boss/` has `harness.mjs` (set-up and shared
+  helpers), `rules.test.mjs` and one file per boss. The 64 tests moved verbatim, and
+  `npm test` runs `tests/*/*.test.mjs` too.
+- [x] **M6 Guide data:** `src/boss/guide/<boss>.mjs`, one per kind; `guide.mjs` lists them
+  in kind order. Checked deep-equal with the old list.
+- [x] **M7 Scene mirror:** each boss's KINDS entry is `src/boss/<boss>/kind.mjs` (the minis'
+  are in `minis/kinds.mjs`; the Bastion's `RAM_LANE` and Ninefold's `NINEFOLD` sit beside
+  theirs), and the Zodiarch's constants are `zodiarch/geometry.mjs`. `scene.mjs` (571 → 317
+  lines) re-exports them; all 32 exports were checked identical.
 - [ ] Later, not blocking: M5 art tools, M8 shared C++ (`src/asteroid.cpp`, `src/game.cpp`;
   carefully, the ESP32 shares them).
 

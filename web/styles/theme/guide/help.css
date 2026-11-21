@@ -101,6 +101,30 @@
     font-size: var(--size-small);
     line-height: 1.4;
 }
+/* Bosses: three one-line rules, no glyph. */
+.utility-view[data-view='help'] .help-bosses {
+    --tone: #ff9370;
+    padding-left: 14px;
+}
+.utility-view[data-view='help'] .help-bosses::before {
+    display: none;
+}
+.utility-view[data-view='help'] .help-bosses ul {
+    display: grid;
+    gap: 6px;
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    color: #cdb6f0;
+    font-size: var(--size-small);
+    line-height: 1.35;
+}
+.utility-view[data-view='help'] .help-bosses li b {
+    color: #ffe9c4;
+    font-family: var(--font-display);
+    font-weight: 400;
+    margin-right: 6px;
+}
 /* Pickups: the sprite from the atlas at 3x, beside what it does. --ax/--ay mirror sprites.json. */
 .utility-view[data-view='help'] .help-pickups {
     --tone: #ff82c8;

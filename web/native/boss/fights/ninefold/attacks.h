@@ -53,11 +53,14 @@ static bool bs_fox_comets(unsigned long t) {
     return t >= end;
 }
 // Foxfire: it ducks and scoops while the flames gather in its jaws (700 ms),
-// tosses its head to throw three slow homing wisps, then shakes its head.
+// tosses its head to throw three slow homing wisps, then licks its chops and
+// shakes its head.
 static bool bs_fox_foxfire(unsigned long t) {
+    // Then it licks its chops (out, up to the nose, out) and shakes its head.
     boss.fox.pose = t < 700        ? FP_TOSS_0
                     : t < 1500     ? FP_TOSS_1
-                    : (t / 90) % 2 ? FP_SIT_UP
+                    : t < 1770     ? (t - 1500) / 90 % 2 ? FP_LICK_1 : FP_LICK_0
+                    : (t / 70) % 2 ? FP_SIT_UP
                                    : FP_SIT_DOWN;
     for (unsigned k = 0; k < 3; k++) {
         if (bs_at(t, 700 + k * 250)) {

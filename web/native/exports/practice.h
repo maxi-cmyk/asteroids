@@ -39,6 +39,16 @@ void web_boss_assist(int longer_warnings, int calm) {
     (void)calm;
 #endif
 }
+// Ascendant (nextSteps.md R2): the sign of the real-world date (0 Aries .. 11
+// Pisces, -1 none), which the Zodiarch throws first and a little stronger. The
+// page passes it in; the engine never reads a clock, so replays stay exact.
+void web_ascendant(int sign) {
+#ifdef WEB_HD
+    boss_ascendant = sign >= 0 && sign < 12 ? sign : -1;
+#else
+    (void)sign;
+#endif
+}
 void web_practice_targets() {
 #ifdef WEB_HD
     if (practice_mode) {

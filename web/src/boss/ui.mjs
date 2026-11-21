@@ -12,7 +12,8 @@ export function createBossUi(root = document) {
         tag = intro.querySelector('.boss-tier');
     const label = bar.querySelector('.boss-name'),
         track = bar.querySelector('.boss-track'),
-        fill = track.querySelector('i');
+        fill = track.querySelector('i'),
+        pearl = track.querySelector('.boss-pearl');
     let kind = -1,
         stage = 0,
         flashTimer = 0;
@@ -68,6 +69,16 @@ export function createBossUi(root = document) {
                 flashTimer = setTimeout(() => bar.classList.remove('crossed'), 420);
             }
             stage = state.stage;
+            // The Zodiarch's pearl window (nextSteps.md R2): a pearl at the bar's end, lit while
+            // the window is open, its ring draining as the timer; it glints during the tell.
+            if (pearl) {
+                const slot = info.aux?.pearl,
+                    value = slot === undefined ? 0 : state.aux[slot];
+                setHidden(pearl, slot === undefined);
+                const look = value > 0 ? 'open' : value < 0 ? 'tell' : 'shut';
+                if (pearl.dataset.state !== look) pearl.dataset.state = look;
+                pearl.style.setProperty('--left', value > 0 ? value.toFixed(3) : '0');
+            }
         },
     };
 }

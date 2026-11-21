@@ -63,15 +63,23 @@ static void bs_signs_tick() {
             p.x = p.u;
             p.y = p.v;
         }
+        // While it acts, |r| is 1 + the seconds since it formed, so the
+        // renderer can key each sign's hold, tell and recoil motion to its
+        // attack (nextSteps.md R2); the sign of r stays the fish's facing.
+        unsigned long act = t - ZOD_FORM_MS;
+        float facing = p.r < 0 ? -1.0f : 1.0f;
+        p.r = facing * (1 + act / 1000.0f);
         if (p.slot == SG_GEMINI || p.slot == SG_PISCES) {
             if (!p.lead) {
                 continue; // the lead one runs the pair
             }
         }
-        if (bs_sign_act(p, t - ZOD_FORM_MS)) {
+        if (bs_sign_act(p, act)) {
             bs_drop_hazard(p.hz0);
             bs_drop_hazard(p.hz1);
             bs_sign_dissolve(p);
+        } else if (p.state == 1) {
+            p.r = (p.r < 0 ? -1.0f : 1.0f) * (1 + act / 1000.0f);
         }
     }
 }

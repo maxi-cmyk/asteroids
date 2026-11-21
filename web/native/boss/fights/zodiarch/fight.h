@@ -16,6 +16,7 @@ static void bs_zod_update() {
     }
     bs_zod_steer();
     bs_zod_place();
+    bs_zod_lookahead();
     boss.aux[AUX_ZOD_SPEED] = boss.swim.v;
     boss.aux[AUX_ZOD_MODE] = float(boss.swim.mode);
     if (!boss.phase) {
@@ -156,14 +157,14 @@ static int bs_zod_own_pick() {
                                ZA_BREATH};
     unsigned avail = boss.phase >= 3 ? 7 : boss.phase >= 2 ? 4 : 1;
     // One that does not fit yet keeps its turn, as the signs do.
-    unsigned k0 = unsigned(boss.aux[AUX_ZOD_OWN_NEXT]) % avail;
+    unsigned k0 = unsigned(boss.swim.own_next) % avail;
     for (unsigned j = 0; j < avail; j++) {
         int id = pool[(k0 + j) % avail];
         if (!bs_own_fits(id)) {
             continue;
         }
         if (j == 0) {
-            boss.aux[AUX_ZOD_OWN_NEXT] = float(k0 + 1);
+            boss.swim.own_next = float(k0 + 1);
         }
         return id;
     }
@@ -173,6 +174,14 @@ static int bs_zod_own_pick() {
 // that, skipping any that would not fit beside the signs already out. 0 if none
 // fits.
 static int bs_zod_sign_pick() {
+    // Ascendant: the date's sign comes first, once, ahead of the rotation.
+    boss.swim.ascend_spawn = false;
+    if (!boss.swim.ascended && boss_ascendant >= 0
+        && bs_sign_fits(unsigned(boss_ascendant))) {
+        boss.swim.ascended = true;
+        boss.swim.ascend_spawn = true;
+        return ZA_SIGN + boss_ascendant;
+    }
     if (boss.phase >= 3) {
         for (unsigned tries = 0; tries < 12; tries++) {
             int id = ZA_SIGN + int(rock_random_bounded(12));
@@ -185,14 +194,14 @@ static int bs_zod_sign_pick() {
     // A sign that does not fit yet keeps its turn: the rotation only moves past
     // the one thrown.
     const uint8_t *row = SEQ_ZOD[boss.phase - 1];
-    unsigned k0 = unsigned(boss.aux[AUX_ZOD_NEXT]) % row[0];
+    unsigned k0 = unsigned(boss.swim.next_sign) % row[0];
     for (unsigned j = 0; j < row[0]; j++) {
         unsigned k = (k0 + j) % row[0];
         if (!bs_sign_fits(unsigned(row[1 + k] - ZA_SIGN))) {
             continue;
         }
         if (j == 0) {
-            boss.aux[AUX_ZOD_NEXT] = float(k0 + 1);
+            boss.swim.next_sign = float(k0 + 1);
         }
         return row[1 + k];
     }
@@ -206,18 +215,18 @@ static int bs_zod_pick() {
     // is room, then one of its own (in phases 1 and 2 it alternates; in phase
     // 3: sign, sign, own...).
     unsigned out = bs_signs_out(), limit = bs_zod_limit();
-    float streak = boss.aux[AUX_ZOD_LAST_SIGN];
+    float streak = boss.swim.sign_streak;
     // From phase 3 it throws both in a row (its own attacks run longer: it
     // settles first), so two signs really are out together.
     float run = boss.phase >= 3 ? limit : limit - 1;
     bool sign_turn = out == 0 || (out < limit && streak < run);
     int id = sign_turn ? bs_zod_sign_pick() : 0;
     if (id) {
-        boss.aux[AUX_ZOD_LAST_SIGN] = streak + 1;
+        boss.swim.sign_streak = streak + 1;
     } else {
         id = bs_zod_own_pick();
         if (id) {
-            boss.aux[AUX_ZOD_LAST_SIGN] = 0;
+            boss.swim.sign_streak = 0;
         }
     }
     return id;
@@ -266,11 +275,27 @@ static void bs_zod_circles() {
 }
 static unsigned bs_zod_body(float *out) {
     unsigned n = 0;
+    // The head, measured against the turned head frames (nextSteps.md R2):
+    // skull, eye, snout and throat, plus the lower jaw shut or dropped. Within
+    // 3 px of the drawn edge (leaning the player's way) except the last 12 px
+    // of the snout tip, left out so contact never reaches left of x = 216; the
+    // thin horns, mane and brow spike are left out too, and the neck segment
+    // covers their roots.
+    static const float HEAD[][3]
+            = {{-14, -2, 17}, {-38, -3, 10}, {-57, -2, 8}, {-30, 9, 9}};
+    static const float SHUT[][3] = {{-52, 7, 6}};
+    static const float OPEN[][3] = {{-50, 13, 6}, {-60, 11, 4}};
+    bool open = boss.aux[AUX_ZOD_MOUTH] > .5f;
     float hx, hy;
-    bs_zod_local(-14, -2, hx, hy);
-    bs_guard_body(out, n, hx, hy, 17);
-    bs_zod_local(-52, -3, hx, hy);
-    bs_guard_body(out, n, hx, hy, 9);
+    for (const float *c : HEAD) {
+        bs_zod_local(c[0], c[1], hx, hy);
+        bs_guard_body(out, n, hx, hy, c[2]);
+    }
+    for (unsigned i = 0; i < (open ? 2u : 1u); i++) {
+        const float *c = open ? OPEN[i] : SHUT[i];
+        bs_zod_local(c[0], c[1], hx, hy);
+        bs_guard_body(out, n, hx, hy, c[2]);
+    }
     for (unsigned k = 0; k < boss.seg_n; k++) {
         bs_guard_body(
                 out, n, boss.seg[k][0], boss.seg[k][1], boss.seg[k][2] * .9f);

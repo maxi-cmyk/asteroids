@@ -12,6 +12,7 @@ import {
     rmSync,
 } from 'node:fs';
 import { assembleHtml } from './tools/assemble-html.mjs';
+import { buildInfo } from './tools/build-info.mjs';
 const root = dirname(fileURLToPath(import.meta.url));
 const test = process.argv.includes('--test');
 const oled = process.argv.includes('--oled');
@@ -59,6 +60,7 @@ const exports = [
     'web_practice_targets',
     'web_boss_practice',
     'web_boss_assist',
+    'web_ascendant',
     'web_boss_body',
     'web_practice_multishot',
     'web_practice_hold',
@@ -78,6 +80,7 @@ if (test)
         'web_test_boss',
         'web_test_boss_stats',
         'web_test_boss_body',
+        'web_test_boss_circles',
         'web_test_boss_set',
         'web_test_boss_stress',
     );
@@ -165,7 +168,10 @@ if (!test && !oled) {
         copyFileSync(resolve(root, file), resolve(root, 'dist', file));
     // index.html is a template: each `<!-- @include html/name.html -->` line is replaced by that
     // partial, so every screen's markup lives in its own file.
-    writeFileSync(resolve(root, 'dist/index.html'), assembleHtml(resolve(root, 'index.html')));
+    writeFileSync(
+        resolve(root, 'dist/index.html'),
+        assembleHtml(resolve(root, 'index.html'), { build: buildInfo() }),
+    );
     for (const folder of ['src', 'styles']) {
         rmSync(resolve(root, 'dist', folder), { recursive: true, force: true });
         cpSync(resolve(root, folder), resolve(root, 'dist', folder), { recursive: true });
@@ -180,6 +186,7 @@ if (!test && !oled) {
         'index.html',
         'style.css',
         'theme.css',
+        'site',
     ]);
     outputs.add('THIRD-PARTY-LICENSE.txt');
     for (const entry of readdirSync(resolve(root, 'dist')))
@@ -228,5 +235,30 @@ if (!test && !oled) {
         )
     )
         throw new Error('Release page would contain the developer tools');
+}
+if (!test && !oled) {
+    // The deploy folder (nextSteps.md R6): exactly what the public page needs and nothing the
+    // tests leave in dist/ (test engines with state-editing hooks, object files, generated
+    // headers). W1 uploads dist/site/ as it is.
+    const SITE = [
+        'index.html',
+        'style.css',
+        'theme.css',
+        'src',
+        'styles',
+        'assets',
+        'game.wasm',
+        'THIRD-PARTY-LICENSE.txt',
+    ];
+    const site = resolve(root, 'dist/site');
+    rmSync(site, { recursive: true, force: true });
+    mkdirSync(site, { recursive: true });
+    for (const entry of SITE)
+        cpSync(resolve(root, 'dist', entry), resolve(site, entry), { recursive: true });
+    const deployed = readdirSync(site, { recursive: true });
+    const stray = deployed.filter(
+        (f) => /(^|\/)(test|oled-test|oled)\.wasm$|\.o$|(^|\/)gen\//.test(f) || /^dev\//.test(f),
+    );
+    if (stray.length) throw new Error(`dist/site would deploy: ${stray.slice(0, 5).join(', ')}`);
 }
 console.log(`Built ${outputName}.wasm from production C17/C++ sources.`);

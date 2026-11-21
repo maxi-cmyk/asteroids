@@ -27,17 +27,26 @@ static void bs_fox_begin() {
     boss.aux[AUX_FOX_ALPHA] = 1;
     boss.aux[AUX_FOX_FACE] = -1;
 }
-// The reaction drawn while it sits: a yelp and a look round at its tails, or a
-// wet-dog shake. Returns the pose, or -1 when there is none.
+// The reaction drawn while it sits: a yelp and a full turn to look at its
+// tails, or a wet-dog shake. Returns the pose, or -1 when there is none.
 static int bs_fox_react_pose() {
     BossFox& f = boss.fox;
     unsigned long in = game_ms - f.react_at;
-    if (f.react == FR_YELP && in < 1000) {
+    // A tail lost: it yelps (400 ms), turns a full circle on the spot to look
+    // at its tails (900 ms; the face runs -1 to 1 and back as a cosine, so the
+    // renderer squeezes it through side-on), then glares at the pilot (400 ms).
+    // The mark is open throughout: the daze is the window.
+    if (f.react == FR_YELP && in < 1700) {
         if (in < 400) {
             return FP_YELP;
         }
-        boss.aux[AUX_FOX_FACE] = ((in - 400) / 250) % 2 ? 1.0f : -1.0f;
-        return FP_STAND;
+        if (in < 1300) {
+            float u = (in - 400) / 900.0f;
+            boss.aux[AUX_FOX_FACE] = -cosf(u * TWO_PI);
+            return FP_WALK_0 + int((in - 400) / 110) % 4;
+        }
+        boss.aux[AUX_FOX_FACE] = -1;
+        return FP_SIT_BRISTLE;
     }
     if (f.react == FR_SHAKE && in < 900) {
         return in < 600 ? FP_SHAKE_0 + int(in / 90) % 3 : FP_STAND;
