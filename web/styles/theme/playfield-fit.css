@@ -7,8 +7,8 @@ body:is([data-screen='play'], [data-screen='pause']) {
 }
 body:is([data-screen='play'], [data-screen='pause']) .app-shell {
     background:
-        linear-gradient(#0a0518e6, #0a0518ee),
-        url('../../assets/home-scene.png') center / cover no-repeat,
+        var(--menu-veil, linear-gradient(#0a0518e6, #0a0518ee)),
+        var(--menu-backdrop, url('../../assets/home-scene.png') center / cover) no-repeat,
         #0a0518;
     image-rendering: pixelated;
 }

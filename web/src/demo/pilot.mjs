@@ -11,6 +11,8 @@ const SHIP = 7,
     BULLET_SPEED = 18.75,
     FIRE_EVERY = 6, // ticks between shots: eight a second
     ROCK_MARGIN = 9,
+    MUZZLE = 13, // SHIP_BULLET_OFFSET: shots leave the nose, not the centre
+    CLAIM_TICKS = 30, // how far ahead a bullet in flight counts as already hitting a rock
     HOME_X = 110,
     LASER_HOLD_TICKS = 80, // the charge takes 1.5 s (75 ticks)
     LASER_MIN_ROCKS = 4,
@@ -27,6 +29,7 @@ export class Pilot {
         this.boss = new BossPilot(game, {
             margin: 12,
             extraDanger: (px, py, ahead) => this.rockDanger(px, py, ahead),
+            steadyOnlyInDanger: true,
         });
     }
     // Every live rock as { x, y, r, vx, vy }, read straight from the scene.
@@ -46,6 +49,29 @@ export class Pilot {
         }
         return rocks;
     }
+    // Rocks that a bullet already in flight will hit. Rocks break on one hit, so another shot at
+    // one of these is wasted.
+    #claimed(scene) {
+        const claimed = new Set();
+        const { at, stride, count } = BLOCKS.BULLETS;
+        for (let i = 0; i < count; i++) {
+            const b = at + i * stride;
+            if (!scene[b]) continue;
+            const [bx, by, bvx, bvy] = [scene[b + 1], scene[b + 2], scene[b + 3], scene[b + 4]];
+            for (const rock of this.rocks) {
+                if (claimed.has(rock)) continue;
+                for (let k = 1; k <= CLAIM_TICKS; k++) {
+                    const dx = bx + bvx * k - rock.x - rock.vx * k,
+                        dy = by + bvy * k - rock.y - rock.vy * k;
+                    if (dx * dx + dy * dy < (rock.r + 1) ** 2) {
+                        claimed.add(rock);
+                        break;
+                    }
+                }
+            }
+        }
+        return claimed;
+    }
     // The cost of standing at (px, py) `ahead` ticks from now, given where the rocks are heading.
     rockDanger(px, py, ahead) {
         let cost = 0;
@@ -56,12 +82,13 @@ export class Pilot {
         }
         return cost;
     }
-    // The rock worth shooting next: the closest ahead of the ship, nearer lanes first.
-    #rockTarget(sx, sy) {
+    // The rock worth shooting next: the closest ahead of the ship, nearer lanes first, skipping
+    // rocks a bullet is already on its way to.
+    #rockTarget(sx, sy, claimed) {
         let best = null,
             bestScore = Infinity;
         for (const rock of this.rocks) {
-            if (rock.x < sx + 14 || rock.x > WIDTH) continue;
+            if (rock.x < sx + 14 || rock.x > WIDTH || claimed.has(rock)) continue;
             const score = rock.x - sx + Math.abs(rock.y - sy) * 0.6;
             if (score < bestScore) {
                 best = rock;
@@ -69,8 +96,9 @@ export class Pilot {
             }
         }
         if (!best) return null;
-        // Bullets are quick, but a rock still drifts a little while one is in flight.
-        const flight = Math.hypot(best.x - sx, best.y - sy) / BULLET_SPEED;
+        // Bullets are quick, but a rock still drifts a little while one is in flight (which
+        // starts at the muzzle, not the ship's centre).
+        const flight = Math.max(0, Math.hypot(best.x - sx, best.y - sy) - MUZZLE) / BULLET_SPEED;
         return { x: best.x + best.vx * flight, y: best.y + best.vy * flight };
     }
     // The inputs for this tick, as Runtime.step takes them.
@@ -90,10 +118,15 @@ export class Pilot {
             body = this.boss.body();
             target = this.boss.target(scene, state, bossParts(scene));
         }
-        const rockTarget = this.#rockTarget(sx, sy);
+        const rockTarget = this.#rockTarget(sx, sy, this.#claimed(scene));
         target ??= rockTarget;
         // Stand back from the action at the target's height, or go and fetch a power-up.
-        let home = { x: HOME_X, y: target ? clamp(target.y, 40, 230) : 135 };
+        // With nothing to aim at (between waves, or every rock already claimed) it idles in a slow
+        // loop over the left of the field, so the demo never looks frozen.
+        const idle = this.tick * 0.012;
+        let home = target
+            ? { x: HOME_X, y: clamp(target.y, 40, 230) }
+            : { x: HOME_X + Math.sin(idle) * 50, y: 135 + Math.sin(idle * 1.7) * 60 };
         if (scene[S.PICKUP_ACTIVE] && scene[S.PICKUP_X] < WIDTH - 40)
             home = { x: scene[S.PICKUP_X], y: scene[S.PICKUP_Y] };
         const move = this.boss.steer(scene, { shots, hazards, body }, home);
@@ -107,6 +140,8 @@ export class Pilot {
                 length = Math.hypot(ax, ay) || 1;
             aimX = ax / length;
             aimY = ay / length;
+            // A boss target is shot on rhythm; a rock target only while it is unclaimed, which
+            // #rockTarget already guarantees.
             fire = this.tick % FIRE_EVERY === 0 && length < WIDTH + 40;
         }
         // The laser: when it is ready and rocks are bunched up, hold the trigger through the

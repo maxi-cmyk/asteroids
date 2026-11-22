@@ -65,8 +65,8 @@
 .utility-view[data-view='developer'] {
     border: 0;
     background:
-        linear-gradient(#0a0518d9, #0a0518f0),
-        url('../../assets/home-scene.png') center / cover;
+        var(--menu-veil, linear-gradient(#0a0518d9, #0a0518f0)),
+        var(--menu-backdrop, url('../../assets/home-scene.png') center / cover);
     image-rendering: pixelated;
 }
 .utility-view[data-view='developer']:not([hidden]) {

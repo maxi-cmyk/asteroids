@@ -8,6 +8,8 @@ import { renderHomeScreen } from '../screens/home.mjs';
 import { accuracyText } from '../state/records.mjs';
 import { needsRelease } from '../state/navigation.mjs';
 import { MusicDirector } from '../audio/soundtrack.mjs';
+import { MATCH_LOOK } from '../audio/menu-themes.mjs';
+import { furthestWave, lookRegion, lookTrack } from './menu-look.mjs';
 import { S } from '../runtime/scene-layout.mjs';
 import { element, setAttr, setText } from './dom.mjs';
 
@@ -36,6 +38,8 @@ export class Presenter {
             { runtime, navigation, session } = app;
         const update = setText;
         const scene = runtime.scene();
+        this.#look();
+        app.practiceRange.render(scene);
         if (['play', 'pause'].includes(navigation.screen) && runtime.state !== 'results') {
             app.renderer.hulls = session.hulls();
             app.renderer.renderIfChanged(scene, session.players());
@@ -140,10 +144,23 @@ export class Presenter {
                 runtimeState: runtime.state,
                 scene,
                 demoScene: app.demo?.active ? app.demo.scene() : null,
-                menuTheme: app.settings.menuTheme,
+                menuTheme: this.#menuTheme(),
                 origin: navigation.origin,
             }),
         );
+    }
+    // The look's region (-1 Classic) for the active profile, from how far it has flown.
+    #lookRegion() {
+        const { app } = this;
+        const wave = furthestWave(app.runtime?.records, app.profileStore.activeProfile);
+        return lookRegion(app.settings.menuLook, wave);
+    }
+    #menuTheme() {
+        const theme = this.app.settings.menuTheme;
+        return theme === MATCH_LOOK ? lookTrack(this.#lookRegion()) : theme;
+    }
+    #look() {
+        this.app.menuLook.sync(this.#lookRegion(), this.app.gameArt?.worlds);
     }
     #liveStats(runtime, update) {
         const stats = runtime.stats();

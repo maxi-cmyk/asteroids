@@ -5,10 +5,24 @@ import { assembleHtml } from '../tools/assemble-html.mjs';
 const html = assembleHtml();
 const pause = html.slice(html.indexOf('id="pauseMenu"'), html.indexOf('id="runSummary"'));
 
-test('practice tools live in the Pause menu, not on the playfield', () => {
-    for (const id of ['resetTargets', 'endPractice']) {
+test('practice tools: End practice in Pause, everything else in the tools drawer', () => {
+    for (const id of ['openPracticeTools', 'endPractice']) {
         assert.ok(pause.includes(`id="${id}"`), `${id} should be in the pause menu`);
     }
+    const drawer = html.slice(
+        html.indexOf('id="practiceDrawer"'),
+        html.indexOf('id="unlockToast"'),
+    );
+    for (const id of [
+        'practiceRespawn',
+        'practiceClear',
+        'practiceNext',
+        'bossPick',
+        'bossPracticeStart',
+        'practiceDrops',
+    ])
+        assert.ok(drawer.includes(`id="${id}"`), `${id} should be in the drawer`);
+    assert.ok(html.includes('data-view="drills"'), 'the drill list is its own screen');
     for (const id of ['practiceMultishot', 'practiceDoubleFire']) {
         assert.ok(!pause.includes(`id="${id}"`), `${id} moved out of the pause menu`);
         assert.ok(

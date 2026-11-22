@@ -37,7 +37,11 @@ const SKY = [
     [240, 22],
     [128, 96],
 ];
-export function drawHome(ctx, ms, { reduced = false, art = null, hull = 'vanguard' } = {}) {
+export function drawHome(
+    ctx,
+    ms,
+    { reduced = false, art = null, hull = 'vanguard', glare = true } = {},
+) {
     ctx.clearRect(0, 0, WIDTH, HEIGHT);
     if (reduced) return;
     const t = Math.floor(ms / 50) * 0.05;
@@ -71,7 +75,7 @@ export function drawHome(ctx, ms, { reduced = false, art = null, hull = 'vanguar
         ctx.fillRect(Math.floor(x), Math.floor(y), 1, 1);
     }
     if (art) {
-        sunGlare(ctx, t);
+        if (glare) sunGlare(ctx, t);
         flyby(ctx, art, hull, t);
     }
     // Shooting star: an 11 second loop, visible for the first 0.9 s.

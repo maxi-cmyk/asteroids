@@ -1,3 +1,4 @@
+import { sanitizePractice } from '../state/practice.mjs';
 import { defaults, saveProfiles, sanitizeSettings } from '../state/settings.mjs';
 import { element, setHidden } from './dom.mjs';
 import { prefersReducedMotion } from './motion.mjs';
@@ -32,10 +33,13 @@ export class SettingsController {
             calm: settings.bossCalm,
         });
         app.runtime?.ascendant(ascendantSign());
+        if (app.runtime) app.runtime.practiceConfig = sanitizePractice(settings.practice);
         if (app.runtime) app.runtime.fightLog.enabled = settings.fightLog;
         const sound = element('sound'),
             music = element('music');
-        sound.textContent = settings.soundEnabled ? 'Sound on' : 'Sound off';
+        const soundLabel = settings.soundEnabled ? 'Sound effects on' : 'Sound effects off';
+        sound.setAttribute('aria-label', soundLabel);
+        sound.title = soundLabel;
         sound.setAttribute('aria-pressed', String(settings.soundEnabled));
         music.setAttribute('aria-pressed', String(settings.musicEnabled));
         this.syncMusicLabel();
@@ -52,7 +56,9 @@ export class SettingsController {
               : 'Music on';
         if (text === this.musicText) return;
         this.musicText = text;
-        element('music').textContent = text;
+        const music = element('music');
+        music.setAttribute('aria-label', text);
+        music.title = text;
         setHidden(element('soundHint'), !waiting);
     };
     // Apply button: commits the draft, then reports whether storage took it.

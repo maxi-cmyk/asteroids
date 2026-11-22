@@ -83,11 +83,23 @@ deadzone, angular aim response, and screen shake are adjustable. Closing setting
 leaves gameplay paused so the player can resume deliberately.
 
 Practice keeps the full aiming, laser, shield, collision, and scoring paths,
-but unshielded collisions never consume lives. Shields replenish when neither
-stored nor armed. Stationary targets replenish 1.5 seconds after the last one is
-destroyed; Reset targets is immediate. Try multishot grants the normal 6-second
-effect. Five goals track movement, aiming, primary fire, laser discharge, and
-shield arming. Practice has no leaderboard entry path and ends at the menu.
+but unshielded collisions never consume lives (each touch is counted as a hit taken).
+Shields replenish when neither stored nor armed. Practice has no leaderboard entry path
+and ends at the menu; it never unlocks hulls.
+
+**The practice range** (`native/exports/practice.h`, `src/screens/practice-range.mjs`).
+Play → Practice lists drills (Targets, Waves, Stream, Pickup lab, Boss, Custom); one press
+starts one, and the last drill and its settings are kept per profile. In flight, **T**
+(rebind-safe: ignored if T is bound to an action) or a controller's **View / Select** opens
+the tools drawer and the run waits until it closes. Rocks: *targets* (three still targets,
+refilled 1.5 s after the last one dies when Refill is on), *waves* (real waves from the chosen
+wave, moving on unless Stay on this wave is set), *stream* (one wave's rocks without end), or
+*none*. Rock speed (50–150 %) scales rocks as they enter from the right edge only, so the
+entrance warning is unchanged and fragments are not scaled twice. Respawn now, Clear field
+and Next wave act at once. Pickups: put a multishot, shield or 2× fire down ahead of the ship,
+make the laser ready, keep multishot or 2× fire on, and switch random drops on or off. Shortcuts
+while flying: R respawn, N next wave, 1–4 pickups. Every value is clamped in the engine, and
+every tool call is recorded, so practice runs replay exactly.
 
 ## 2× fire pickup
 

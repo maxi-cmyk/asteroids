@@ -6,7 +6,8 @@ import { drawShowcase } from '../render/showcase.mjs';
 // profile's hull, co-op shows both profiles side by side.
 export function createModeScreen({ getArt, store, activeProfile, reduced }) {
     const solo = element('modeArtSolo').getContext('2d'),
-        coop = element('modeArtCoop').getContext('2d');
+        coop = element('modeArtCoop').getContext('2d'),
+        practice = element('modeArtPractice').getContext('2d');
     const chip = element('modeHull').getContext('2d');
     return {
         render() {
@@ -56,6 +57,19 @@ export function createModeScreen({ getArt, store, activeProfile, reduced }) {
                 time,
                 reduced: still,
                 seed: 4,
+            });
+            drawShowcase(practice, art, {
+                ships: [
+                    {
+                        hull: store.profiles[activeProfile()],
+                        x: Math.round(width * 0.4),
+                        y: Math.round(height * 0.55),
+                        scale: 2,
+                    },
+                ],
+                time,
+                reduced: still,
+                seed: 5,
             });
         },
     };

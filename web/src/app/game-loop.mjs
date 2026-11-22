@@ -80,6 +80,7 @@ export class GameLoop {
         session.pauseFrame(now);
         const pad = session.menuPad();
         app.diagnosticPad = pad;
+        app.practiceRange.pad(pad);
         if (
             input.gameplayReady &&
             navigation.screen === 'play' &&
@@ -122,7 +123,8 @@ export class GameLoop {
         while (this.accumulator >= TICK_MS) {
             if (
                 (!navigation.shouldStep && !app.demo?.active) ||
-                element('navigationDecision').open
+                element('navigationDecision').open ||
+                app.practiceRange.open
             ) {
                 this.accumulator = 0;
                 break;

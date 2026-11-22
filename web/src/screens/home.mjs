@@ -28,5 +28,7 @@ export function renderHomeScreen({
               : 'Arrow keys: navigate · Enter: select · Esc: back',
     );
     if (watching) demoEngine.render();
+    // The profile name only matters once someone switches to the second profile.
     setText(element('profileLabel'), `Player ${profileStore.activeProfile + 1}`);
+    setHidden(element('profileLabel'), profileStore.activeProfile === 0);
 }

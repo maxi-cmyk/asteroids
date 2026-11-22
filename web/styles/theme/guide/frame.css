@@ -6,8 +6,8 @@
     padding: clamp(16px, 3.4vh, 36px) clamp(18px, 5vw, 64px) clamp(12px, 2vh, 24px);
     border: 0;
     background:
-        linear-gradient(#0a0518d9, #0a0518f0),
-        url('../../../assets/home-scene.png') center / cover;
+        var(--menu-veil, linear-gradient(#0a0518d9, #0a0518f0)),
+        var(--menu-backdrop, url('../../../assets/home-scene.png') center / cover);
     image-rendering: pixelated;
     scrollbar-color: #5a3c98 #0e0624;
 }

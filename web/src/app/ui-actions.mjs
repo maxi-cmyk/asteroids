@@ -11,9 +11,10 @@ export function installActions(app) {
         if (!nav() || app.launch.active || app.consumeDemo()) return;
         nav().request('mode');
     });
+    // Practice opens the drill list (nextSteps.md H3); Help's button starts the last drill.
     on('practice', () => {
         if (app.consumeDemo()) return;
-        nav().start(true);
+        app.router.navigate('drills');
     });
     on('soloPlay', () => {
         app.coopInput.live = false;
@@ -23,16 +24,14 @@ export function installActions(app) {
         app.coopScreen.reset();
         nav().request('lobby');
     });
+    // Help's "Watch a flight": the demo plays on Home, so go there first.
     on('watchDemo', () => {
         if (app.consumeDemo()) return;
-        app.demo?.start();
-        app.menu.reset();
-        app.loop.resetTiming();
-        app.draw();
-        element('stopDemo').focus();
+        app.router.navigate('home');
+        app.startDemo();
     });
     on('stopDemo', () => app.consumeDemo());
-    on('helpPractice', () => nav().start(true));
+    on('helpPractice', () => app.practiceRange.startDrill(app.practiceRange.config.drill));
     for (const button of document.querySelectorAll('[data-go]'))
         button.addEventListener('click', () => app.router.navigate(button.dataset.go, button));
 
@@ -46,11 +45,6 @@ export function installActions(app) {
         else nav().pause();
         app.draw();
     });
-    for (const [id, action] of [['resetTargets', () => app.runtime.resetTargets()]])
-        on(id, () => {
-            action();
-            nav().resume();
-        });
     // The HUD toggles keep the pause menu closed: switch a pickup on or off mid-flight.
     on('practiceMultishot', () => app.runtime.togglePractice('multishot'));
     on('practiceDoubleFire', () => app.runtime.togglePractice('doubleFire'));
@@ -61,7 +55,8 @@ export function installActions(app) {
             Number(element('bossTier').value),
             Number(element('bossPhase').value),
         );
-        nav().resume();
+        if (nav().screen === 'pause') nav().resume();
+        app.practiceRange.close();
     });
     on('endPractice', () => {
         app.controls.clear();

@@ -4,11 +4,33 @@
 .shell-header {
     gap: 12px;
 }
-.shell-header #sound,
-.shell-header #music,
-.shell-header #fullscreen {
-    font-size: 12px;
-    padding: 6px 10px;
+/* Sound, music and fullscreen are small icon buttons; an "off" state is a diagonal stroke. */
+.shell-header .icon-button {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    min-height: 0;
+    padding: 0;
+    background: transparent;
+    border-color: transparent;
+}
+.icon-button svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.icon-button .on,
+.icon-button .off {
+    fill: none;
+}
+.icon-button[aria-pressed='false'] .on,
+.icon-button[aria-pressed='true'] .off {
+    display: none;
 }
 #runDevice {
     margin-left: auto;
@@ -187,11 +209,9 @@
     #profileLabel {
         font-size: 11px;
     }
-    .shell-header #sound,
-    .shell-header #music,
-    .shell-header #fullscreen {
-        padding: 5px;
-        font-size: 11px;
+    .shell-header .icon-button {
+        width: 28px;
+        height: 28px;
     }
     .utility-view {
         padding: 16px;

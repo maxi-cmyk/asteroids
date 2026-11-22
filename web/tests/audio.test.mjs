@@ -10,7 +10,13 @@ import {
     menuRequest,
     planetRequest,
 } from '../src/audio/soundtrack.mjs';
-import { MENU_THEMES, MENU_GROUPS, SILENT_MENUS, isMenuTheme } from '../src/audio/menu-themes.mjs';
+import {
+    MENU_THEMES,
+    MENU_GROUPS,
+    SILENT_MENUS,
+    MATCH_LOOK,
+    isMenuTheme,
+} from '../src/audio/menu-themes.mjs';
 import { S, BOSS, BOSS_AT } from '../src/runtime/scene-layout.mjs';
 import { defaults, sanitizeSettings, SettingsDraft, loadProfiles } from '../src/state/settings.mjs';
 
@@ -255,7 +261,7 @@ test('the menu theme list is grouped, has no duplicates and matches the soundtra
     for (const theme of MENU_THEMES) {
         assert.ok(MENU_GROUPS.includes(theme.group), theme.id);
         assert.ok(isMenuTheme(theme.id));
-        if (theme.id === 'cycle' || theme.id === SILENT_MENUS) continue;
+        if (['cycle', SILENT_MENUS, MATCH_LOOK].includes(theme.id)) continue;
         assert.ok(tracks[theme.id], `${theme.id} is in the manifest`);
         assert.equal(tracks[theme.id].title, theme.title, `${theme.id} title matches`);
     }
@@ -311,4 +317,31 @@ test('a play() the browser refuses is marked blocked and retried on the next ges
     await Promise.resolve();
     assert.equal(elements[0].playing, true);
     assert.equal(player.blocked, false);
+});
+
+test('menu look: regions open as they are reached, and matching music follows the look', async () => {
+    const { lookRegion, regionsReached, lookTrack, furthestWave, isMenuLook } =
+        await import('../src/app/menu-look.mjs');
+    assert.equal(sanitizeSettings({}).menuLook, 'classic');
+    assert.equal(sanitizeSettings({ menuLook: 'ember' }).menuLook, 'ember');
+    assert.equal(sanitizeSettings({ menuLook: 'nope' }).menuLook, 'classic');
+    assert.ok(isMenuLook('last') && !isMenuLook('HOME'));
+    assert.equal(regionsReached(0), 1);
+    assert.equal(regionsReached(5), 1);
+    assert.equal(regionsReached(6), 2);
+    assert.equal(regionsReached(40), 6);
+    assert.equal(lookRegion('classic', 30), -1);
+    assert.equal(lookRegion('frontier', 0), 0, 'the first region is always open');
+    assert.equal(lookRegion('ember', 10), -1, 'not reached yet: Classic');
+    assert.equal(lookRegion('ember', 11), 2);
+    assert.equal(lookRegion('last', 0), -1);
+    assert.equal(lookRegion('last', 17), 3);
+    assert.equal(lookTrack(-1), 'cycle');
+    assert.equal(lookTrack(2), 'ember');
+    const key = (practice) => JSON.stringify(['solo', false, [], practice]);
+    const records = {
+        profiles: [{ [key(false)]: { wave: 12 }, [key(true)]: { wave: 29 } }, {}],
+    };
+    assert.equal(furthestWave(records, 0), 12, 'practice runs do not count');
+    assert.equal(furthestWave(records, 1), 0);
 });

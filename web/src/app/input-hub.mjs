@@ -113,6 +113,12 @@ export class InputHub {
         document.addEventListener('change', resync, true);
         document.addEventListener('focusout', resync, true);
         window.addEventListener('pointerdown', () => app.unlockAudio());
+        // Any input holds off the idle Home demo.
+        for (const type of ['pointerdown', 'pointermove', 'wheel', 'keydown'])
+            window.addEventListener(type, () => app.noteActivity(), {
+                capture: true,
+                passive: true,
+            });
         // Any key counts too, in the menus as well as in flight.
         window.addEventListener('keydown', () => app.unlockAudio(), { capture: true });
         // Preserve brief controller releases between the fixed simulation ticks.

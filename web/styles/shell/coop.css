@@ -144,6 +144,7 @@
     }
     .mode-options {
         flex-direction: column;
+        grid-template-columns: minmax(0, 1fr);
     }
     .coop-hud {
         grid-template-columns: 1fr 1fr;

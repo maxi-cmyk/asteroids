@@ -5,8 +5,11 @@
                     <strong>Demo flight</strong
                     ><button id="stopDemo">Return to Home</button>
                 </div>
-                <span id="profileLabel">Player 1</span
-                ><button id="sound" aria-pressed="false">Sound off</button
-                ><button id="music" aria-pressed="false">Music off</button
-                ><button id="fullscreen">Fullscreen</button>
+                <span id="profileLabel" hidden>Player 1</span
+                ><button id="sound" class="icon-button" aria-pressed="false" aria-label="Sound effects off" title="Sound effects off"
+                    ><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z" /><path class="on" d="M11 5.5q1.5 2.5 0 5M13 3.5q3 4.5 0 9" fill="none" /><path class="off" d="M1 15 15 1" /></svg></button
+                ><button id="music" class="icon-button" aria-pressed="false" aria-label="Music off" title="Music off"
+                    ><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l8-2v9.5a2 2 0 1 1-1.5-1.9V4.2L7.5 5.5v7a2 2 0 1 1-1.5-1.9z" /><path class="off" d="M1 15 15 1" /></svg></button
+                ><button id="fullscreen" class="icon-button" aria-label="Fullscreen" title="Fullscreen"
+                    ><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 6V1.5H6M10 1.5h4.5V6M14.5 10v4.5H10M6 14.5H1.5V10" fill="none" /></svg></button>
             </header>

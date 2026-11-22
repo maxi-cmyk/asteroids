@@ -14,6 +14,8 @@ import { createServices } from './bootstrap.mjs';
 import { BossUnlockToast } from './boss-unlock-toast.mjs';
 import { element } from './dom.mjs';
 import { GameLoop } from './game-loop.mjs';
+import { PracticeRange } from '../screens/practice-range.mjs';
+import { MenuLook, furthestWave } from './menu-look.mjs';
 import { HomeBackdrop } from './home-backdrop.mjs';
 import { InputHub } from './input-hub.mjs';
 import { KeyboardRouter } from './keyboard-router.mjs';
@@ -60,6 +62,8 @@ export class App {
         this.router = new ScreenRouter(this);
         this.launch = new LaunchController(this);
         this.homeBackdrop = new HomeBackdrop(this);
+        this.menuLook = new MenuLook();
+        this.practiceRange = new PracticeRange(this);
         this.layout = new Layout(this);
         this.loop = new GameLoop(this);
         this.presenter = new Presenter(this);
@@ -85,6 +89,8 @@ export class App {
             unlockAudio: () => this.unlockAudio(),
             calibration: this.calibration,
             engine: () => this.runtime?.fingerprint,
+            furthestWave: () =>
+                furthestWave(this.runtime?.records, this.profileStore.activeProfile),
         });
         this.helpScreen = createHelpScreen(this.settings);
         const activeProfile = () => this.profileStore.activeProfile;
@@ -135,6 +141,7 @@ export class App {
     menuActive() {
         return (
             this.navigation?.screen !== 'play' ||
+            this.practiceRange?.open ||
             this.runtime?.state === 'results' ||
             (this.runtime?.coop && this.runtime.state === 'game-over') ||
             this.navigation.pending
@@ -147,8 +154,21 @@ export class App {
         this.controls.clear();
         this.menu.reset();
         this.draw();
-        element('watchDemo').focus();
+        if (this.navigation?.screen === 'home') element('play').focus();
+        this.noteActivity();
         return true;
+    }
+    // Starts the Home demo (from Help, or after IDLE_DEMO_MS without input on Home).
+    startDemo() {
+        if (!this.demo || this.demo.active) return;
+        this.demo.start();
+        this.menu.reset();
+        this.loop.resetTiming();
+        this.draw();
+        element('stopDemo').focus();
+    }
+    noteActivity() {
+        this.lastActivity = performance.now();
     }
     unlockAudio() {
         this.audio.onStateChange ??= () => this.settingsController.syncMusicLabel();
@@ -168,6 +188,7 @@ export class App {
         this.loop.installFocusHandling();
         this.layout.observe(element('coopHud'));
         installActions(this);
+        this.practiceRange.install();
         try {
             await this.#loadEngine();
         } catch (error) {

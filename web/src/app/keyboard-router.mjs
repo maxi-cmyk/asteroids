@@ -1,3 +1,4 @@
+import { TOOLS_KEY } from '../screens/practice-range.mjs';
 import { adjustField } from '../input/menu-fields.mjs';
 import { element } from './dom.mjs';
 import { FLIGHT_STATES } from '../state/navigation.mjs';
@@ -45,6 +46,16 @@ export class KeyboardRouter {
                 event.preventDefault();
                 menu.focus.move(['ArrowLeft', 'ArrowUp'].includes(event.code) ? -1 : 1);
             }
+            return;
+        }
+        if (
+            app.practiceRange?.open &&
+            event.code === TOOLS_KEY &&
+            !event.repeat &&
+            !event.target.matches?.('select')
+        ) {
+            event.preventDefault();
+            app.practiceRange.close();
             return;
         }
         if (app.isSettingsOpen()) this.settingsKey(event);
@@ -117,6 +128,10 @@ export class KeyboardRouter {
             return;
         }
         const keySettings = controls?.settings ?? settings;
+        if (app.practiceRange?.key(event, Object.values(keySettings.keys))) {
+            event.preventDefault();
+            return;
+        }
         const accepted = [...ARROWS, 'Enter', 'Escape', ...Object.values(keySettings.keys)];
         if (!accepted.includes(event.code)) return;
         if (event.target.closest('button, input, select, textarea')) {

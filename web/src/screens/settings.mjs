@@ -8,6 +8,7 @@ import {
     keyLabel,
 } from '../state/settings.mjs';
 import { buildInfo } from '../version.mjs';
+import { MENU_LOOKS, lookRegion, regionsReached } from '../app/menu-look.mjs';
 
 // The numeric settings with a range input and a readout, in screen order.
 const SLIDERS = [
@@ -37,12 +38,28 @@ class SettingsScreen {
         this.applyButton.disabled = !dirty;
         this.settingsStatus.textContent = dirty ? 'Unapplied changes' : '';
     }
+    // Regions not reached yet stay listed but locked; a stored look that is locked (another
+    // profile's, or a reset) shows as Classic, which is what the page draws.
+    #renderLooks() {
+        const wave = this.furthestWave?.() ?? 0,
+            open = regionsReached(wave);
+        for (const [index, option] of [...element('menuLook').options].entries()) {
+            const region = index - 2; // after Classic and Furthest
+            const locked = region >= open;
+            option.disabled = locked;
+            option.textContent = option.dataset.title + (locked ? ' · not reached yet' : '');
+        }
+        const look = this.settings.menuLook;
+        element('menuLook').value =
+            look === 'classic' || look === 'last' || lookRegion(look, wave) >= 0 ? look : 'classic';
+    }
     render() {
         const { settings, profileStore } = this;
         element('inputProfile').value = profileStore.activeProfile;
         element('audioEnabled').checked = settings.soundEnabled;
         element('musicEnabled').checked = settings.musicEnabled;
         element('menuTheme').value = settings.menuTheme;
+        this.#renderLooks();
         element('bossLongWarnings').checked = settings.bossLongWarnings;
         element('bossCalm').checked = settings.bossCalm;
         element('fightLog').checked = settings.fightLog;
@@ -148,6 +165,18 @@ class SettingsScreen {
         });
         element('musicEnabled').addEventListener('change', (event) => {
             settings.musicEnabled = event.target.checked;
+            this.changed();
+        });
+        // Menu look (H2): changing it shows at once behind Settings, like the menu music.
+        const looks = element('menuLook');
+        for (const look of MENU_LOOKS) {
+            const option = document.createElement('option');
+            option.value = look.id;
+            option.dataset.title = look.title;
+            looks.append(option);
+        }
+        looks.addEventListener('change', (event) => {
+            settings.menuLook = event.target.value;
             this.changed();
         });
         // One option per theme, grouped. Choosing one previews it at once (the music follows the

@@ -80,6 +80,12 @@ static void scene_core(float *scene) {
     scene[SCENE_PRECISION] = combat_input.precision && state == STATE_PLAYING;
     scene[SCENE_PRACTICE] = practice_mode;
     scene[SCENE_PRACTICE_GOALS] = practice_goals;
+    scene[SCENE_PRACTICE_ROCKS] = practice_mode ? practice_rocks : 0;
+    scene[SCENE_PRACTICE_HITS] = practice_mode ? practice_hits : 0;
+    scene[SCENE_PRACTICE_FLAGS]
+            = practice_mode ? practice_refill | practice_drops << 1 | practice_hold_wave << 2
+                                      | practice_speed_pct << 8
+                            : 0;
 #endif
     scene[SCENE_RUN_DESTROYED] = run_destroyed;
     scene[SCENE_RUN_BEST_MULTIPLIER] = run_best_multiplier;

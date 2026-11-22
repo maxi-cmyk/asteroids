@@ -19,6 +19,7 @@ export class MenuNavigator {
         const decision = element('navigationDecision');
         if (decision.open) return decision;
         if (demo?.active) return element('demoControls');
+        if (this.app.practiceRange?.open) return element('practiceDrawer');
         if (runtime?.state === 'results' && navigation.screen === 'play')
             return element('runSummary');
         if (navigation.screen === 'pause') return element('pauseMenu');
@@ -49,6 +50,10 @@ export class MenuNavigator {
             this.editing = false;
             return;
         }
+        if (this.app.practiceRange?.open) {
+            this.app.practiceRange.close();
+            return;
+        }
         this.app.navigation.back();
     }
     handlePad(pad, now) {
@@ -66,6 +71,7 @@ export class MenuNavigator {
         )
             return;
         app.input.device = 'controller';
+        app.noteActivity();
         if (app.consumeDemo()) return;
         if (input.pause && navigation.screen === 'pause' && !navigation.pending) {
             navigation.resume();

@@ -31,9 +31,15 @@ export const RECORDED_CALLS = [
     'web_demo_lives',
     'web_set_clock',
     'web_ascendant',
+    'web_practice_config',
+    'web_practice_spawn',
+    'web_practice_clear',
+    'web_practice_respawn',
+    'web_practice_next_wave',
+    'web_practice_reset_stats',
 ];
 // Settings that persist across runs: their latest values open every replay.
-const SETTINGS = ['web_boss_assist', 'web_ascendant'];
+const SETTINGS = ['web_boss_assist', 'web_ascendant', 'web_practice_config'];
 const LIMIT_TICKS = 50 * 60 * 60; // an hour of play; longer runs are not kept
 
 // A short fingerprint of the engine build (FNV-1a over the WASM bytes). A replay only plays on

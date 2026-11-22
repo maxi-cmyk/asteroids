@@ -96,3 +96,15 @@ Both pages report to the dev server's output when opened with `?check=1` / `?aut
 
 - [ ] Stress run on a mid laptop.
 - [ ] Replay check in Firefox (`replay.html?check=1`).
+
+## v0.3 polish (H1–H4, R6 colour check) — 2026-11-22
+
+Device and browser as above (the built-in Chromium pane).
+
+| Check | Evidence / status |
+| --- | --- |
+| Demo pilot (H4) | `tests/demo.test.mjs`, 2 minutes × 3 seeds headless: at a wall 0–1 % of ticks (was 78–82 %), 90–97 % of shots hit (was 64–74 %); the boss bot's steering is unchanged, so the boss baseline does not move. Rendered: the idle demo flew mid-field with the laser |
+| Calmer Home (H1) | Rendered: four menu entries and a How to play link, icon buttons for sound, music and fullscreen (labels and `aria-pressed` kept), Practice as a third Play card; after 30 s without input the demo starts, and a key returns Home with focus on Play. Smoke walk (`dev/smoke.mjs`) passes through the new drill list |
+| Menu look (H2) | `tests/audio.test.mjs`: regions open as reached, practice runs do not count, locked looks fall back to Classic, matched music follows the look. Rendered: Celestial frontier behind Settings and Ember orbit behind Home, live while choosing |
+| Practice range (H3) | `tests/practice-range.test.mjs`: every rock mode, clamping, rock speed (×1.5 exactly on entry), refill off, Respawn, Next wave, pickups on demand, laser ready, nothing outside practice, and a practice run with tool changes replays tick for tick. Rendered: drill list, Waves from wave 6, T opens and closes the drawer, 3 puts down 2× fire, Escape closes the drawer. Scene golden: only the three new practice fields changed (checked by zeroing them against the old golden) |
+| Colour-blind check (R6) | Machado 2009 protanopia, deuteranopia and tritanopia matrices over the dev boss sheets (`boss-states.html`): the Ringwarden's prism sweep, the Sentinel's plate-throw loops and the Bastion's ram lane all stay visible in every simulation, because the marks are light dots read by brightness and shape. The faintest is the Bastion's lane line under tritanopia over the red sky: legible, but the first to strengthen if a player reports it |

@@ -56,10 +56,18 @@ export async function runSmoke() {
     decision.querySelector('[data-decision="quit"]').click();
     await wait(400);
     note('home again', screen());
-    click('practice');
+    click('play'); // Practice is a card on the Play screen
+    await wait(300);
+    click('practice'); // opens the drill list (nextSteps.md H3)
+    await wait(300);
+    note('drills', screen());
+    document.querySelector('[data-drill="targets"]').click();
     await until(() => window.asteroids.state() === 'playing');
     note('practice', [screen(), el('practice') && window.asteroids.state()]);
     await tap('Escape');
+    click('openPracticeTools'); // the boss picker lives in the tools drawer
+    await wait(200);
+    note('tools drawer', !el('practiceDrawer').hidden);
     el('bossPick').value = '0';
     el('bossTier').value = '0';
     el('bossPhase').value = '0';

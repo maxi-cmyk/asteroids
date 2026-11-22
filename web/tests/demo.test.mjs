@@ -87,3 +87,44 @@ test('the Home demo plays the whole game: bosses, deaths and all, until it is st
     assert(livesLost > 0, 'the pilot loses lives like anyone, and keeps flying');
     demo.stop();
 });
+
+// H4: the demo pilot used to park against a wall for most of a run and waste shots on rocks a
+// bullet was already flying to.
+test('demo pilot keeps off the walls and wastes few shots', async () => {
+    const { Pilot } = await import('../src/demo/pilot.mjs');
+    const { S } = await import('../src/runtime/scene-layout.mjs');
+    const bytes = await readFile(new URL('../dist/test.wasm', import.meta.url));
+    for (const start of [1, 2, 3]) {
+        let seed = start;
+        const g = await createRuntime(bytes, {
+            random: () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0),
+            storage: { getItem: () => null, setItem: () => {} },
+        });
+        g.api.web_boss_assist(1, 0);
+        g.api.web_start(0);
+        const pilot = new Pilot(g);
+        let fired = 0,
+            wall = 0,
+            flying = 0;
+        for (let t = 0; t < 50 * 120; t++) {
+            const s = g.scene();
+            if (g.state !== 'playing') {
+                if (g.state === 'death' && !s[S.LIVES]) g.api.web_demo_lives(3);
+                g.step();
+                continue;
+            }
+            flying++;
+            const x = s[S.SHIP_X],
+                y = s[S.SHIP_Y];
+            if (x <= 17 || x >= 463 || y <= 17 || y >= 247) wall++;
+            const input = pilot.decide(s);
+            if (input.fire) fired++;
+            g.api.web_fire_press(+input.firePressed);
+            g.api.web_actions(input.aimX, input.aimY, +input.laser, 0, +input.shield);
+            g.api.web_step(input.x, input.y, +input.fire, 0, 0);
+        }
+        const hits = g.stats().hits;
+        assert(wall / flying < 0.1, `seed ${start}: at a wall ${wall} of ${flying} ticks`);
+        assert(hits / fired > 0.8, `seed ${start}: ${hits} hits from ${fired} shots`);
+    }
+});

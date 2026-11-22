@@ -113,3 +113,172 @@ body[data-practice='true']:is([data-screen='play'], [data-screen='pause']):not([
     background: #ffbe6e26;
     color: #ffbe6e;
 }
+
+/* ---- Practice range (nextSteps.md H3) -----------------------------------------
+   The drill list is its own screen; the tools drawer slides over the right of the
+   field and the run waits while it is open. */
+.practice-drills {
+    padding: clamp(16px, 3.4vh, 36px) clamp(18px, 5vw, 64px);
+    border: 0;
+    background:
+        var(--menu-veil, linear-gradient(#0a0518d9, #0a0518f0)),
+        var(--menu-backdrop, url('../../assets/home-scene.png') center / cover);
+    image-rendering: pixelated;
+}
+.practice-drills:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 2vh, 20px);
+    overflow: auto;
+}
+.practice-drills > h1 {
+    margin: 0;
+    font-size: clamp(28px, 3.6vw, 46px);
+    color: #ffd68c;
+}
+.drills-lede {
+    margin: 0;
+    color: #cdb6f0;
+}
+.drill-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(10px, 1.6vw, 22px);
+}
+.drill-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-height: 96px;
+    padding: 14px 16px;
+    text-align: left;
+    background: #0e0624d9;
+    border: 1px solid #3a2a64;
+    color: #aa8cd2;
+}
+.drill-card strong {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(20px, 2vw, 28px);
+    color: #ffe9c4;
+}
+.drill-card span {
+    font-size: var(--size-body);
+}
+.drill-card[aria-current='true'] {
+    border-color: #be96e6;
+}
+.drill-card:hover:not(:disabled),
+.drill-card:focus {
+    background: #160a34e6;
+    border-color: #ffbe6e;
+    box-shadow: 0 0 0 1px #ffbe6e;
+    outline: 1px solid transparent;
+}
+.drills-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 18px;
+    color: #aa8cd2;
+}
+.drills-foot label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #be96e6;
+}
+.drills-foot p {
+    margin: 0;
+}
+@media (max-width: 700px) {
+    .drill-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.practice-drawer {
+    position: absolute;
+    z-index: 6;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(46%, 420px);
+    overflow-y: auto;
+    padding: 10px 14px 12px;
+    background: #0a0518f2;
+    border-left: 1px solid #5a3c98;
+    color: #cdb6f0;
+    font-size: var(--size-small);
+    scrollbar-color: #5a3c98 #0e0624;
+}
+.practice-drawer[hidden] {
+    display: none;
+}
+.practice-drawer header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.practice-drawer h2 {
+    margin: 0;
+    font-size: clamp(18px, 2cqw, 24px);
+    color: #ffd68c;
+}
+.practice-drawer h3 {
+    margin: 10px 0 4px;
+}
+.practice-drawer section {
+    border-top: 1px solid #3a2a64;
+}
+.drawer-note,
+.drawer-keys {
+    margin: 2px 0;
+    color: #8a76b0;
+}
+.drawer-choices,
+.drawer-actions,
+.drawer-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 4px 0;
+}
+.practice-drawer button,
+.practice-drawer select {
+    min-height: 30px;
+    padding: 2px 8px;
+    font-size: var(--size-small);
+}
+.practice-drawer button[aria-pressed='true'] {
+    color: #0a0518;
+    background: #ffbe6e;
+    border-color: #ffbe6e;
+}
+.practice-drawer .drawer-fields label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.practice-drawer .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 2px 0;
+}
+.practice-drawer :disabled {
+    opacity: 0.45;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .practice-drawer:not([hidden]) {
+        animation: drawer-in 0.14s ease-out;
+    }
+}
+@keyframes drawer-in {
+    from {
+        transform: translateX(24px);
+        opacity: 0;
+    }
+}

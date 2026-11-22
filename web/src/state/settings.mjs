@@ -1,4 +1,6 @@
 import { DEFAULT_MENU_THEME, isMenuTheme } from '../audio/menu-themes.mjs';
+import { DEFAULT_MENU_LOOK, isMenuLook } from '../app/menu-look.mjs';
+import { PRACTICE_DEFAULTS, sanitizePractice } from './practice.mjs';
 
 export const SETTINGS_KEY = 'asteroids.web.settings-v1';
 export const KEY_ACTIONS = {
@@ -49,6 +51,8 @@ export function defaults() {
         soundEnabled: false,
         musicEnabled: false,
         menuTheme: DEFAULT_MENU_THEME,
+        menuLook: DEFAULT_MENU_LOOK,
+        practice: { ...PRACTICE_DEFAULTS },
         backgroundMotion: 1,
         backgroundBrightness: 1,
         bossLongWarnings: false,
@@ -84,6 +88,8 @@ export function sanitizeSettings(raw = {}) {
     settings.soundEnabled = raw.soundEnabled === true;
     settings.musicEnabled = raw.musicEnabled === true;
     if (isMenuTheme(raw.menuTheme)) settings.menuTheme = raw.menuTheme;
+    if (isMenuLook(raw.menuLook)) settings.menuLook = raw.menuLook;
+    settings.practice = sanitizePractice(raw.practice);
     settings.bossLongWarnings = raw.bossLongWarnings === true;
     settings.bossCalm = raw.bossCalm === true;
     settings.fightLog = raw.fightLog === true;

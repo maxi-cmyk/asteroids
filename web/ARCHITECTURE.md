@@ -16,8 +16,9 @@ web/
     render/            canvas rendering: renderer, layers, backgrounds, effects
     boss/              boss presentation: scene decoding, painters, death, sound, UI
     screens/           one module per screen (DOM rendering and wiring)
-    state/             persisted state: settings, records, hangar, navigation, and the one
-                       save that bundles them for export, import and merging (save.mjs)
+    state/             persisted state: settings, records, hangar, navigation, the practice
+                       range's drills and config (practice.mjs), and the one save that
+                       bundles them for export, import and merging (save.mjs)
     input/             controllers, keyboard/pad bindings, co-op input, calibration
     audio/             sound effects and music
     demo/              the isolated Home demo run
@@ -64,6 +65,10 @@ A scene is a point in ℝ¹⁴⁰⁸; snapshot deltas and drawing between two sc
 | `presenter.mjs` | Per-frame canvas and DOM updates |
 | `launch-controller.mjs`, `home-backdrop.mjs`, `presentation-clock.mjs`, `layout.mjs` | Warp overlay, Home layer, menu animation clock, playfield fitting |
 | `settings-controller.mjs`, `ui-actions.mjs`, `boss-unlock-toast.mjs` | Settings glue, plain button handlers, unlock toast |
+| `menu-look.mjs` | The menus' backdrop (Classic or a region reached), applied as `--menu-backdrop` / `--menu-veil` and `body[data-look]` |
+
+The practice range's drill list and in-flight tools drawer are `src/screens/practice-range.mjs`;
+while the drawer is open the game loop does not step and the menu keys drive the drawer.
 
 ## Runtime (src/runtime)
 

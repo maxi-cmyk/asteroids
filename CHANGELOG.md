@@ -25,6 +25,17 @@ The v0.3 release is waiting on a playtest and the release checks (`nextSteps.md`
 - Contact circles measured against the art.
 - A hit-circle overlay on the dev sheets.
 
+**Menus and practice**
+- A calmer Home: Play, Hangar, Records and Settings, a How to play link, and icon buttons for
+  sound, music and fullscreen. Practice is a card on the Play screen, and the demo plays by
+  itself after 30 s on Home (or from Help).
+- Menu look: the menus can show the sky of any region you have reached, and the menu music
+  can follow it.
+- The practice range: drills (targets, real waves from any wave, an endless stream, a pickup
+  lab, any boss), and a tools drawer in flight (T or View / Select) for rocks, speed, pickups
+  and the boss picker. Practice runs replay exactly.
+- The Home demo pilot no longer hugs the walls or wastes shots.
+
 **Engine and data**
 - Deterministic engine: own `sinf`/`cosf`, seeded runs and replays of every run, the same in
   Node, Chrome and JavaScriptCore.

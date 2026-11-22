@@ -12,6 +12,7 @@ const TITLES = {
     mode: 'Choose flight',
     hangar: 'Hangar',
     lobby: 'Local co-op',
+    drills: 'Practice',
 };
 
 // Reacts to the Navigation state machine: shows the right view, resets what the last screen
@@ -64,6 +65,7 @@ export class ScreenRouter {
         }
         if (screen === 'hangar') app.hangarScreen.open();
         if (screen === 'mode') app.modeScreen.render();
+        if (screen === 'drills') app.practiceRange.renderDrills();
         if (navigation.pending) this.#showDecision();
         else this.#restoreFocus(screen);
         this.#syncHash(screen);
@@ -113,6 +115,7 @@ export class ScreenRouter {
         element('screenBack').hidden = ['home', 'play', 'pause'].includes(screen);
         document.title = screen === 'home' ? 'Asteroids' : `${TITLES[screen]} · Asteroids`;
         element('helpPractice').hidden = navigation.origin === 'pause';
+        element('watchDemo').hidden = navigation.origin === 'pause';
         element('helpPaused').hidden = navigation.origin !== 'pause';
     }
     // The "Quit this run?" / "Unapplied settings" dialog.

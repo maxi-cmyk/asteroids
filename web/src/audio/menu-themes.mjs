@@ -5,6 +5,8 @@
 export const MENU_GROUPS = Object.freeze(['Menu themes', 'Planet themes', 'Boss themes']);
 export const DEFAULT_MENU_THEME = 'cycle';
 export const SILENT_MENUS = 'silent';
+// Plays the theme of the region the menu look shows (Classic: the playlist).
+export const MATCH_LOOK = 'match-look';
 
 const menu = (id, title) => ({ id, title, group: MENU_GROUPS[0] });
 const planet = (id, title) => ({ id, title, group: MENU_GROUPS[1] });
@@ -12,6 +14,7 @@ const boss = (id, title) => ({ id, title, group: MENU_GROUPS[2] });
 
 export const MENU_THEMES = Object.freeze([
     menu('cycle', 'Play them all in turn'),
+    menu(MATCH_LOOK, 'Match the menu look'),
     menu('home', 'Ready or Not'),
     menu('gravity-well-escape', 'Gravity Well Escape'),
     menu('insert-another-coin', 'Insert Another Coin'),

@@ -90,6 +90,26 @@
 .home-menu button:disabled {
     color: #6a5890;
 }
+/* A region menu look (H2) shows that region's sky behind Home, darkened where the menu sits. */
+body[data-look]:not([data-look='classic']) .home-view {
+    background:
+        linear-gradient(90deg, #03071ae0 0 28%, #03071a59 62%, #03071a26), var(--menu-backdrop);
+}
+/* How to play: a quiet link under the menu, not a fifth menu entry. */
+.home-menu .home-help {
+    margin-top: clamp(8px, 2vh, 20px);
+    min-height: 32px;
+    padding: 4px;
+    font-family: var(--font-body);
+    font-size: var(--size-body);
+    color: #8a76b0;
+    text-decoration: underline;
+    text-decoration-color: #4a3a74;
+    text-underline-offset: 4px;
+}
+.home-menu .home-help::before {
+    display: none;
+}
 #homeHint {
     background: transparent;
     color: #8a76b0;
@@ -102,6 +122,9 @@ body[data-screen='home'] #screenTitle {
 body[data-screen='home'] .shell-header button {
     background: transparent;
     border-color: #3a2a64;
+}
+body[data-screen='home'] .shell-header .icon-button {
+    border-color: transparent;
 }
 /* Play carries the selection until another entry takes focus. */
 .home-menu button.primary::before {

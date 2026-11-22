@@ -50,6 +50,24 @@ static bool practice_hold_multishot = false;
 static bool practice_hold_double_fire = false;
 static unsigned long practice_empty_since = 0;
 static unsigned practice_goals = 0;
+// The practice range (nextSteps.md H3). Rocks: targets (three still dummies), waves (real
+// waves from practice_wave, advancing unless held), stream (practice_wave's rocks without
+// end), or none. Speed scales rocks as they enter; drops turns the random pickups on.
+enum PracticeRocks : uint8_t {
+    PRACTICE_TARGETS,
+    PRACTICE_WAVES,
+    PRACTICE_STREAM,
+    PRACTICE_NONE,
+};
+static uint8_t practice_rocks = PRACTICE_TARGETS;
+static uint16_t practice_wave = 1;
+static uint16_t practice_speed_pct = 100;
+static bool practice_refill = true;
+static bool practice_drops = true;
+static bool practice_hold_wave = false;
+static unsigned practice_hits = 0; // hits that would have cost a life
+static unsigned long practice_last_hit_ms = 0;
+static bool practice_scaled[ASTEROID_MAX] = {};
 
 static void practice_targets() {
     memset(rocks, 0, sizeof(rocks));
@@ -57,6 +75,86 @@ static void practice_targets() {
         spawn_asteroid(340 + i * 35, 65 + i * 70, AsteroidSize(i), 0, 0);
     }
     practice_empty_since = 0;
+}
+
+// Starts practice_wave afresh: its rocks begin after the usual entrance warning.
+static void practice_begin_wave() {
+    memset(rocks, 0, sizeof(rocks));
+    memset(practice_scaled, 0, sizeof(practice_scaled));
+    wave_number = practice_wave;
+    prepare_wave(game_ms);
+    practice_empty_since = 0;
+}
+static void practice_apply_rocks() {
+    if (practice_rocks == PRACTICE_TARGETS) {
+        pending_asteroids = 0;
+        practice_targets();
+    } else if (practice_rocks == PRACTICE_NONE) {
+        memset(rocks, 0, sizeof(rocks));
+        pending_asteroids = 0;
+    } else {
+        practice_begin_wave();
+    }
+}
+// Rocks entering from the right edge take the practice speed once; fragments inherit their
+// parent's (already scaled) speed, so they are left alone.
+static void practice_scale_entering() {
+    for (int i = 0; i < ASTEROID_MAX; i++) {
+        Asteroid& rock = rocks[i];
+        if (!rock.active) {
+            practice_scaled[i] = false;
+            continue;
+        }
+        if (practice_scaled[i]) {
+            continue;
+        }
+        practice_scaled[i] = true;
+        if (rock.position_x > SCREEN_W && practice_speed_pct != 100) {
+            rock.velocity_x *= practice_speed_pct / 100.0f;
+            rock.velocity_y *= practice_speed_pct / 100.0f;
+        }
+    }
+}
+static void practice_update_rocks() {
+    switch (practice_rocks) {
+    case PRACTICE_TARGETS:
+        if (!asteroid_active_count() && practice_refill) {
+            if (!practice_empty_since) {
+                practice_empty_since = game_ms;
+            }
+            if (game_ms - practice_empty_since >= 1500) {
+                practice_targets();
+            }
+        }
+        break;
+    case PRACTICE_WAVES: {
+        uint16_t before = wave_number;
+        asteroids_update(game_ms);
+        if (wave_number != before && practice_hold_wave) {
+            wave_number = practice_wave;
+            prepare_wave(game_ms);
+        }
+        practice_wave = wave_number;
+        break;
+    }
+    case PRACTICE_STREAM:
+        wave_number = practice_wave;
+        if (!pending_asteroids) {
+            prepare_wave(game_ms);
+            next_spawn_ms = game_ms; // no gap: the next rock still gets its warning
+        }
+        asteroids_update(game_ms);
+        break;
+    default:
+        break;
+    }
+    practice_scale_entering();
+}
+// Pickups drop from destroyed rocks only when drops are on (always outside practice).
+static void combat_drop(float position_x, float position_y) {
+    if (!practice_mode || practice_drops) {
+        powerups_drop(position_x, position_y);
+    }
 }
 
 static void combat_reset() {
@@ -209,7 +307,7 @@ static void combat_destroy_laser_targets() {
         particles_spawn(parent.position_x, parent.position_y);
         combat.laser_kills++;
         combat_award(asteroid_points(parent.size));
-        powerups_drop(parent.position_x, parent.position_y);
+        combat_drop(parent.position_x, parent.position_y);
     }
 }
 
@@ -265,6 +363,11 @@ static void combat_ship_hit() {
         return;
     }
     if (practice_mode) {
+        // One touch (a rock overlapping for several ticks) counts once.
+        if (!practice_hits || game_ms - practice_last_hit_ms >= 500) {
+            practice_hits++;
+        }
+        practice_last_hit_ms = game_ms;
         return;
     }
     ship_die(ship);
@@ -315,14 +418,7 @@ static void combat_update_playing(bool laser_pressed) {
         if (!ship.effects.shield) {
             combat.shield_stored = true;
         }
-        if (!asteroid_active_count()) {
-            if (!practice_empty_since) {
-                practice_empty_since = game_ms;
-            }
-            if (game_ms - practice_empty_since >= 1500) {
-                practice_targets();
-            }
-        }
+        practice_update_rocks();
     } else {
         if (!boss_controls_wave()) {
             asteroids_update(game_ms);
@@ -358,7 +454,7 @@ static void combat_update_playing(bool laser_pressed) {
         }
     }
     bullets_update();
-    bullets_check_asteroids(combat_primary_hit, powerups_drop);
+    bullets_check_asteroids(combat_primary_hit, combat_drop);
     for (Bullet& bullet : bullets) {
         if (bullet.active && bullet.position_x < 0) {
             bullet.active = false;

@@ -10,6 +10,8 @@ import { WasmHost } from './wasm-host.mjs';
 import { SeededRandom } from './rng.mjs';
 import { ReplayRecorder, engineFingerprint } from './replay.mjs';
 
+import { PRACTICE_DEFAULTS, PRACTICE_ROCKS, sanitizePractice } from '../state/practice.mjs';
+
 export const STATES = [
     'menu',
     'countdown',
@@ -214,6 +216,7 @@ class Runtime {
     start(practice = false, { seed } = {}) {
         this.coop = null;
         this.replays.begin({ mode: 'solo', practice: !!practice }, seed);
+        if (practice) this.#sendPractice();
         this.api.web_start(+practice);
         this.#clearHold();
         this.#beginRun(practice);
@@ -274,6 +277,39 @@ class Runtime {
     // ---------------------------------------------------------------- practice tools
     resetTargets() {
         this.api.web_practice_targets();
+    }
+    // The practice range (nextSteps.md H3). `practiceConfig` is kept between runs, so the next
+    // practice starts the same way; each change reaches a running practice at once.
+    practiceConfig = { ...PRACTICE_DEFAULTS };
+    setPractice(config) {
+        this.practiceConfig = sanitizePractice({ ...this.practiceConfig, ...config });
+        this.#sendPractice();
+    }
+    #sendPractice() {
+        const c = this.practiceConfig;
+        this.api.web_practice_config(
+            PRACTICE_ROCKS.indexOf(c.rocks),
+            c.wave,
+            c.speed,
+            +c.refill,
+            +c.drops,
+            +c.hold,
+        );
+    }
+    practiceSpawn(kind) {
+        this.api.web_practice_spawn(kind);
+    }
+    practiceClear() {
+        this.api.web_practice_clear();
+    }
+    practiceRespawn() {
+        this.api.web_practice_respawn();
+    }
+    practiceNextWave() {
+        this.api.web_practice_next_wave();
+    }
+    practiceResetStats() {
+        this.api.web_practice_reset_stats();
     }
     doubleFire() {
         this.api.web_practice_double_fire();

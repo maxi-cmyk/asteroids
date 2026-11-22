@@ -71,6 +71,9 @@ export const S = Object.freeze({
     PICKUP_Y: 480,
     PICKUP_KIND: 481,
     COLLECT_KIND: 482, // which pickup the collect cue is for: 0 multishot, 1 shield, 2 2x fire, 3 health
+    PRACTICE_ROCKS: 483, // practice range: 0 targets, 1 waves, 2 stream, 3 none
+    PRACTICE_HITS: 484, // touches that would have cost a life this practice
+    PRACTICE_FLAGS: 485, // 1 refill, 2 drops, 4 hold wave, speed percent from bit 8
     // legacy boss header
     BOSS_ACTIVE: 512,
     BOSS_X: 513,

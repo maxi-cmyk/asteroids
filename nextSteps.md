@@ -1,19 +1,22 @@
 # Next steps
 
-Rewritten 2026-11-19 to hold only what is left to do. Everything finished (M1 and M4, P3,
-P2.1, the whole of P4, with their build notes and deviations) is in
-`docs/nextSteps-2026-11-19.archive.md`; older plans are in the other `docs/nextSteps-*.archive.md`
-files. The rules as built live in `web/COMBAT.md`, art in `web/assets/ART.md`, code layout in
-`web/ARCHITECTURE.md`, design reasons in `DESIGN-DECISIONS.md`, network and security in
-`docs/NETWORK-AND-SECURITY.md`.
+Rewritten 2026-11-22 to hold only what is left to do. The plan before this rewrite, with
+everything built for v0.3 (R2 to R7 and their notes), is in `docs/nextSteps-2026-11-22.archive.md`;
+older plans are in the other `docs/nextSteps-*.archive.md` files. The rules as built live in
+`web/COMBAT.md`, art in `web/assets/ART.md`, code layout in `web/ARCHITECTURE.md`, design
+reasons in `DESIGN-DECISIONS.md`, network and security in `docs/NETWORK-AND-SECURITY.md`,
+evidence in `docs/ACCEPTANCE.md`, and what changed per version in `CHANGELOG.md`.
 
-**Where things stand:** every boss and mini has had its upgrade (P3, P2.1, P4) and is waiting for
-a playtest. That build is **v0.3**. Next comes the v0.3 release (playtest, tune and the
-release checks in R1 to R8), then **v0.4 LAN** and **v0.5 web**.
+**Where things stand:** v0.3 (every boss upgraded, deterministic replays, one save format,
+version and build id, release checks, a calmer Home, menu looks, the practice range and a
+fixed demo pilot) is built and waiting on a second playtest, tuning and a
+few checks only you can do. Then tag it, then **v0.4 Campaign** (Act 1 first, then Endless), **v0.5 LAN** and **v0.6 web**.
 
-**Contents:** Roadmap · v0.3 release (R1–R8) · S2 Combo bonuses · The three ways to play together ·
-v0.4 LAN (S3, S4) · v0.5 Web (W1 static site, W2 online rooms, W3 accounts) · S6 Versus ·
-S7 Modifiers · S8 ESP32 handheld · Standing rules · Open decisions · Tools
+**Contents:** Roadmap · v0.3 release (R1, R6, polish leftovers, R8, later) · v0.4 Campaign (C1 Act 1,
+C2 Endless, C3 Act 2, C4 Achievements) · S2 Combo bonuses · The three ways to play together ·
+v0.5 LAN (S3, S4) · v0.6 Web (W1 static site, W2 online
+rooms, W3 accounts) · S6 Versus · S7 Modifiers · S8 ESP32 handheld · Standing rules ·
+Open decisions · Tools
 
 ---
 
@@ -21,236 +24,380 @@ S7 Modifiers · S8 ESP32 handheld · Standing rules · Open decisions · Tools
 
 | Version | Stage | Goal | Depends on | Size |
 | --- | --- | --- | --- | --- |
-| **v0.3** | R1 | Playtest the upgraded bosses and tune from the logs | people | M |
-| v0.3 | R2 | Boss leftovers (P3, P2.1, P2.2 remainders, Ascendant): **built 2026-11-20** | R1 | done |
-| v0.3 | R3 | **Built 2026-11-19/20.** Deterministic engine, replays, compact replay file, Save replay; left: Firefox check | none | done |
-| v0.3 | R4 | **Built 2026-11-19.** One save format: versioned, exportable, mergeable | none | S |
-| v0.3 | R5 | Version, build id and changelog: **built 2026-11-20** | none | done |
-| v0.3 | R6 | Release checks: shipped files, Safari stress, accessibility, first run **done 2026-11-20**; left: music rights, licence, mid-laptop stress | you | S |
-| v0.3 | R7 | Modularise leftovers that the network code will touch (M2, M6, M7): **built 2026-11-20** | none | done |
-| v0.3 | R8 | Tag `v0.3.0` | R1 to R7 | S |
-| v0.3.x | S2 | Maximum-combo bonuses (in the engine before the protocol is frozen) | R3 recommended | M |
-| **v0.4** | S3 | Network foundation: headless engine, snapshot codec, protocol | R3, R4 | L |
-| v0.4 | S4 | LAN co-op on two machines | S3 | XL |
-| **v0.5** | W1 | Public site on Vercel: solo and local co-op, no server | R6 | S |
-| v0.5 | W2 | Online rooms on Railway (the LAN server in a container, Redis beside it) | S4 | L |
-| v0.5 | W3 | Accounts, cloud saves and verified leaderboards (optional, decide first) | W2, R3, R4 | L |
+| **v0.3** | R1 | Second playtest, tune from the logs, answer the design questions | people | M |
+| v0.3 | R6 | Release checks left: music rights, licence, mid-laptop stress, Firefox replay | you | S |
+| v0.3 | R8 | Tag `v0.3.0` | R1, R6 | S |
+| **v0.4** | C1 | **Campaign Act 1** (main focus): 6 levels, stars, level select | R8 | L |
+| v0.4 | C2 | Endless with prestige and the new rock types; opens after Act 1 | C1 | L |
+| v0.4 | C4 | Achievements, with a 0.5 s trophy toast and a Records tab | C1 | M |
+| v0.4 | S2 | Maximum-combo bonuses (in the engine before the protocol is frozen) | none | M |
+| **v0.5** | S3 | Network foundation: headless engine, snapshot codec, protocol | none | L |
+| v0.5 | S4 | LAN co-op on two machines | S3 | XL |
+| **v0.6** | W1 | Public site on Vercel: solo and local co-op, no server | R8 | S |
+| v0.6 | W2 | Online rooms on Railway (the LAN server in a container, Redis beside it) | S4 | L |
+| v0.6 | W3 | Accounts, cloud saves and verified leaderboards (optional, decide first) | W2 | L |
+| later | C3 | Act 2: the new rock types and new bosses you design | C2 | XL |
 | later | S6 | Versus | S4 (W2 for online) | M |
 | later | S7 | Run modifiers | S2 | M |
 | later | S8 | Barebones single-player ESP32 build | S2 | L |
 
-W1 can ship as soon as v0.3 is tagged: the game already runs entirely in the browser, so a
-public page needs no server at all. S6 to S8 keep their order from the old plan; S8 never
-touches the network code and can start any time after S2.
+W1 can ship as soon as v0.3 (or v0.4) is tagged: the game runs entirely in the browser, so a public page
+needs no server. S8 never touches the network code and can start any time after S2.
 
 ---
 
-## v0.3 release: what to finish before scaling
+## v0.3 release: what is left
 
-The bosses are done but not yet proven on people, and a few things are much cheaper to do now
-than after other machines, servers or accounts depend on them. R3 and R4 (the two formats the
-network and the cloud would otherwise freeze) are built.
+### R1. Playtest and tune
 
-### R1. Playtest and tune (was S0)
-
-- [x] **Playtest sessions** (2–4 people; follow `docs/PLAYTEST-PROTOCOL.md`; the fight log
-  exports JSON). Targets:
-  - Sentinel cleared first try by a new player with 3 lives.
-  - The Zodiarch takes most players several attempts.
-  - Fight lengths inside the COMBAT.md table, with people taking about 1.5× the bot.
-- [ ] **Questions to answer in play** (all came up while building P3 and P4):
-  - **Tidecaller:** answered 2026-11-20: it was not clear that the bubbles go first. **Built:**
-    a glassy shield wraps the bell while any bubble stands. Each bubble feeds it along a
-    tether, a blocked shot ripples it, it thins as bubbles pop, and the last pop bursts it
-    (`src/boss/tidecaller/painter.mjs`; the field guide says so). Re-check in the next
-    playtest. Still open: should the bell take damage only while it contracts (built: any
-    time)?
-  - **The other bosses** read fine in the 2026-11-20 playtest.
-  - **Bastion:** it still never hits the bot. Does the ramming run feel threatening to a
-    person? Its outriggers (±98 px) reach past the lane (±70 px) without hurting: widen the
-    lane or let the engines hurt.
+- [ ] **Second playtest** (2–4 people; `docs/PLAYTEST-PROTOCOL.md`; the fight log exports
+  JSON). Targets: the Sentinel cleared first try by a new player with 3 lives; the Zodiarch
+  takes most players several attempts; fight lengths inside the COMBAT.md table, with people
+  taking about 1.5× the bot.
+- [ ] **Questions to answer in play:**
+  - **Tidecaller:** does the new bubble shield make it clear the bubbles go first? Should the
+    bell take damage only while it contracts (now: any time)?
+  - **Bastion:** it never hits the bot. Does the ramming run feel threatening to a person?
+    Its outriggers (±98 px) reach past the lane (±70 px) without hurting: widen the lane or
+    let the engines hurt.
   - **Cinderforge:** do people land enough shots in a vent (the bot needs two vents; people
     are expected to need three or four)?
   - **Ringwarden:** most bot hits come from the repel ring and the prism beam. Are they
     readable?
-  - **Zodiarch:** does its 338 px body curling into a loose ring after some attacks read as
-    natural?
-  - **Ninefold:** does it still need the optional fox run for variety?
+  - **Zodiarch:** does its body curling into a loose ring after some attacks read as natural?
+  - **Ninefold:** does it need the fox run for variety?
 - [ ] **Tune from the logs:** `BOSS_K`, rest lengths, window lengths, per-attack frequency,
   pickup drops at phases 2 and 3. One change per commit, with the evidence in the message.
-- [ ] **Re-verify after tuning:** every boss is beatable without pickups or laser at 1×
-  multiplier, and each has a faster mechanic route. **Pre-tuning baseline re-run
-  2026-11-20** (`node tests/boss-baseline.mjs 5 0,1,2`): all 36 fights beaten, no faults.
-  Unchanged except the Zodiarch (0.2 to 0.4 hits, from its new head contact) and Ninefold
-  (1 to 2 s quicker); `COMBAT.md` updated. Run it again after any tuning.
+- [ ] **Re-verify after tuning:** every boss beatable without pickups or laser at 1×
+  multiplier, each with a faster mechanic route. Re-run `node tests/boss-baseline.mjs 5 0,1,2`
+  (the 2026-11-20 pre-tuning baseline: all 36 fights beaten, no faults) and update `COMBAT.md`.
 - [ ] **Design questions:**
-  - Event pull: keep or cut (decide after the playtest; calm forces already removes it).
+  - Event pull: keep or cut (calm forces already removes it).
   - Mini-boss on first runs: strictly on wave 3 (proposed), or an earlier one too?
   - Boss practice picker: bosses and mini-bosses together, tagged (proposed)?
+- [ ] **Only if the playtest asks for them:**
+  - **The fox run** for Ninefold, if the fight needs more variety.
+  - **A boss backstop barrier**, if someone finds a safe spot behind a boss.
 
-### R2. Boss leftovers (built 2026-11-20)
+### R6. Release checks left (before anything is public)
 
-- [x] **Zodiarch (P3):**
-  - **Boss-bar pearl icon:** dark while shut, glinting in the tell, lit with a draining ring
-    while open (`src/boss/ui.mjs`).
-  - **Whiskers:** drawn live from the lip, drooping under the jaw, trailing the head's
-    motion. The static whiskers are gone from the head art.
-  - **Path dots:** a 0.6 s look-ahead of the steering. The engine runs the same move step on
-    a copy of the swim state (`ZodMove` in `swim.h`) and reports where the head will be (aux
-    9 to 11; the sign rotations moved into `BossSwim`). Hidden while it holds or turns.
-  - **`?hitboxes=1`** on `boss-states.html` and `zodiarch-attacks.html`
-    (`dev/hitboxes.mjs`, test-only export `web_test_boss_circles`): pink hurts, gold stops
-    shots, cyan key star, orange shootable shot, red outline contact.
-  - **Contact measured against the turned head frames:** the old two circles missed the
-    eye, throat and lower jaw by up to 19 px. Now skull, eye, snout, throat and jaw (shut or
-    dropped), within 3 px of the drawn edge, except the last 12 px of the snout tip, which
-    keeps contact right of x 216. `BOSS_BODY_MAX` is now 40 circles (was 32).
-- [x] **Ninefold (P2.1):**
-  - **Popped decoy:** it bursts into foxfire wisps that stream back to the real fox. A decoy
-    running home at the end makes none.
-  - **Ear flick:** a shot passing its head while it sits idle (new pose `sit-flick`; drawn
-    only, so its hit circles do not move).
-  - **Licks its chops** after foxfire (new poses `lick-0` and `lick-1`, with a tongue), then
-    shakes its head.
-  - **Lost tail:** a yelp, then a full turn on the spot (squeezed side-on through the turn),
-    then a glare.
-- [x] **Zodiarch creatures (P2.2):** every sign's hold, tell and recoil from the table
-  (`src/boss/zodiarch/motion.mjs`). It moves the one strike frame (lean, lift, squash,
-  shuffle) and adds touches at its emitters: kindling glows, dust, snorts, drips, robe
-  stars, spray. It is keyed to the creature's act time, which the engine now reports as
-  `|r| - 1` seconds; the sign of `r` stays the fish's facing. No new art was needed. The
-  hit circles do not move.
-- [x] **Ascendant (P2.3):** the sign of today's date is thrown first, and its key star takes
-  four hits (four pips). The page passes the sign in (`web_ascendant`, recorded in replays as
-  a setting), so the engine never reads a clock. Tests leave it off.
-- [ ] **Not built, on purpose:**
-  - **The fox run:** only if the Ninefold fight needs more variety. The playtest found the
-    other bosses fine.
-  - **The boss backstop barrier:** only if a playtest finds a safe spot behind a boss.
+- [x] **Music rights** (open decision 8): confirm or replace every supplied track before W1.
+- [x] **Licence** (open decision 27): choose one for the code (or "all rights reserved") before
+  the repo or site is public; list third-party fonts and sounds with their licences.
+- [ ] **Stress on a mid laptop:** so far only an M4 MacBook Pro.
+  `stress.html?auto=1&boss=5&phase=2&seconds=60` reports to the dev server's output.
+- [ ] **Firefox replay check:** open `replay.html?check=1` in Firefox once; it should give the
+  same hash as Safari, Chromium and Node (`docs/ACCEPTANCE.md`).
 
-### R3. Deterministic engine (built 2026-11-19)
+### v0.3 polish leftovers (H1–H4 built 2026-11-22; plans in the archive)
 
-**Built.** A run is now its seed plus its engine calls, and plays out the same everywhere:
-- **Own maths:** `web/native/mathf.h` gives the engine its own `sinf`/`cosf` (double-precision
-  fdlibm kernels, only `rint` and `floor` besides arithmetic, all exact in WebAssembly); the
-  `sinf`/`cosf` imports are gone and `build.mjs` refuses them. Over 4 million samples the
-  results equal `Math.fround(Math.sin(x))` exactly, so no golden moved and the bot is unchanged.
-- **Seeded runs:** `src/runtime/rng.mjs` (sfc32, integer-only) feeds `browser_random`; every
-  run reseeds it from `crypto.getRandomValues` (`start(practice, {seed})` and
-  `startCoop({seed})` can fix it). Tests that inject their own `random` keep working and
-  simply record no replay.
-- **Replays:** `src/runtime/replay.mjs` records every state-changing engine call from the start
-  of a run (runs of identical ticks stored once), plus the build fingerprint, the seed, the
-  leaderboard bytes the engine read, the boss assists, and the two engine clocks
-  (`web_clock` / `web_set_clock`, new exports: they were the only state that survived from
-  earlier runs). `runtime.replay` holds the last finished run; an abandoned run keeps none.
-  `ReplayPlayer` plays one on a fresh engine a tick at a time; `playReplay` all at once.
-- **Checked:** `tests/replay.test.mjs` replays boss-practice, solo and co-op runs recorded on an
-  engine that had already played other runs, and matches the live scene every tick. The
-  cross-runtime check (`dev/replay-check.mjs`: a 60 s Zodiarch fight, fixed seed, integer-only
-  inputs) gives the same hash, `d1fcbccb` for engine `ea84b9aa33b0a`, in Node, Chrome (the
-  browser pane) and JavaScriptCore (Safari's engine, run through macOS's `jsc`).
-- **Dev page:** `replay.html` runs that check in any browser and plays a saved replay with the
-  real renderer.
-
-Still open:
-- [x] **Safari (2026-11-20):** `replay.html?check=1` gives `1c1ff5e4` for engine
-  `372ef46734400` in Safari 27, Chromium 156 and Node alike (in `docs/ACCEPTANCE.md`).
-- [ ] **Firefox:** not installed on the dev Mac; open `replay.html?check=1` in it once (the
-  page reports to the dev server's output).
-- [x] **Compact file (2026-11-20):** `src/runtime/replay-codec.mjs` packs a replay as "ASTR",
-  a JSON header and the ticks, each argument coded against the last in its slot (integers as
-  zigzag varints of the difference, floats as the XOR of their bits). 60 s of noisy scripted
-  input is 77 kB (242 kB as JSON); real play repeats far more. Files over 4 MB are refused
-  both ways, on top of the one-hour tick cap. Round-trip and replay tested.
-- [x] **Save replay** on Results: downloads the finished run as `.astr`; `replay.html`
-  watches `.astr` or `.json`.
-- [x] The ESP32 build keeps its own `sinf` (nothing shared changed; `tests/run_host.sh` passes).
-
-### R4. One save format (built 2026-11-19)
-
-**Built.** `src/state/save.mjs` reads every part a browser keeps as one versioned object
-(`format: 1`): the HD and OLED top-five tables, both co-op tables, personal bests, boss
-defeats, unlocks, equipped hulls and settings (the fight log stays out; it is a dev tool).
-The parts keep their own storage keys, so no module changed how it loads.
-- **Validation:** an imported file is written into scratch storage and read back through each
-  module's own validator, so a bad part is dropped and the rest kept; files over 512 kB or not
-  from this game are refused.
-- **Merge rule** (`mergeSaves`, pure, reused by W3): bests take the larger value per metric,
-  accuracy the better ratio (50 shots or more), top-five tables the best five of both with
-  duplicates once, unlocks the union, boss defeats the larger count (not the sum, so merging
-  the same save twice changes nothing). Settings, hulls and the active profile come from one
-  side. Tested for order independence and idempotence.
-- **Writing** is all or nothing: if storage refuses any part, the earlier parts are put back.
-- **UI:** Records → **Export save** downloads `asteroids-save-<date>.json`; **Import save…**
-  shows what the file holds, merges it on confirm (keeping this browser's settings) and
-  reloads. Checked in the browser pane with a test save.
-- Tests: `tests/save.test.mjs`.
-
-### R5. Version and build id
-
-- [x] **Version (2026-11-20):** `package.json` is `0.3.0`. The build and the dev server write
-  `<meta name="build" content="0.3.0+<commit>[-dirty]">` (`tools/build-info.mjs`). Settings →
-  **About** shows the version, commit and engine fingerprint, and Records → Export save
-  stamps the file with the build id.
-- [x] `CHANGELOG.md` with v0.1 to v0.3, from the git history and the archives (nothing was
-  tagged before, so the earlier boundaries are dates).
-- [x] **Ready for the handshake:** `buildInfo().id` (`src/version.mjs`) is the value S11
-  compares (`docs/NETWORK-AND-SECURITY.md`). Using it is part of S3.5.
-
-### R6. Release checks (needed before anything is public)
-
-- [ ] **Music rights** (open decision 8): confirm or replace every supplied track before W1.
-- [x] **What ships (2026-11-19):** the release build no longer copies the dev pages, leaves
-  the developer screen and its footer button out of the page (`<!-- @include-dev -->` and
-  `<!-- @dev -->` blocks in `tools/assemble-html.mjs`; `#developer` goes Home), removes stale
-  files older layouts left in `dist/`, and fails if a dev page, `assets/inspo/`,
-  `assets/bosses/draft-*` or the developer screen would ship. Developer tools exist only on
-  the local dev server (`serve.mjs`, bound to 127.0.0.1).
-- [x] **Test engines stay out of a deploy (2026-11-20):** `node build.mjs` writes
-  `dist/site/` with only the page, styles, `src/`, `assets/`, `game.wasm` and the licence
-  file, and fails if a test engine, object file, generated header or dev page would land in
-  it. W1 uploads `dist/site/`.
-- [x] **Stress in Safari (2026-11-20):** Zodiarch phase 2, 60 s. Safari 27 ran at 165 fps
-  (p99 7 ms) and Chromium at 120 fps (p99 9 ms), with no frame over 25 ms after the first.
-  The first boss frame takes 31 to 36 ms to build its caches, once, during the entrance; the
-  page now reports it apart (`firstFrame`). Details in `docs/ACCEPTANCE.md`.
-- [ ] **Stress on a mid laptop:** the only machine so far is an M4 MacBook Pro.
-- [x] **Accessibility pass (2026-11-20):**
-  - Warnings never rely on colour alone: every telegraph is dotted (live hazards are
-    solid) and blinks for its last 260 ms. Hit feedback differs in shape too (a burst
-    against glancing sparks). The new Tidecaller shield and Zodiarch pearl state show by
-    shape (membrane and tethers; a draining ring on the bar).
-  - Menu focus is collected per screen, so the new About tab (L1/R1 and arrows) and Save
-    replay are reachable by keyboard and controller.
-  - Reduced motion is unchanged.
-  - Not done: a check with colour-blind simulation on real screenshots.
-- [x] **First run (2026-11-20):** Play → Solo flight starts the launch (two clicks, checked
-  with cleared storage). Help has a new **Bosses** card: weak points, warnings and hit
-  feedback, a sentence each.
-- [ ] **Licence:** choose one for the code (or "all rights reserved") before the repo or site
-  is public; list third-party fonts and sounds with their licences.
-
-### R7. Modularise what the network code will touch
-
-From M (archive): only the splits that S3 and W3 will edit, so the network diffs stay
-readable. The rules for splitting are unchanged (no behaviour change in a split commit).
-- [x] **M2 Boss tests (2026-11-20):** `tests/boss/` has `harness.mjs` (set-up and shared
-  helpers), `rules.test.mjs` and one file per boss. The 64 tests moved verbatim, and
-  `npm test` runs `tests/*/*.test.mjs` too.
-- [x] **M6 Guide data:** `src/boss/guide/<boss>.mjs`, one per kind; `guide.mjs` lists them
-  in kind order. Checked deep-equal with the old list.
-- [x] **M7 Scene mirror:** each boss's KINDS entry is `src/boss/<boss>/kind.mjs` (the minis'
-  are in `minis/kinds.mjs`; the Bastion's `RAM_LANE` and Ninefold's `NINEFOLD` sit beside
-  theirs), and the Zodiarch's constants are `zodiarch/geometry.mjs`. `scene.mjs` (571 → 317
-  lines) re-exports them; all 32 exports were checked identical.
-- [ ] Later, not blocking: M5 art tools, M8 shared C++ (`src/asteroid.cpp`, `src/game.cpp`;
-  carefully, the ESP32 shares them).
+- [ ] **Menu look:** measure menu text contrast (AA) on each region look; the veil is the
+  region's colour at the old opacity, but no look has been measured.
+- [ ] **Home:** highlight How to play once on a first run (no records yet).
+- [ ] **Practice range, not built yet:** Restart drill as one key, Restart fight and Skip to
+  next phase for bosses, a "count hits / hits cost nothing" switch, CPS in the drill readout.
+  The Waves drill has no mini-bosses or bosses (Boss drill only); decide if it should.
 
 ### R8. Tag v0.3.0
 
 - [ ] `npm run check`, `sh tests/run_host.sh`, the PlatformIO build, the stress run; update
-  README, COMBAT and Help; tag `v0.3.0`.
+  README, COMBAT, Help and `CHANGELOG.md`; tag `v0.3.0`.
+
+### Later, not blocking
+
+- [ ] **M5 art tools** and **M8 shared C++** (`src/asteroid.cpp`, `src/game.cpp`; carefully,
+  the ESP32 shares them). The plan for both is in `docs/nextSteps-2026-11-19.archive.md`.
+
+---
+
+## v0.4 Campaign (planned 2026-11-22)
+
+The game becomes a **campaign of levels** plus an **Endless** mode. **Act 1 is the main
+focus**; Endless opens once Act 1 is finished; Act 2 comes after Endless, reusing its new rock
+types, with new bosses you design then.
+
+| Mode | What it is |
+| --- | --- |
+| **Act 1** | 6 levels, one per region, each the current 5-wave layout: rocks, rocks, mini-boss on wave 3, rocks, boss on wave 5 |
+| **Endless** (C2) | today's run with prestige; opens after Act 1 |
+| **Act 2** (C3) | 6 more levels, same layout, the new rock types, new bosses |
+
+### C1. Act 1 (main focus)
+
+| Level | Region | Waves | Mini (wave 3) | Boss (wave 5) |
+| --- | --- | --- | --- | --- |
+| 1 | Celestial frontier | 1–5 | Picket | Sentinel |
+| 2 | Violet orbit | 6–10 | Shardling | Ringwarden |
+| 3 | Ember orbit | 11–15 | Cinderling | Cinderforge |
+| 4 | Ruined moon | 16–20 | Gunnery | Bastion |
+| 5 | Lunar passage | 21–25 | Moonjelly | Tidecaller |
+| 6 | Outer rift | 26–30 | Ninefold | Zodiarch |
+
+**Length:** a level should take a person about **3 minutes**. The demo pilot clears a region
+in about 45–60 s, and people are expected to take 1.5–2.5× the bot, so today's waves are close.
+Add the levels to the baseline tool (`tests/boss-baseline.mjs`) and check them in the R1
+playtest; trim or pad waves only if a level runs far off 3 minutes.
+
+**Engine** (most of it exists: boss practice already starts at any wave):
+- [ ] `web_start_level(act, level, players)`: start at the level's first wave in its region,
+  3 lives, ×1 multiplier, the wave difficulty of those wave numbers, bosses at tier I.
+  Recorded in replays (a level is one short replay, which W3 can re-run cheaply).
+- [ ] The level ends when the wave-5 boss falls: a new `level-clear` state with time, score,
+  lives lost and hits taken in the scene (named in `scene-layout.mjs`; golden updated).
+  Losing the last life ends the level (retry), never the act.
+- [ ] Practice and the demo stay as they are.
+
+**Stars** (3 per level, 18 in Act 1):
+- [ ] Clear the level · clear it without losing a life · clear it under par time. Par is set
+  from the bot's level time × 1.5, rounded, and tuned after the playtest.
+
+**Progress and saves:**
+- [ ] Level 1 is open; each clear opens the next; clearing level 6 finishes Act 1 and opens
+  Endless.
+- [ ] Per profile and level: best stars, best time, best score. A new part of the R4 save;
+  merging keeps the best of each.
+- [ ] **Returning players:** a save whose highest wave is already past a level's boss opens
+  the levels up to there (no stars given); one that reached wave 30 also opens Endless.
+- [ ] Hull unlocks come from mini-boss defeats in levels and in Endless (never practice).
+
+**Screens:**
+- [ ] **Play** (with H1): **Campaign**, **Endless** (locked until Act 1, with the reason), and
+  **Practice**; one or two pilots chosen as today.
+- [ ] **Level select:** the six levels as cards on a path, each with its region's backdrop,
+  mini and boss silhouettes, stars, best time and score; locked ones dimmed. Mouse, keyboard
+  and controller.
+- [ ] **Level clear:** stars earned one by one, time against par, score; **Next level**,
+  **Retry**, **Level select**. A failed level offers **Retry** and **Level select**.
+- [ ] **Pause:** gains **Restart level**.
+- [ ] Records: a Campaign tab (per level bests and stars) beside the Endless tables (today's
+  top-five tables become Endless's).
+- [ ] Help: campaign, stars and Endless in a few sentences each.
+
+**Co-op:** both modes for two players; a level cleared together counts for both profiles, each
+with its own stars.
+
+**Tests:** each level starts at the right wave, region, mini and boss; clear and fail
+detection; each star rule; progress unlocking; the returning-player migration; save merge; a
+level replay round-trips; co-op credit.
+
+### C2. Endless mode with prestige (planned 2026-11-22, was H5)
+
+**Endless opens once Act 1 is finished.** It is today's 30-wave run that never ends, with the
+prestige rules below. The new rock types are built here first; Act 2 (C3) reuses them.
+
+
+**Today:** after wave 30 the run stays in the Outer rift forever. Bosses come back one tier
+harder every 30 waves (`bs_tier_for` in `native/boss/lifecycle.h` already works out tier
+= (wave − 1) / 30 on boss waves). Rock difficulty stops rising at wave 24, and the chain
+multiplier always restarts at ×1 and caps at ×5 (`src/core/scoring.c`).
+
+**New rule:** clearing wave 30 starts **prestige 1** at wave 1 in the Celestial frontier, with
+the region themes and music in order again, and **new rock types and patterns**, so no lap
+plays like the one before. Each lap after that is prestige n + 1, with no end. At prestige *n*
+the **base multiplier is n + 1** and the **cap is ×(5 + n)** (settled 2026-11-22): the chain
+starts at ×(n + 1) and drops back to it, never to ×1. A player who has **cleared** a prestige
+level can start a new run there.
+
+**C2.1 Engine: the lap and the multiplier**
+- [ ] Keep one absolute wave count inside the engine (wave 37 = prestige 1, wave 7), so boss
+  tiers, records and replays need no second counter. Derive `prestige = (wave − 1) / 30` and
+  `lap_wave = (wave − 1) % 30 + 1`; regions, boss kinds and mini-bosses use `lap_wave`. Boss
+  tiers already follow the prestige level, but nothing caps them today (wave 121 would ask for
+  tier V): clamp at IV, or decide what tier V+ means.
+- [ ] Scoring (`src/core/scoring.c`, so the ESP32 can reuse it): `score_set_base(state, base)`;
+  `score_reset` returns to the base; the cap is base + 4. Clamp the base at ×99 and the score
+  at the 32-bit maximum (saturating, never wrapping). Host tests.
+- [ ] Scene: `PRESTIGE` and `LAP_WAVE` fields (named in `scene-layout.mjs`); `WAVE` stays
+  absolute. Scene golden updated.
+
+**C2.2 New rock types, one per prestige level.** Each lap adds one new type on top of the
+ones before, and shows it from its first waves. Every type follows the fairness rules: a warning
+of at least 700 ms before it can hurt, a shape that reads without colour, one hit or a clearly
+shown health, nothing lethal off-screen. Proposed order (to tune; each is one engine kind plus a
+painter and a sound):
+
+| Prestige | New type | What it does | Counterplay |
+| --- | --- | --- | --- |
+| 1 | **Comet** | small, fast, straight; a glowing streak warns of its line 0.8 s ahead | step off the line; one hit |
+| 2 | **Missile** | launched from the right edge, turns toward the ship at a limited rate, burns out after 4 s | outturn it or shoot it (one hit) |
+| 3 | **Cluster rock** | a big rock that bursts into a ring of 6 fast shards when it breaks | break it far away, or dodge the ring |
+| 4 | **Iron rock** | takes 3 hits (cracks show each one); the laser breaks it at once | focus fire or spend the laser |
+| 5 | **Mine** | drifts slowly, pulses, then bursts into a short ring of shots unless shot first | shoot it early, or keep away from the ring |
+| 6 | **Magnet rock** | pulls the ship gently toward it (none under calm forces) | fly against the pull; shoot it first |
+| 7 | **Swarm** | 5–8 tiny drones flying in formation (line, V, wave) | sweep them; multishot shines |
+| 8 | **Phase rock** | blinks between solid and ghost on a visible rhythm; only solid ones hurt or can be hit | time the shots |
+| 9+ | **Remix** | no new type: every type so far, in new mixes and heavier waves | |
+
+- [ ] **Patterns never repeat a lap:** each wave's spawn list comes from `(lap_wave, prestige)`
+  and the run seed. Each prestige also adds formations (walls with a gap, V, spirals, crossing
+  streams, an escort of comets around an iron rock). The share of new types rises over the
+  lap, and the overall speed rises 8 % per prestige up to a cap. Still deterministic, so
+  replays hold.
+- [ ] **Engine:** rock kinds live in the web layer (`native/`), not `src/asteroid.cpp`, which the
+  ESP32 shares (M8 decides later whether any move to the handheld). The scene's rock block
+  (stride 8) has no spare slot: put the kind in the `active` value (0 empty, 1 + kind), or
+  widen the stride to 10 with a health and a timer slot (scene golden and layout test change).
+- [ ] **Scoring per kind** (proposed): comet 2×, missile 3×, iron 4×, mine 2×, swarm drone 1×
+  of a small rock, all times the multiplier.
+- [ ] **Art and sound:** pixel painters in `src/render/layers/` (generated where it fits),
+  one sound per type, the death bursts; the field guide gets a "Rocks" page.
+- [ ] **First meeting:** the prestige card shows each new type (C2.4); Help explains them all.
+
+**C2.3 Starting at a prestige level**
+- [ ] A level counts as **cleared** when its wave 30 falls in a real run (not practice, not the
+  demo). Each profile stores its highest cleared prestige (records, a new part of the R4 save;
+  merge keeps the larger).
+- [ ] Play → Solo flight shows **Start at** only once a level is cleared: *Prestige 0* and
+  every cleared level (cleared prestige 1 → you may start at prestige 1). It remembers the last
+  choice. Local co-op offers the lower of the two profiles' levels.
+- [ ] Starting at prestige *n* begins at wave 1 of that lap (absolute wave 30n + 1) with the
+  normal lives and no pickups, and the base multiplier ×(n + 1) from the first rock.
+  `web_start` gains the start level (recorded in replays).
+- [ ] Records: the top-five tables stay one list per mode, with each entry marked by its start
+  level ("from P2"); personal bests note it too. Open question: separate boards per start level
+  instead?
+
+**C2.4 Presentation**
+- [ ] **The prestige card** (settled 2026-11-22), after the Zodiarch on wave 30. Rocks are
+  held off while it shows:
+  - **0–5 s:** **PRESTIGE 1**, nothing else (the same family as the boss intro card).
+  - **Then, briefly (about 2.5 s):** the new rock type, animated as it flies in play, with one
+    sentence of **six words or fewer**. Proposed lines:
+
+    | Prestige | Rock | Line |
+    | --- | --- | --- |
+    | 1 | Comet | Comets streak by on glowing trails. |
+    | 2 | Missile | Missiles chase you until shot down. |
+    | 3 | Cluster rock | Cluster rocks burst into shards. |
+    | 4 | Iron rock | Iron rocks take three hits. |
+    | 5 | Mine | Shoot mines before they burst. |
+    | 6 | Magnet rock | Magnet rocks pull your ship. |
+    | 7 | Swarm | Swarms fly in tight formation. |
+    | 8 | Phase rock | Phase rocks hurt only when solid. |
+    | 9+ | none | no second panel; the card ends at 5 s |
+
+  - Then the region transition Outer rift → Celestial frontier, which needs a wrap gesture in
+    `src/render/regions.mjs` (today `regionForWave` stops at the rift).
+  - A run started at a prestige level shows the same card. A start at P3 shows comets,
+    missiles and cluster rocks together under one line ("Watch out for these new rocks.").
+  - Any fire press skips the explanation, never the 5 s title. With reduced motion the rock is
+    shown still. A test checks every line is one sentence of six words or fewer.
+  - This replaces the open question about a first-meeting tag: the card is the introduction.
+- [ ] HUD: "P1 · WAVE 7" (just "WAVE 7" before prestige 1).
+- [ ] `regionForWave`, music and menu look "furthest region reached" read the lap wave.
+- [ ] Results and Records: highest wave shown as "P2 · W14"; personal bests "highest prestige"
+  and "highest prestige cleared". The stored wave stays absolute, so old saves need no change.
+- [ ] Practice (H3): the Waves drill takes a prestige level, and a "Rocks" drill shows each
+  type on its own.
+- [ ] Endless is locked on the Play screen until Act 1 is finished ("Finish Act 1 to unlock").
+- [ ] Help: prestige, the base multiplier, starting levels and the rock types.
+
+**Interactions:** co-op shares the lap and both chains use the same base; S2's maximum-combo
+bonus keys on the current cap (5 + n), not ×5; the demo keeps lives forever, so it will reach
+prestige and the new rocks (the demo pilot, H4, must learn to read rock kinds and dodge
+missiles); the boss bot gets a run with new rock types in its wave tests.
+
+**Tests:** wave 30 → prestige 1 wave 1 (region, boss kind, tier); no two laps produce the same
+spawn list; each rock type's warning, health, scoring and burst; magnet off under calm forces;
+multiplier base, cap and reset at n = 0, 1, 4, 98, 99; score saturation; start-at-level
+unlocking (practice and demo never clear a level), its replay, and the save merge; old saves load
+with nothing cleared.
+
+### C3. Act 2 (after Endless)
+
+- [ ] 6 levels with the Act 1 layout (5 waves, mini on wave 3, boss on wave 5), in remixed
+  versions of the six regions.
+- [ ] **Rock types from Endless (C2.2):** one new type taught per level, in prestige order
+  (comet, missile, cluster rock, iron rock, mine, magnet rock); swarms and phase rocks stay
+  Endless-only until a later act. Each level opens with its six-word line (C2.4).
+- [ ] **New bosses and minis** (6 and 6), designed by you once the rock types exist, through
+  the usual storyboard → your approval → build steps. Not before.
+- [ ] Endless adds the Act 2 bosses to its rotation once they exist.
+- [ ] Stars, progress, saves and screens as in Act 1.
+
+### C4. Achievements (planned 2026-11-22, was H6)
+
+**Toast:** when an achievement is earned, a trophy icon with its name appears **top
+centre** of the playfield and is gone **0.5 s** after its first pixel (in about 80 ms, hold,
+out about 120 ms), so it never covers the field for longer than that. Several at once share one toast
+("3 achievements"). With reduced motion it appears and disappears without sliding. A short chime
+plays at the effects volume. Earning one never pauses the run. Results then lists what was earned
+this run, and Records → **Achievements** shows them all.
+
+**Data and rules:**
+- [ ] One table, `src/achievements/list.mjs`: id, name, how to earn it, icon, category,
+  hidden or not, and for counters the target (for example 100 bosses).
+- [ ] A pure `AchievementWatcher` that reads the scene and the run stats each tick and at the
+  end of a run, and returns what was earned. It never touches the engine, so a replay earns
+  exactly the same achievements (and W3 can check them on the server later). Facts the scene
+  lacks (for example "flawless" on a defeat) become scene fields or events, named in
+  `scene-layout.mjs`.
+- [ ] Practice and the demo never earn achievements, as with hull unlocks.
+- [ ] Storage: `asteroids.web.achievements-v1` (id → date first earned, plus counters), a
+  new part of the R4 save; merging keeps the union and the earliest date.
+
+**The list** (accepted 2026-11-22: your basics, marked ★, and all the suggestions). Numbers
+are proposals to tune after the R1 playtest; names are placeholders. Tiered ones (bronze,
+silver, gold) are one achievement with steps, each step with its own toast.
+
+| Category | Achievement | How to earn it | Tiers |
+| --- | --- | --- | --- |
+| Bosses ★ | First of its kind | defeat each of the 6 bosses (one per boss) | 6 |
+| Bosses ★ | Small fry | defeat each of the 6 mini-bosses (one per mini) | 6 |
+| Bosses ★ | Clean sweep | defeat 3 bosses or minis in a row without taking a hit · all 12 in a row | 3 → 12 |
+| Bosses ★ | Against the clock | defeat a boss in under its bot time (COMBAT.md; e.g. Sentinel 27 s, Zodiarch 48 s) | per boss |
+| Bosses | Untouched | defeat any boss without taking a hit (the flawless bonus) | |
+| Bosses | Tiered up | defeat a tier II, III and IV boss | 3 |
+| Bosses | Boss hunter | 25 / 100 / 500 boss and mini defeats in total | 3 |
+| Rocks ★ | Rockslide | destroy 8 / 12 / 16 rocks within 3 s | 3 |
+| Rocks | Quarryman | 1,000 / 10,000 / 100,000 rocks in total | 3 |
+| Rocks | One beam, many rocks | destroy 4 / 6 rocks with one laser | 2 |
+| Score ★ | High roller | score 100 k / 1 M / 10 M in one run | 3 |
+| Score | Max chain | reach the multiplier cap · hold it for 10 s | 2 |
+| Score | Big base | reach a ×5 / ×10 base multiplier (prestige 4 / 9) | 2 |
+| Campaign | Chapter and verse | clear each Act 1 level | 6 |
+| Campaign | Act 1 | finish Act 1 (opens Endless) | |
+| Campaign | Star pilot | 6 / 12 / all 18 Act 1 stars | 3 |
+| Progress | Full circuit | clear wave 30 in Endless | |
+| Progress | Prestige | reach prestige 1 / 3 / 5 / 10 | 4 |
+| Progress | Iron hull | clear a level without losing a life (also its star) | |
+| Skill | Sharpshooter | a run with 90 % accuracy and at least 200 shots | |
+| Skill | No wasted shots | 50 kills in a row without a miss | |
+| Skill | Saved by the shield | a stored shield blocks a hit that would have killed you | |
+| Skill | Close shave | finish a wave on your last life with the multiplier at its cap | |
+| Skill | Laser only | clear a wave without firing your main gun | |
+| Skill | Steady hands | defeat a mini-boss using only precision mode | |
+| Signature | one per boss, around its mechanic (examples): Sentinel, hit the eye on the first plate opening; Ringwarden, break every blade before the halo lock; Cinderforge, kill it in its first vent of the last phase; Bastion, never touched by the ramming run; Tidecaller, pop every bubble within 5 s; Zodiarch, defeat today's Ascendant sign first; Ninefold, never shoot a decoy | | 7 |
+| Pickups | Fully loaded | multishot and 2× fire active at once | |
+| Pickups | Collector | collect every pickup kind in one run | |
+| Hangar | Fleet | unlock every hull · defeat a boss with each hull | 2 |
+| Co-op | Wingmates | finish a co-op run · both players alive when a boss falls | 2 |
+| Rock types | one per prestige rock type (C2.2): destroy 50 comets, 50 missiles, 25 cluster rocks, 25 iron rocks, 25 mines before they burst, 25 magnet rocks, 10 whole swarms, 50 phase rocks | | 8 |
+| Prestige start | start a run at a cleared prestige level (C2.3) | | |
+| Hidden | a few surprises, e.g. let the demo play for 5 minutes, open How to Play mid-boss, die to the very first rock | | |
+
+Some rules need facts the scene lacks today and become scene events: a hit taken this
+fight (have `HITS_TAKEN`), kills by the laser in one beam, "killing blow prevented" by the
+shield, the boss mechanic events for the signature ones, and the fight timer (from the
+boss state). The watcher's tests list each one.
+
+**UI:**
+- [ ] The toast element and its CSS (top centre, above the HUD, `aria-live` polite so screen
+  readers hear it without it taking focus). Share one queue with the hull-unlock toast, which
+  moves to Results so nothing big covers play.
+- [ ] Records → Achievements: a grid of icons. Earned ones show the date. Locked ones are
+  dimmed, with how to earn them, or "???" if hidden. Counters show progress ("37 / 100").
+  Reachable by keyboard and controller.
+- [ ] Icons: a 16 px pixel trophy plus an emblem per category, made by a `tools/` script like
+  the other art (no third-party art).
+
+**Tests:** each rule on scripted scenes; a replay earns the same set; the toast is gone by
+0.5 s; practice and the demo earn nothing; save import and merge; old saves without the part
+load empty.
+
+**Settled 2026-11-22:** the multiplier cap rises to ×(5 + n); laps do not repeat (C2.2).
+All suggested achievements are in (2026-11-22). **Open:** the exact numbers, after the
+playtest.
 
 ---
 
@@ -317,15 +464,10 @@ the page comes from Vercel and connects to the room server at `wss://rooms.<doma
 
 ---
 
-## v0.4 LAN: vetting notes (2026-11-19)
+## v0.5 LAN: vetting notes (2026-11-19)
 
-The S3 and S4 plan below was reviewed against the code as it is now. It holds; these are the
-changes and the risks found.
+Risks found when the S3 and S4 plan was checked against the code.
 
-- **Authority stays on the server.** With R3 the engine becomes deterministic, which would make
-  lockstep possible, but an authoritative server is still the better fit: a late joiner or a
-  reconnect needs no catch-up simulation, and a modified client cannot change a result. R3
-  is used for desync checks and tests, not to replace the server.
 - **The scene is bigger than the plan assumed.** S3.3's 1408 floats was measured before P3
   and P4 added boss aux slots and parts. Re-measure `scene-layout.mjs` first; the codec
   target (under 20 kB/s per client) stays.
@@ -352,19 +494,13 @@ changes and the risks found.
 
 ## S3. Network foundation (prerequisite for LAN, hosted, versus)
 
-The plan rests on one finding that decides the architecture.
+The engine is deterministic since v0.3 (own `sinf`/`cosf`, seeded runs, replays), but online
+play still uses a **single authoritative server whose snapshots clients only render**: a late
+joiner or a reconnect needs no catch-up simulation, and a modified client cannot change a result.
+Replays are for desync checks and tests. Clients never advance the simulation themselves.
 
-> **Finding: the engine is not cross-browser deterministic.** `game.wasm` imports its math
-> (`sinf`, `cosf` and friends) from the host (`env` imports in `wasm-host.mjs`), so each
-> browser's own `Math.sin` feeds the simulation. V8 and JavaScriptCore can differ in the
-> last bit, and boss shot angles use `sinf`/`cosf` constantly. Lockstep (every client
-> re-simulating from shared inputs) would drift. The chosen design, a **single
-> authoritative server whose snapshots clients only render**, avoids the problem. Clients
-> must never advance the simulation themselves.
-
-Good news for that design: the renderer, boss painters and boss sound observer already read
-only the **scene** (`Float32Array`, 1408 floats at `scene-layout.mjs`). A client can be a
-thin renderer fed scenes.
+The renderer, boss painters and boss sound observer already read only the **scene**
+(`Float32Array` at `scene-layout.mjs`), so a client can be a thin renderer fed scenes.
 
 **S3.1 Spike: headless engine under Node.** Tools: Node, `wasm-host.mjs`.
 - [ ] Run `WasmHost` in a Node process with no DOM (the tests already do this); loop it at
@@ -474,7 +610,7 @@ First network release: the existing two-player co-op rules on two machines, one 
 
 ---
 
-## v0.5 Web deployment (plan and vetting, 2026-11-19)
+## v0.6 Web deployment (plan and vetting, 2026-11-19)
 
 "Web deployment" is three separate things with very different costs. Ship them in this order;
 each is useful on its own.
@@ -486,17 +622,17 @@ each is useful on its own.
 | **W3 Accounts** | progress on every device, global leaderboards | yes (W2's server) | yes | auth and database free tiers cover a hobby game; $0 to start |
 
 The game already runs entirely in the browser, so **W1 is a release, not a project**: build,
-upload `dist/`, add headers. Accounts are the only step that changes the privacy and security
+upload `dist/site/`, add headers. Accounts are the only step that changes the privacy and security
 picture, so they come last and only if you want what they give.
 
 ### W1. Static site (solo and local co-op)
 
 - [ ] **Host: Vercel** (chosen 2026-11-19). A `vercel.json` at the repo root with
-  `buildCommand` (`cd web && npm ci && npm run build`), `outputDirectory` `web/dist`, and the
+  `buildCommand` (`cd web && npm ci && npm run build`), `outputDirectory` `web/dist/site`, and the
   headers below. Vercel's build machines run Linux, so `web/build.mjs` must find `clang` and
   `wasm-ld` there (it looks for Homebrew paths first): either install LLVM in the build
   command, or (simpler) build `dist/` in GitHub Actions and deploy it with the Vercel CLI
-  (`vercel deploy --prebuilt`). Check which works before W1.
+  (`vercel deploy --prebuilt`, from `dist/site/`). Check which works before W1.
 - [ ] **Previews:** every push gets a preview URL. Turn on deployment protection for previews,
   or keep them public deliberately; production deploys only from a tag.
 - [ ] **Plan:** Hobby is free but limited to non-commercial use; move to Pro if the game ever
@@ -555,7 +691,7 @@ these notes:
 
 **First decide what accounts are for.** The current design deliberately has none (decision N6
 in `docs/NETWORK-AND-SECURITY.md`: nothing to leak or breach). Accounts are worth it for:
-1. **Progress on every device** (cloud saves of the R4 save).
+1. **Progress on every device** (cloud saves of the save file, `src/state/save.mjs`).
 2. **Global leaderboards** that mean something.
 3. **Friends and invites** instead of room codes (later).
 
@@ -581,16 +717,16 @@ users, pauses when idle.
   boards, replay checks) and, for online play, to the room server on the WebSocket handshake.
   Both verify it and read or write Postgres. The room server's database role may only insert
   finished runs. No database keys in the page.
-- [ ] **Tables:** `players` (Clerk user id, initials, created), `saves` (player, R4 save JSON,
+- [ ] **Tables:** `players` (Clerk user id, initials, created), `saves` (player, save JSON,
   format version, updated), `runs` (player, mode, rules key, score, seed, replay blob,
   verified, created), leaderboard views over `runs`. No email or name stored by the game:
   Clerk holds them.
-- [ ] **Cloud save sync:** on sign-in, merge the local save and the cloud save with the R4 merge
+- [ ] **Cloud save sync:** on sign-in, merge the local save and the cloud save with the save merge
   rule (bests take the larger, unlocks the union, settings the newer) and write the result to
   both. Never overwrite either side blindly.
 - [ ] **Leaderboards only from runs the server saw or re-ran.** A score typed into the page
   is worthless, so a board entry must be either an online run (W2, the server simulated it) or
-  a solo run whose replay the server re-simulates (R3) to the same score. Replays are capped
+  a solo run whose replay the server re-simulates to the same score. Replays are capped
   in size and length; re-simulation runs in an API function (WASM under Node), so it never
   touches the room server, with a per-player rate limit so it cannot run up the bill.
   Separate boards per rules key (mode, friendly fire, modifiers), as records are today.
@@ -602,7 +738,7 @@ users, pauses when idle.
   moderate; decision S6). If free names are ever wanted, they need a filter and a report
   button.
 - [ ] **Account deletion:** a button in Settings, plus Clerk's user-deleted webhook removing the
-  player's rows. Export of their data (the R4 save plus their runs) on request.
+  player's rows. Export of their data (their save plus their runs) on request.
 - [ ] **Legal pages:** privacy policy (what is stored, where, for how long, which vendors), terms,
   and a minimum age (children's data rules such as COPPA in the US, GDPR in the EU and the
   PDPA in Singapore make under-13 sign-ups the riskiest case; say "13 or older to create an
@@ -800,10 +936,10 @@ a time, no music files), about
 I²C refresh time that caps frame rate.
 
 **S8.0 Scope (settled 2026-10-26).** The "barebones" set:
-- [ ] **In:** everything the firmware already does, the single-player combo rule from S2,
+- **In:** everything the firmware already does, the single-player combo rule from S2,
   region pacing as a simple wave counter shown on the HUD, one boss (see S8.3), the
   highscore table with initials, pause, demo.
-- [ ] **Out:** co-op, versus, any network, hulls and unlocks, settings screens beyond a
+- **Out:** co-op, versus, any network, hulls and unlocks, settings screens beyond a
   volume/mute toggle, music, tiers, modifiers (one-life could be a boot-time option later).
 Scope confirmed: the existing firmware game, the combo rule and the Sentinel-lite boss. Anything you want from the web game that is not here
 needs a one-line justification, since each feature costs flash, RAM and frame time.
@@ -871,39 +1007,36 @@ host and strict-C17 checks pass, the budgets hold, and the README describes the 
 
 ## Standing rules (every stage)
 
-- [ ] Solo and practice keep working at every commit.
-- [ ] Before merging: `cd web && npm run check`, `sh tests/run_host.sh` from the repo root,
+- Solo and practice keep working at every commit.
+- Before merging: `cd web && npm run check`, `sh tests/run_host.sh` from the repo root,
   and a PlatformIO build whenever shared C/C++ changes (the web build compiles `src/*.cpp`
   directly, so a firmware edit can move web goldens and the reverse). A new scene field means the
   scene golden and layout test change in the same commit.
-- [ ] Per-player shot ownership, 2× pending events, laser and shield state, CPS, accuracy,
+- Per-player shot ownership, 2× pending events, laser and shield state, CPS, accuracy,
   chains, results and profile records carry through every mode. Friendly hits never count
   as enemy accuracy or score.
-- [ ] New modes appear in navigation only when they work. Reuse Home → Play, lobby, pause,
+- New modes appear in navigation only when they work. Reuse Home → Play, lobby, pause,
   results and Records instead of adding pages.
-- [ ] Update COMBAT, README, SETUP and Help text with each release.
-- [ ] Keep evidence types separate in `docs/ACCEPTANCE.md`: automated, rendered, physical
+- Update COMBAT, README, SETUP, Help and `CHANGELOG.md` with each release.
+- Keep evidence types separate in `docs/ACCEPTANCE.md`: automated, rendered, physical
   input, two-machine. Anything not performed stays unchecked.
-
 
 ---
 
 ## Open decisions
 
+Settled ones (22 determinism, 25 page host, 4 and 4b room host) are in the archive.
+
 | # | Question | Blocks | Proposed |
 | --- | --- | --- | --- |
-| 22 | Make the engine deterministic (own `sinf`/`cosf`, seeded runs, replays) | R3, W3 leaderboards | Yes, in v0.3 |
+| 8 | Rights to the supplied music tracks | R6, W1 | Confirm or replace before any public release |
+| 27 | Code licence | R6 | Decide before anything is public |
+| 26 | A domain name | W1 (and Clerk production) | Buy one before W1 |
 | 23 | Do we want accounts at all, and for what (cloud saves, global boards, friends)? | W3 | Optional accounts, guests keep the full game; build after W2 |
 | 24 | Auth and database provider | W3 | Clerk, with Postgres in the Railway project; only servers touch the database |
-| 25 | ~~Host for the page~~ **Settled 2026-11-19:** Vercel; rooms on their own subdomain elsewhere | W1 | Done |
-| 26 | A domain name | W1 (and Clerk production) | Buy one before W1 |
-| 27 | Code licence | R6 | Decide before anything is public |
-| 8 | Rights to the supplied music tracks | R6, W1 | Confirm or replace before any public release |
 | 1 | Ordinary assist split in co-op | S2 | The killer gets the award; the team bonus is the only assist payout |
 | 2 | Allow `ws` as the one runtime dependency, and put the server in `web/server/` | S4 | Yes |
 | 3 | Client-side prediction for the local ship | S4.6 | Decide after measuring LAN latency |
-| 4 | ~~Hosting provider for rooms~~ **Settled 2026-11-19:** Railway (one replica per room service) with Redis; budget set after measuring tick cost | W2 | Done |
-| 4b | ~~Serve the page from the game server or a static host~~ **Settled:** Vercel online, the room server on LAN | W2 | Done |
 | 6 | Versus round length and rematch rules | S6 | 3 minutes, best of one |
 | 7 | Modifier combinations | S7.5 | One at a time first |
 | 11 | Portable power and enclosure | S8.7 | Optional; do after the firmware is accepted |
@@ -917,16 +1050,17 @@ host and strict-C17 checks pass, the budgets hold, and the README describes the 
 
 **Already installed and used:** Node 26, Homebrew `llvm` + `lld`, Xcode command-line tools,
 PlatformIO, Prettier, ESLint, `postcss`, Python 3 with Pillow, NumPy and fontTools, the
-built-in browser pane, Safari, Chrome, and `web/tests/boss-bot.mjs`.
+built-in browser pane, Safari, Chrome, `web/tests/boss-bot.mjs` and `web/tests/boss-baseline.mjs`.
 
 **To acquire (ask before installing any package):**
 
 | Tool | Needed by | Notes |
 | --- | --- | --- |
 | 2–4 playtesters, a screen recorder, a notes sheet | R1 | Real-player tuning |
-| A mid-range laptop, Safari | R6 | Stress budget |
+| A mid-range laptop | R6 | Stress budget |
+| Firefox | R6, W1 | Replay check and browser acceptance |
 | A domain name | W1, W3 | Clerk production needs one |
-| Vercel account (and the Vercel CLI if deploying a prebuilt `dist/` from CI) | W1 | Hobby is free for non-commercial use |
+| Vercel account (and the Vercel CLI if deploying a prebuilt `dist/site/` from CI) | W1 | Hobby is free for non-commercial use |
 | Two physical gamepads, ideally an identical pair plus a different brand | S4, S6 | Same model twice is an acceptance case |
 | A second computer on the same network, and a phone hotspot for a different network | S4, W2 | Two browser tabs are not acceptance |
 | `ws` npm package | S4 | The one new runtime dependency |

@@ -53,7 +53,8 @@ export class Navigation {
         if (this.live) this.set('pause');
     }
     request(target, skipDraft = false) {
-        if (!['home', 'pause', 'mode', 'lobby', ...UTILITIES].includes(target)) target = 'home';
+        if (!['home', 'pause', 'mode', 'lobby', 'drills', ...UTILITIES].includes(target))
+            target = 'home';
         if (this.screen === 'settings' && target !== 'settings' && !skipDraft && this.dirty()) {
             this.pending = { kind: 'draft', target };
             this.changed(this.screen, this.screen);
@@ -81,7 +82,7 @@ export class Navigation {
         if (UTILITIES.includes(this.screen)) this.request(this.origin);
         else if (this.screen === 'play') this.pause();
         else if (this.screen === 'pause') this.request('home');
-        else if (this.screen === 'lobby') this.request('mode');
+        else if (this.screen === 'lobby' || this.screen === 'drills') this.request('mode');
         else if (this.screen === 'mode') this.request('home');
     }
     resolve(choice) {

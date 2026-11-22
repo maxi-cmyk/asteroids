@@ -29,7 +29,7 @@ export function menuRequest(theme = DEFAULT_MENU_THEME) {
     return theme === DEFAULT_MENU_THEME || !isMenuTheme(theme) ? HOME : single(theme);
 }
 // Screens that are part of the menus; the utility screens count only when opened from a menu.
-const MENU_SCREENS = ['home', 'mode', 'lobby'];
+const MENU_SCREENS = ['home', 'mode', 'lobby', 'drills'];
 
 const FLYING = ['playing', 'countdown', 'death'];
 

@@ -98,8 +98,8 @@ void web_start(int practice) {
     combat_reset();
     boss = {};
     if (practice_mode) {
-        pending_asteroids = 0;
-        practice_targets();
+        practice_hits = 0;
+        practice_apply_rocks();
         combat.shield_stored = true;
         ship.invincible_left = 0;
         set_state(STATE_PLAYING);

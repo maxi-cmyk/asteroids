@@ -10,8 +10,8 @@
     overflow: auto;
     border: 0;
     background:
-        linear-gradient(#0a0518d9, #0a0518f0),
-        url('../../assets/home-scene.png') center / cover;
+        var(--menu-veil, linear-gradient(#0a0518d9, #0a0518f0)),
+        var(--menu-backdrop, url('../../assets/home-scene.png') center / cover);
     image-rendering: pixelated;
 }
 .flight-mode > h1,
@@ -30,8 +30,8 @@
 }
 .mode-options {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: clamp(14px, 2.6vw, 36px);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(12px, 2vw, 30px);
     margin: 0;
     flex: 1;
     min-height: 0;

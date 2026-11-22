@@ -70,10 +70,14 @@ const lethal = (h) => h.kind <= HAZARD.arm || (h.kind === HAZARD.burn && h.warn 
 
 export class BossPilot {
     // `extraDanger(px, py, ahead)` adds a cost for anything else to avoid (the demo adds rocks).
-    constructor(game, { margin = 12, extraDanger = null } = {}) {
+    // `steadyOnlyInDanger` keeps the last heading only while something threatens: without it the
+    // bonus outweighs the pull home, so a calm ship drifts into a wall and stays there (the demo
+    // sets it; the boss bot keeps the old steering so its baseline does not move).
+    constructor(game, { margin = 12, extraDanger = null, steadyOnlyInDanger = false } = {}) {
         this.game = game;
         this.margin = margin;
         this.extraDanger = extraDanger;
+        this.steadyOnlyInDanger = steadyOnlyInDanger;
         this.last = null;
     }
     body() {
@@ -225,7 +229,13 @@ export class BossPilot {
                 if (!here)
                     cost +=
                         Math.hypot(nx - home.x, (ny - home.y) * 0.35) * 0.35 + (dx || dy ? 0.2 : 0);
-                if (this.last && this.last.dx === dx && this.last.dy === dy) cost -= 3;
+                if (
+                    (here || !this.steadyOnlyInDanger) &&
+                    this.last &&
+                    this.last.dx === dx &&
+                    this.last.dy === dy
+                )
+                    cost -= 3;
                 if (!best || cost < best.cost) best = { cost, dx, dy };
             }
         this.last = best;
