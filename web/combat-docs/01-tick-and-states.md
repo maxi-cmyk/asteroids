@@ -29,7 +29,7 @@ Consequences: pausing, the countdown and the death animation all **freeze** `gam
 attacks, hazard timers and pickups pause exactly with the game, and dying does not advance the
 fight while the death animation plays.
 
-## States (`GameState`, `src/game.cpp`)
+## States (`GameState`, `engine/src/game.cpp`)
 
 `MENU → COUNTDOWN → PLAYING ⇄ PAUSED`, `PLAYING → DEATH_ANIM → PLAYING | INITIALS | GAME_OVER`,
 plus `DEMO` (autopilot). `set_state` stamps `state_entered_ms = millis()`.
@@ -84,7 +84,7 @@ Notes:
   rock in step 12 is gone before the boss sees it. This is why rocks in front of a boss shield it.
 - Boss shots and hazards that hit the ship during step 16 call `combat_ship_hit` too; the same
   tick's rock collision (15) has already run.
-- In the OLED/firmware build `update_playing` in `src/game.cpp` runs a simpler version (no aim, no
+- In the OLED/firmware build `update_playing` in `engine/src/game.cpp` runs a simpler version (no aim, no
   laser, no boss).
 
 ## Entry points that start or reset a run (`exports/`)

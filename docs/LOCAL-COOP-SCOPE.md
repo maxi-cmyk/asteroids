@@ -33,10 +33,10 @@ layout at 960×540, 1440×900, browser zoom and fullscreen without covering haza
 
 | Current path | Risk if called twice | Required change |
 | --- | --- | --- |
-| `src/game.cpp`, `web/native/combat.h` | One ship, global death state, global resets and finalization | Explicit player slots and per-player lifecycle within one run |
-| `src/powerup.cpp` | Pickup movement/cue advances twice; first player always collects | Separate world pickup update from collection and player effect clocks |
-| `src/bullet.cpp` | Shared capacity and callback with no owner; separate passes can hit through nearer objects | Owned fixed pools and unified swept collision resolution |
-| `src/scoring.cpp` | One global combo reset/award | Independent `ScoringState` using existing portable C functions |
+| `engine/src/game.cpp`, `web/native/combat.h` | One ship, global death state, global resets and finalization | Explicit player slots and per-player lifecycle within one run |
+| `engine/src/powerup.cpp` | Pickup movement/cue advances twice; first player always collects | Separate world pickup update from collection and player effect clocks |
+| `engine/src/bullet.cpp` | Shared capacity and callback with no owner; separate passes can hit through nearer objects | Owned fixed pools and unified swept collision resolution |
+| `engine/src/scoring.cpp` | One global combo reset/award | Independent `ScoringState` using existing portable C functions |
 | `web/native/boss.h` | Targets one ship; updates shots while checking that ship; global award | World boss update once, explicit target and owned damage events |
 | `web/src/app/` | First-controller fallback can silently replace a lost device | Explicit assignments and reconnection workflow |
 | `web/src/runtime/`, `web/src/state/records.mjs` | One profile/result; solo leaderboard binding; finalize on one death | Latched two-player context, shared completion and isolated persistence |
@@ -157,7 +157,7 @@ Use the existing LLVM/wasm-ld build, C/C++ WebAssembly simulation, JavaScript
 Gamepad API and keyboard/pointer events, Canvas 2D and HTML/CSS. No new engine,
 backend or network dependency is needed. Build packaging must include extracted
 modules. Run `npm --prefix web test`, `npm --prefix web run build` and
-`sh tests/run_host.sh`; build ESP32 whenever shared production sources change.
+`sh engine/tests/run_host.sh`; build ESP32 whenever shared production sources change.
 
 ## Stress-test acceptance matrix
 

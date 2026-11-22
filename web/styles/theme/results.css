@@ -88,6 +88,34 @@ body[data-results='true'] .console .combat-hud {
     color: #9a86c0;
     font-size: clamp(14px, 1.8cqw, 18px);
 }
+/* Continue is the main action; Export fight log (dev) sits beside it as a quieter
+   buttons of the same height, with a clear gap between them. */
+.screen .run-summary .result-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    justify-content: center;
+    gap: clamp(10px, 1.6cqw, 18px);
+}
+.screen .run-summary .result-actions button:not(#continueResults) {
+    min-height: 0;
+    padding: 6px clamp(14px, 2cqw, 24px) 4px;
+    background: transparent;
+    border: 1px solid #5a3c98;
+    color: #cdb6f0;
+    font-family: var(--font-display);
+    font-size: clamp(16px, 2cqw, 22px);
+    letter-spacing: 0.04em;
+}
+.screen .run-summary .result-actions button:not(#continueResults):hover,
+.screen .run-summary .result-actions button:not(#continueResults):focus {
+    border-color: #ffbe6e;
+    color: #fff4d6;
+    outline: none;
+}
+.screen .run-summary .result-actions [hidden] {
+    display: none;
+}
 .screen .run-summary #continueResults {
     min-height: 0;
     padding: 6px clamp(26px, 4cqw, 48px) 4px;

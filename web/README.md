@@ -123,7 +123,7 @@ removes browser scores. Failed writes retain the original retry flow.
 ```sh
 npm test
 # From the repository root:
-sh tests/run_host.sh
+sh engine/tests/run_host.sh
 ```
 
 The test command builds both the original 128×64 WASM baseline and the HD
@@ -219,7 +219,7 @@ Choose **Watch demo** on Home. The browser never launches it after idle time.
 Any key/controller menu action or **Return to Home** stops it; the exit action
 is consumed and a fresh action is needed to play. `web/demo/engine.mjs` owns a
 separate WASM instance without storage or audio. `web/demo/controller.cpp` holds
-the shared autopilot; `src/demo.cpp` forwards to it for firmware builds.
+the shared autopilot; `engine/src/demo.cpp` forwards to it for firmware builds.
 Firmware idle-demo behavior is unchanged.
 
 ## Tasks 1–2 validation (2026-10-21)
@@ -230,7 +230,7 @@ Firmware idle-demo behavior is unchanged.
   responses, movement/precision/bounds, and simulated drift/disconnects.
 - `node web/build.mjs`: production build passed.
 - Host gameplay checks with UBSan passed using
-  `SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk sh tests/run_host.sh`.
+  `SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk sh engine/tests/run_host.sh`.
   The default Command Line Tools SDK failed to link due to unsupported
   architecture entries; the Xcode SDK run resolved that environmental issue.
 - Safari: desktop and 390×844 responsive settings inspected; sliders, profile

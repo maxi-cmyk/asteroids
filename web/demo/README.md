@@ -12,6 +12,6 @@ out of lives is not the end: the engine hands the pilot its lives back (`web_dem
 the demo never restarts on its own.
 
 `controller.cpp` is the firmware's rock-only autopilot. The browser bridge includes it here;
-`src/demo.cpp` remains the firmware build entry point. Firmware idle-demo behavior is
+`engine/src/demo.cpp` remains the firmware build entry point. Firmware idle-demo behavior is
 unchanged. The `web_demo` export (the old C++-driven demo state) is no longer used by the
 shell; browser menu ticks cannot launch a demo.

@@ -21,18 +21,18 @@ Deeper docs: network + security `docs/NETWORK-AND-SECURITY.md`; combat engine in
 
 ```
  ESP32 firmware ──┐
-                  ├── same game rules (src/) ──► game.wasm ──► browser (reads the scene)
- src/core (C17) ──┘                                     └──► Node server (online / LAN)
+                  ├── same game rules (engine/src/) ──► game.wasm ──► browser (reads the scene)
+ engine/core (C17) ──┘                                     └──► Node server (online / LAN)
 ```
 
 ## 1. One game, several hosts [built]
 
-- **Decision:** the firmware's `src/*.cpp` is the base game. `web/native/bridge.cpp` includes
+- **Decision:** the shared game in `engine/src/*.cpp` (also built into the firmware) is the base game. `web/native/bridge.cpp` includes
   those files directly; web-only features (co-op, bosses, laser) sit beside them in `web/native/`.
 - **Why:** one set of rules to test; the scene can read game state without extra getters.
 - **Cost:** a firmware change can break the web goldens and the reverse, so always run
-  `npm run check`, `sh tests/run_host.sh` and a PlatformIO build after shared edits.
-- **Rule:** rules both platforms need go in `src/core/` (plain C17, no Arduino, no browser).
+  `npm run check`, `sh engine/tests/run_host.sh` and a PlatformIO build after shared edits.
+- **Rule:** rules both platforms need go in `engine/core/` (plain C17, no Arduino, no browser).
 
 ## 2. WebAssembly without Emscripten [built]
 
@@ -105,7 +105,7 @@ Deeper docs: network + security `docs/NETWORK-AND-SECURITY.md`; combat engine in
 
 | Layer | What it catches |
 | --- | --- |
-| `tests/run_host.sh` (strict C17, UBSan) | logic bugs, undefined behaviour |
+| `engine/tests/run_host.sh` (strict C17, UBSan) | logic bugs, undefined behaviour |
 | `node --test` against the wasm | gameplay, co-op, boss rules |
 | Goldens (scene, render, sound) | accidental changes to the contract or output |
 | `boss-bot.mjs` | unbeatable or unfair boss fights |

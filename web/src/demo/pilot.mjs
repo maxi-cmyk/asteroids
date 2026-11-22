@@ -124,8 +124,11 @@ export class Pilot {
         // With nothing to aim at (between waves, or every rock already claimed) it idles in a slow
         // loop over the left of the field, so the demo never looks frozen.
         const idle = this.tick * 0.012;
+        // A boss target off the top or bottom of the field (the Bastion's last engine when it
+        // sits low) is not chased: bosses follow your row, so holding mid-field brings it back.
+        const offField = target && (target.y < 12 || target.y > 258);
         let home = target
-            ? { x: HOME_X, y: clamp(target.y, 40, 230) }
+            ? { x: HOME_X, y: offField ? 135 : clamp(target.y, 40, 230) }
             : { x: HOME_X + Math.sin(idle) * 50, y: 135 + Math.sin(idle * 1.7) * 60 };
         if (scene[S.PICKUP_ACTIVE] && scene[S.PICKUP_X] < WIDTH - 40)
             home = { x: scene[S.PICKUP_X], y: scene[S.PICKUP_Y] };

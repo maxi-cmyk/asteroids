@@ -1,0 +1,67 @@
+# Every push and pull request to dev and main. One job, so "check" can be a required status on main;
+# the PlatformIO build is skipped inside the job when nothing it depends on changed.
+name: check
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # The web build compiles the engine to WebAssembly with clang and wasm-ld.
+      - name: Install LLVM
+        run: sudo apt-get update && sudo apt-get install -y clang lld
+
+      - name: Web check (format, lint, WASM builds, browser suite)
+        working-directory: web
+        run: |
+          npm ci
+          npm run check
+
+      - name: Engine host tests
+        run: sh engine/tests/run_host.sh
+
+      - name: Did the handheld build's inputs change?
+        id: firmware
+        run: |
+          if [ "${{ github.event_name }}" = pull_request ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="${{ github.event.before }}"
+          fi
+          # A new branch has an all-zero "before"; build to be safe.
+          if [ -z "$base" ] || [ "$base" = 0000000000000000000000000000000000000000 ] \
+              || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "$base" HEAD -- engine firmware platformio.ini; then
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Cache PlatformIO
+        if: steps.firmware.outputs.build == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+
+      - name: ESP32 build
+        if: steps.firmware.outputs.build == 'true'
+        run: |
+          pip install platformio
+          pio run

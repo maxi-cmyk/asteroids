@@ -68,6 +68,17 @@ this project's gameplay C++ to WebAssembly, with a web-only 480×270 playfield,
 smaller detailed sprites, and PS4/standard-gamepad and keyboard controls. Run `cd web`, `npm run build`, then `npm start`; open
 `http://127.0.0.1:4173`. The ESP32 firmware is built and flashed separately.
 
+## Repository layout
+
+| Folder | Holds |
+| --- | --- |
+| `engine/` | The shared game: `src/`, `include/` and the portable C17 `core/`, plus `tests/` (host checks, `sh engine/tests/run_host.sh`) |
+| `firmware/` | The ESP32 handheld only: `main.cpp`, `rock_random.cpp`, `HARDWARE.md` |
+| `web/` | The browser game (compiles `engine/` to WebAssembly) and, later, the room server |
+| `platformio.ini` | At the root, where `pio` looks; `src_dir` is `firmware/` and the build adds `engine/` |
+
+`main` is what is deployed and `dev` is where work happens; see [docs/SETUP.md](docs/SETUP.md).
+
 ## Build and upload
 
 ```sh
@@ -81,14 +92,14 @@ If `pio` is not on your PATH, use `~/.platformio/penv/bin/pio`.
 ## Verification
 
 ```sh
-sh tests/run_host.sh
+sh engine/tests/run_host.sh
 ```
 
 The host checks compile production gameplay and input code with simulated hardware, UndefinedBehaviorSanitizer. They cover firing edges, swept collisions, splitting and pool capacity, wave progression, 2D movement bounds, diagonal speed, nose-relative firing, spawn warnings, pause, respawn selection, retry handling, per-hit multiplier scoring, expiry/reset, all wave-profile bounds, deferred entrance patterns, unbiased random ranges with a deterministic test source, and leaderboard ranking, initials navigation, held-button guards, one-time confirmation, reload, malformed records, failed storage writes, rapid primary fire, full-pool rejection, frozen timers, and full-speed movement. Power-up checks cover drop thresholds, collection, refresh, expiry, pause, atomic volleys/fallbacks, diagonal swept collisions, held fire, shield overlap protection, resets, and indicator bounds. They do not verify physical joystick feel, OLED output, buzzer sound, or ESP32 flash persistence; test those on the board after uploading.
 
-To additionally enable AddressSanitizer on a compatible host, run `SANITIZERS=address,undefined sh tests/run_host.sh`. AddressSanitizer currently hangs on the development Mac, so it has not passed here.
+To additionally enable AddressSanitizer on a compatible host, run `SANITIZERS=address,undefined sh engine/tests/run_host.sh`. AddressSanitizer currently hangs on the development Mac, so it has not passed here.
 
-See [setup](docs/SETUP.md) and [game specification](docs/PRD.md).
+See [setup and repository layout](docs/SETUP.md), [handheld wiring and flashing](firmware/HARDWARE.md) and [game specification](docs/PRD.md).
 
 ## Coding style
 
@@ -101,6 +112,6 @@ original spelling. `.clang-format` captures the formatting rules.
 With clang-format installed, check formatting using:
 
 ```sh
-clang-format --dry-run --Werror src/*.cpp include/*.h tests/host/*.h \
-    tests/host/*.cpp
+clang-format --dry-run --Werror engine/src/*.cpp firmware/*.cpp \
+    engine/include/*.h engine/tests/host/*.h engine/tests/host/*.cpp
 ```

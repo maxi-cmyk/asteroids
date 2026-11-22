@@ -50,6 +50,20 @@ static const unsigned BASTION_ENGINE0 = 3; // parts 3 and 4
 static const unsigned long RAM_RISE = 1200, RAM_CROSS = 1400, RAM_AWAY = 1200,
                            RAM_BACK = 1200;
 static const float RAM_HALF = 70; // half the lane's height
+// The lane can slope: the ship dives or climbs across the field (dy per px it
+// travels left), never so steeply that the lane leaves the field.
+static const float RAM_SLOPE_MAX = .2f;
+static const float RAM_BACKOFF = 70; // how far right it pulls back to turn
+// boss.scratch while a ramming run is on: the lanes' hazard slots (+1), the
+// second lane's height and slope, and whether there is a second pass.
+enum {
+    RAM_HZ = 0,
+    RAM_SLOPE = 1,
+    RAM_TWICE = 2,
+    RAM_LANE2 = 3,
+    RAM_SLOPE2 = 4,
+    RAM_HZ2 = 5
+};
 // Marks the run's lane (its `e`): live, the danger is the ship itself, so the
 // renderer draws no band (src/boss/scene.mjs RAM_LANE).
 static const float RAM_STYLE = 20;
@@ -108,31 +122,101 @@ static void bs_bolts_tick() {
         }
     }
 }
+// The rise lasts as long as the lane's warning (longer with the longer-warnings
+// assist), so the hull never crosses a lane that is still only marked.
+static unsigned long bs_bastion_rise() {
+    return boss_assist_long ? RAM_RISE * 13 / 10 : RAM_RISE;
+}
+// Height of a lane starting at (SCREEN_W + 10, y0) with slope k, at x.
+static float bs_bastion_lane_y(float y0, float k, float x) {
+    return y0 + k * (SCREEN_W + 10 - x);
+}
+// Picks a lane near the pilot's row (not just top or bottom half), sometimes
+// sloping, and keeps both of its ends inside the field.
+static void bs_bastion_pick_lane(float& y0, float& k, float avoid) {
+    for (int tries = 0; tries < 6; tries++) {
+        y0 = bs_clamp(boss.target_y + bs_rand(-45, 45), 60, 210);
+        k = bs_rand(0, 100) < 45 ? bs_rand(-RAM_SLOPE_MAX, RAM_SLOPE_MAX) : 0;
+        float end = bs_bastion_lane_y(y0, k, -10);
+        if (end < 75 || end > 195) {
+            k = 0;
+        }
+        if (avoid < 0 || fabsf(y0 - avoid) > 60) {
+            return;
+        }
+    }
+    y0 = avoid < 135 ? 200 : 70;
+}
 static float bs_bastion_ease(float u) {
     u = bs_clamp(u, 0, 1);
     return u * u * (3 - 2 * u);
 }
-// Where the ramming run has the ship, from the rest point (x, y), t ms in.
-static void
-bs_bastion_ram_pose(unsigned long t, float& x, float& y, float& th) {
-    float lane = boss.aux[AUX_BASTION_LANE], hx = x, hy = y;
-    if (t < RAM_RISE) {
-        y = hy + (lane - hy) * bs_bastion_ease(t / 700.0f);
-        x = hx + 10 * bs_clamp((t - 700.0f) / 500, 0, 1);
-        th = .6f + .4f * bs_clamp((t - 600.0f) / 600, 0, 1);
-    } else if (t < RAM_RISE + RAM_CROSS) {
-        float u = (t - RAM_RISE) / float(RAM_CROSS);
-        x = hx + 10 - 800 * (u * sqrtf(u));
-        y = lane;
+// Where the ramming run has the ship, from the rest point (x, y), t ms in:
+// it rises to the lane's start, crosses along it (diving or climbing if the
+// lane slopes), and either comes round to rest from the right or, on a second
+// pass, comes straight back in along another lane first. `pitch` is the hull's
+// angle along a sloping lane.
+static void bs_bastion_ram_pose(
+        unsigned long t, float& x, float& y, float& th, float& pitch) {
+    const unsigned long rise = bs_bastion_rise();
+    float lane = boss.aux[AUX_BASTION_LANE], k = boss.scratch[RAM_SLOPE];
+    float hx = x, hy = y;
+    pitch = 0;
+    if (t < rise) {
+        float u = t / float(rise);
+        float on = bs_bastion_lane_y(lane, k, hx + RAM_BACKOFF);
+        y = hy + (on - hy) * bs_bastion_ease(u * 1.7f);
+        // It pulls back to the right as it turns to the lane, so the nose
+        // never sweeps the pilot's row on the way up.
+        x = hx + RAM_BACKOFF * bs_bastion_ease(u * 1.6f);
+        th = .6f + .4f * bs_clamp((u - .5f) / .5f, 0, 1);
+        pitch = -bs_atan2(k, 1) * bs_clamp((u - .5f) / .5f, 0, 1);
+        return;
+    }
+    t -= rise;
+    if (t < RAM_CROSS) {
+        float u = t / float(RAM_CROSS);
+        x = hx + RAM_BACKOFF - 850 * (u * sqrtf(u));
+        y = bs_bastion_lane_y(lane, k, x);
         th = 1;
-    } else if (t < RAM_RISE + RAM_CROSS + RAM_AWAY) {
+        pitch = -bs_atan2(k, 1);
+        return;
+    }
+    t -= RAM_CROSS;
+    if (boss.scratch[RAM_TWICE] > 0) {
+        if (t < RAM_AWAY) {
+            x = 900; // off the field, turning for the second pass
+            y = bs_bastion_lane_y(boss.scratch[RAM_LANE2],
+                                  boss.scratch[RAM_SLOPE2],
+                                  SCREEN_W);
+            th = .8f;
+            return;
+        }
+        t -= RAM_AWAY;
+        if (t < RAM_CROSS) {
+            float u = t / float(RAM_CROSS), k2 = boss.scratch[RAM_SLOPE2];
+            x = SCREEN_W + 180 - 900 * u;
+            y = bs_bastion_lane_y(boss.scratch[RAM_LANE2], k2, x);
+            th = 1;
+            pitch = -bs_atan2(k2, 1);
+            return;
+        }
+        t -= RAM_CROSS;
+    }
+    if (t < RAM_AWAY) {
         x = 900; // off the field, coming round
+        y = hy;
         th = .5f;
     } else {
-        float u = (t - RAM_RISE - RAM_CROSS - RAM_AWAY) / float(RAM_BACK);
+        float u = (t - RAM_AWAY) / float(RAM_BACK);
         x = 820 + (hx - 820) * bs_bastion_ease(u);
+        y = hy;
         th = .6f;
     }
+}
+static unsigned long bs_bastion_ram_total() {
+    return bs_bastion_rise() + RAM_CROSS + RAM_AWAY + RAM_BACK
+           + (boss.scratch[RAM_TWICE] > 0 ? RAM_AWAY + RAM_CROSS : 0);
 }
 static unsigned bs_bastion_dead_guns() {
     unsigned n = 0;
@@ -142,9 +226,11 @@ static unsigned bs_bastion_dead_guns() {
     return n;
 }
 static void bs_bastion_update() {
-    float thrust = .3f;
-    if (boss.atk == BA_RAM) {
-        bs_bastion_ram_pose(bs_since(boss.atk_t0), boss.x, boss.y, thrust);
+    float thrust = .3f, pitch = 0;
+    bool ramming = boss.atk == BA_RAM;
+    if (ramming) {
+        bs_bastion_ram_pose(
+                bs_since(boss.atk_t0), boss.x, boss.y, thrust, pitch);
         boss.camp_ms[0] = boss.camp_ms[1]
                 = 0; // it passes you; that is not camping
     }
@@ -153,11 +239,15 @@ static void bs_bastion_update() {
     if (fabsf(vy) > 20) {
         vy = 0; // it came back round from the far side
     }
-    // It banks into its turns, burns harder to turn, and lists as it is hurt.
-    unsigned dead = bs_bastion_dead_guns()
-                    + (boss.parts[BASTION_ENGINE0].state
-                       + boss.parts[BASTION_ENGINE0 + 1].state);
-    float roll = bs_clamp(vy * .08f, -.14f, .14f) + .04f * dead;
+    // It banks into its turns (nose up as it climbs, down as it dives), burns
+    // harder to turn, and lists toward the side whose engine it lost; along a
+    // sloping ram lane the hull points down the lane.
+    float list = .03f
+                 * (float(boss.parts[BASTION_ENGINE0].state)
+                    - float(boss.parts[BASTION_ENGINE0 + 1].state));
+    float bank
+            = ramming && pitch != 0 ? pitch : bs_clamp(-vy * .08f, -.1f, .1f);
+    float roll = bank + list;
     boss.aux[AUX_BASTION_ROLL] += (roll - boss.aux[AUX_BASTION_ROLL]) * .08f;
     thrust = bs_max(thrust, bs_clamp(.3f + fabsf(vy) * .7f, 0, 1));
     boss.aux[AUX_BASTION_THRUST]
@@ -263,46 +353,84 @@ static bool bs_bastion_run(int id, unsigned long t) {
         return t >= 600 + n * 600 + 200;
     }
     case BA_RAM: {
-        // It rises to the lane on the pilot's half, bow on, the lane marked
-        // edge to edge; then it crosses the field with its engines blazing,
-        // leaving a wake of debris, and comes back in from the right.
+        // It rises to a lane near the pilot's row, bow on, the lane marked edge
+        // to edge (sometimes sloping: it dives or climbs across); then it
+        // crosses the field with its engines blazing, leaving a wake of debris.
+        // From phase 2 it may turn off the field and make a second pass along
+        // another lane, marked while it is out of sight, before coming home.
+        const unsigned long rise = bs_bastion_rise();
         if (bs_at(t, 0)) {
-            float lane = boss.target_y < 135 ? 70 : 200;
+            float lane, k;
+            bs_bastion_pick_lane(lane, k, -1);
             boss.aux[AUX_BASTION_LANE] = lane;
+            boss.scratch[RAM_SLOPE] = k;
+            boss.scratch[RAM_TWICE]
+                    = boss.phase >= 2 && bs_rand(0, 100) < 50 ? 1.0f : 0.0f;
             BossHazard *h = bs_hazard(HK_LANE,
                                       SCREEN_W + 10,
                                       lane,
-                                      BOSS_PI,
-                                      SCREEN_W + 20,
+                                      bs_atan2(k, -1),
+                                      (SCREEN_W + 20) * sqrtf(1 + k * k),
                                       RAM_HALF,
                                       RAM_RISE,
                                       RAM_CROSS);
-            boss.scratch[0] = h ? float(h - boss.hz) + 1 : 0;
+            boss.scratch[RAM_HZ] = h ? float(h - boss.hz) + 1 : 0;
+            boss.scratch[RAM_HZ2] = 0;
             if (h) {
                 h->e = RAM_STYLE;
             }
         }
-        // Once it goes, the danger is the ship: the lane runs from its stern
-        // to its bow as it crosses.
-        if (t >= RAM_RISE && boss.scratch[0] > 0) {
-            BossHazard& h = boss.hz[unsigned(boss.scratch[0]) - 1];
-            if (h.active && h.kind == HK_LANE && h.e == RAM_STYLE) {
-                h.x = boss.x + 170;
-                h.b = 340;
+        // The second lane is marked as the ship leaves the field, for as long
+        // as it is out of sight.
+        if (boss.scratch[RAM_TWICE] > 0 && bs_at(t, rise + RAM_CROSS)) {
+            float lane2, k2;
+            bs_bastion_pick_lane(lane2, k2, boss.aux[AUX_BASTION_LANE]);
+            boss.scratch[RAM_LANE2] = lane2;
+            boss.scratch[RAM_SLOPE2] = k2;
+            BossHazard *h2 = bs_hazard(HK_LANE,
+                                       SCREEN_W + 10,
+                                       lane2,
+                                       bs_atan2(k2, -1),
+                                       (SCREEN_W + 20) * sqrtf(1 + k2 * k2),
+                                       RAM_HALF,
+                                       RAM_AWAY,
+                                       RAM_CROSS);
+            boss.scratch[RAM_HZ2] = h2 ? float(h2 - boss.hz) + 1 : 0;
+            if (h2) {
+                h2->e = RAM_STYLE;
             }
         }
-        unsigned long cross = t - RAM_RISE;
-        if (t >= RAM_RISE && t < RAM_RISE + RAM_CROSS
-            && cross % 160 < FRAME_TIME_MS && boss.x + 170 < SCREEN_W) {
+        // Once it goes, the danger is the ship: the lane runs from its stern
+        // to its bow as it crosses.
+        bool second = boss.scratch[RAM_TWICE] > 0 && t >= rise + RAM_CROSS;
+        unsigned slot = unsigned(boss.scratch[second ? RAM_HZ2 : RAM_HZ]);
+        float k = boss.scratch[second ? RAM_SLOPE2 : RAM_SLOPE],
+              y0
+              = second ? boss.scratch[RAM_LANE2] : boss.aux[AUX_BASTION_LANE];
+        bool crossing = second ? t >= rise + RAM_CROSS + RAM_AWAY
+                                         && t < rise + 2 * RAM_CROSS + RAM_AWAY
+                               : t >= rise && t < rise + RAM_CROSS;
+        if (crossing && slot > 0) {
+            BossHazard& h = boss.hz[slot - 1];
+            if (h.active && h.kind == HK_LANE && h.e == RAM_STYLE) {
+                h.x = boss.x + 170;
+                h.y = bs_bastion_lane_y(y0, k, h.x);
+                h.b = 340 * sqrtf(1 + k * k);
+            }
+        }
+        unsigned long since
+                = second ? t - rise - RAM_CROSS - RAM_AWAY : t - rise;
+        if (crossing && since % 160 < FRAME_TIME_MS
+            && boss.x + 170 < SCREEN_W) {
             bs_shot(SF_PELLET,
                     boss.x + 170,
-                    boss.aux[AUX_BASTION_LANE] + bs_rand(-55, 55),
+                    bs_bastion_lane_y(y0, k, boss.x + 170) + bs_rand(-55, 55),
                     bs_rand(-.35f, .1f),
                     bs_rand(-.15f, .15f),
                     1,
                     2500);
         }
-        return t >= RAM_RISE + RAM_CROSS + RAM_AWAY + RAM_BACK;
+        return t >= bs_bastion_ram_total();
     }
     case BA_BROAD: {
         if (bs_at(t, 0)) {

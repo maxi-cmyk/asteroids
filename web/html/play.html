@@ -48,35 +48,12 @@
                             <h2>Practice tools</h2>
                             <button id="closePracticeTools" type="button">Close</button>
                         </header>
-                        <p class="drawer-note">The run waits while this is open.</p>
-                        <section aria-label="Rocks">
-                            <h3>Rocks</h3>
-                            <div class="drawer-choices" role="group" aria-label="Rock mode">
-                                <button type="button" data-rocks="targets" aria-pressed="false">Targets</button
-                                ><button type="button" data-rocks="waves" aria-pressed="false">Waves</button
-                                ><button type="button" data-rocks="stream" aria-pressed="false">Stream</button
-                                ><button type="button" data-rocks="none" aria-pressed="false">None</button>
-                            </div>
+                        <section aria-label="Wave">
+                            <h3>Wave</h3>
                             <div class="drawer-fields">
-                                <label>Wave <select id="practiceWave"></select></label>
-                                <label>Rock speed <select id="practiceSpeed"></select></label>
+                                <label>Start at <select id="practiceWave"></select></label>
+                                <button id="practiceStartWave" type="button">Start wave</button>
                             </div>
-                            <label class="toggle-label"><input id="practiceRefill" type="checkbox" /> Refill targets</label>
-                            <label class="toggle-label"><input id="practiceHoldWave" type="checkbox" /> Stay on this wave</label>
-                            <div class="drawer-actions">
-                                <button id="practiceRespawn" type="button">Respawn now</button
-                                ><button id="practiceClear" type="button">Clear field</button
-                                ><button id="practiceNext" type="button">Next wave</button>
-                            </div>
-                        </section>
-                        <section aria-label="Pickups">
-                            <h3>Pickups</h3>
-                            <div id="practiceSpawns" class="drawer-actions"></div>
-                            <div class="drawer-choices" role="group" aria-label="Keep on">
-                                <button id="holdMultishot" type="button" aria-pressed="false">Keep multishot</button
-                                ><button id="holdDoubleFire" type="button" aria-pressed="false">Keep 2× fire</button>
-                            </div>
-                            <label class="toggle-label"><input id="practiceDrops" type="checkbox" /> Pickups drop from rocks</label>
                         </section>
                         <section aria-label="Boss">
                             <h3>Boss</h3>
@@ -116,12 +93,6 @@
                                 <button id="bossPracticeStart">Fight boss</button>
                             </div>
                         </section>
-                        <section aria-label="This drill">
-                            <h3>This drill</h3>
-                            <p id="practiceReadout" role="status">Time 0:00 · Hits 0</p>
-                            <button id="practiceResetStats" type="button">Reset stats</button>
-                        </section>
-                        <p class="drawer-keys">T tools · R respawn · N next wave · 1–4 pickups</p>
                     </aside>
                     <div id="unlockToast" class="unlock-toast" role="status" hidden></div>
                     <div id="pauseMenu" class="pause-menu" hidden>
@@ -186,15 +157,14 @@
                                 </div>
                             </dl>
                             <p id="resultLaser"></p>
-                            <button id="saveReplay" type="button" hidden>
-                                Save replay
-                            </button>
-                            <button id="exportFightLog" type="button" hidden>
-                                Export fight log
-                            </button>
-                            <button id="continueResults" class="primary">
-                                Continue
-                            </button>
+                            <div class="result-actions">
+                                <button id="exportFightLog" type="button" hidden>
+                                    Export fight log
+                                </button>
+                                <button id="continueResults" class="primary">
+                                    Continue
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

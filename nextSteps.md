@@ -12,7 +12,7 @@ version and build id, release checks, a calmer Home, menu looks, the practice ra
 fixed demo pilot) is built and waiting on a second playtest, tuning and a
 few checks only you can do. Then tag it, then **v0.4 Campaign** (Act 1 first, then Endless), **v0.5 LAN** and **v0.6 web**.
 
-**Contents:** Roadmap · v0.3 release (R1, R6, polish leftovers, R8, later) · v0.4 Campaign (C1 Act 1,
+**Contents:** Roadmap · v0.3 release (R1, R6, polish leftovers, R8, later) · B1 Branches and folders · v0.4 Campaign (C1 Act 1,
 C2 Endless, C3 Act 2, C4 Achievements) · S2 Combo bonuses · The three ways to play together ·
 v0.5 LAN (S3, S4) · v0.6 Web (W1 static site, W2 online
 rooms, W3 accounts) · S6 Versus · S7 Modifiers · S8 ESP32 handheld · Standing rules ·
@@ -26,7 +26,8 @@ Open decisions · Tools
 | --- | --- | --- | --- | --- |
 | **v0.3** | R1 | Second playtest, tune from the logs, answer the design questions | people | M |
 | v0.3 | R6 | Release checks left: music rights, licence, mid-laptop stress, Firefox replay | you | S |
-| v0.3 | R8 | Tag `v0.3.0` | R1, R6 | S |
+| v0.3 | B1 | Branches `main` (deployed) and `dev` (staging); shared code in `engine/`, ESP32 in `firmware/` | none | S |
+| v0.3 | R8 | Tag `v0.3.0` | R1, R6, B1 | S |
 | **v0.4** | C1 | **Campaign Act 1** (main focus): 6 levels, stars, level select | R8 | L |
 | v0.4 | C2 | Endless with prestige and the new rock types; opens after Act 1 | C1 | L |
 | v0.4 | C4 | Achievements, with a 0.5 s trophy toast and a Records tab | C1 | M |
@@ -57,7 +58,9 @@ needs no server. S8 never touches the network code and can start any time after 
 - [ ] **Questions to answer in play:**
   - **Tidecaller:** does the new bubble shield make it clear the bubbles go first? Should the
     bell take damage only while it contracts (now: any time)?
-  - **Bastion:** it never hits the bot. Does the ramming run feel threatening to a person?
+  - **Bastion:** the ramming run was reworked on 2026-11-22 (lanes near your row, some
+    sloping, a second pass from phase 2; it banks both ways). Does it feel threatening and
+    fair? The bot is touched under once a fight.
     Its outriggers (±98 px) reach past the lane (±70 px) without hurting: widen the lane or
     let the engines hurt.
   - **Cinderforge:** do people land enough shots in a vent (the bot needs two vents; people
@@ -94,19 +97,132 @@ needs no server. S8 never touches the network code and can start any time after 
 - [ ] **Menu look:** measure menu text contrast (AA) on each region look; the veil is the
   region's colour at the old opacity, but no look has been measured.
 - [ ] **Home:** highlight How to play once on a first run (no records yet).
-- [ ] **Practice range, not built yet:** Restart drill as one key, Restart fight and Skip to
-  next phase for bosses, a "count hits / hits cost nothing" switch, CPS in the drill readout.
-  The Waves drill has no mini-bosses or bosses (Boss drill only); decide if it should.
+- [ ] **Practice:** the Waves drill has no mini-bosses or bosses (the tools panel's Fight boss
+  covers them); decide if it should.
 
 ### R8. Tag v0.3.0
 
-- [ ] `npm run check`, `sh tests/run_host.sh`, the PlatformIO build, the stress run; update
+- [ ] `npm run check`, `sh engine/tests/run_host.sh`, the PlatformIO build, the stress run; update
   README, COMBAT, Help and `CHANGELOG.md`; tag `v0.3.0`.
 
 ### Later, not blocking
 
-- [ ] **M5 art tools** and **M8 shared C++** (`src/asteroid.cpp`, `src/game.cpp`; carefully,
+- [ ] **M5 art tools** and **M8 shared C++** (`engine/src/asteroid.cpp`, `engine/src/game.cpp`; carefully,
   the ESP32 shares them). The plan for both is in `docs/nextSteps-2026-11-19.archive.md`.
+
+---
+
+## B1. Branches and folders: main, dev, engine/, firmware/ (planned 2026-11-22)
+
+**Goal:**
+- **`main`:** what is deployed: the site on Vercel and, from v0.6, the room server on Railway.
+  Nothing lands on it except a release from `dev` or a hotfix, and every merge is tagged.
+- **`dev`:** the staging version, and where daily work goes. Its own Vercel staging URL, and later
+  a Railway staging environment.
+- **The ESP32 handheld** stays in the same branches, in its own `firmware/` folder.
+
+Decided 2026-11-22: folders, not a `hardware` branch.
+- **Little to move.** The web build compiles the firmware's game code (`web/native/bridge.cpp`
+  includes `src/game.cpp`, `asteroid.cpp`, `ship.cpp` and the rest; `build.mjs` adds
+  `src/display.cpp`, `src/sound.cpp`, `src/core/*.c` and `include/config.h`). That code is in
+  `game.wasm`, so it is deployed anyway. Only `platformio.ini`, `src/main.cpp`,
+  `src/rock_random.cpp` and the ESP32 docs are handheld-only.
+- **No drift.** In one branch, CI builds both targets on every push, so a shared-code change
+  that breaks either one fails at once.
+- **Deploys go by path, not by branch.** Vercel builds and serves only `web/dist/site`.
+  Railway restarts only when its watch paths change. Files in `firmware/` never reach players.
+
+Today everything is on `main`, nothing is deployed, and nothing has been committed since `v0.3`,
+so this costs nothing yet. Do it before R8, so `v0.3.0` is the first tag released from `dev` to
+`main`.
+
+**Layout after B1:**
+
+| Folder | Holds | Built by |
+| --- | --- | --- |
+| `engine/src/`, `engine/include/`, `engine/core/` | The shared game: today's `src/*.cpp` (less the two below), `include/`, `src/core/` | the web build and PlatformIO |
+| `engine/tests/` | Today's `tests/host/` and `run_host.sh`: the shared code tested on a PC | CI |
+| `firmware/` | `main.cpp`, `rock_random.cpp`, and `HARDWARE.md` (wiring, parts, flashing: the ESP32 parts of SETUP and README) | PlatformIO |
+| `platformio.ini` (repo root, where `pio` looks) | `[platformio] src_dir = firmware`; `build_flags = -I engine/include`; `build_src_filter = +<*> +<../engine/src/> +<../engine/core/>` | PlatformIO |
+| `web/` | The site, and later `web/server/` (decision 2) | Vercel, Railway |
+
+**Steps** (one sitting):
+- [ ] **Baseline:** commit the work in progress (the v0.3 polish) on `main`. **You:** not committed
+  yet, so commit the polish first and the move as a second commit (the renames are staged by
+  `git mv`; `git reset` them first if you want the polish alone). Before the move, `sh tests/run_host.sh`
+  and `pio run` passed; `npm run check` was not run before it (see the prettier note below).
+- [x] **Move to the layout above** in one commit, with `git mv` so the history follows. Done
+  2026-11-22, staged and not committed. `sh engine/tests/run_host.sh` passes, `pio run` builds with
+  the same flash size (789,169 bytes) as before, and `npm test` passes (291 tests, goldens
+  unchanged), `eslint` has 0 errors. `build_src_filter` reaches outside `src_dir`, so the
+  library fallback below was not needed. `docs/SETUP.md` was split: the ESP32 wiring and flashing
+  are in `firmware/HARDWARE.md`, and `docs/SETUP.md` now covers folders, commands and branches.
+  - Update the paths in `web/build.mjs`, `web/native/bridge.cpp`, `web/native/config.h`,
+    `run_host.sh`, `tools/format-core.sh` and `platformio.ini`, and in the docs: README, SETUP,
+    `web/ARCHITECTURE.md`, `DESIGN-DECISIONS.md`, and the ACCEPTANCE commands.
+  - It is a move, not a change: every check passes, `pio run` builds, and no golden file moves.
+    If `build_src_filter` will not reach outside `src_dir`, fall back to `engine/` as a
+    PlatformIO library (a `library.json` in `engine/`, plus `lib_extra_dirs`).
+- [ ] **Branch `dev`** from `main`, then `git push -u origin dev`. **You:** after committing.
+- [ ] **On GitHub:** **You** (needs your account).
+  - Make `dev` the default branch, so pull requests (yours, Claude sessions' and CI's) target
+    it.
+  - Protect `main`: changes only by pull request, checks must pass, no force-push, no
+    deletion.
+  - Protect `dev` from force-push and deletion only; you can still push to it directly.
+- [x] **CI** (GitHub Actions, `.github/workflows/check.yml`), written 2026-11-22 and **not yet run
+  on GitHub** (LLVM on Linux is `apt install clang lld`; confirm `wasm-ld` is found). On every push and
+  pull request to `dev` and `main`, it runs:
+  - `npm ci && npm run check` in `web/`, on Linux with LLVM installed (this also answers the W1
+    build question);
+  - `sh engine/tests/run_host.sh`;
+  - `pio run` (cache `~/.platformio`). It runs only when `engine/`, `firmware/` or
+    `platformio.ini` changed, but it is always required on `main`.
+- [x] Note the branches and folders in README and `docs/SETUP.md`, and save the workflow below
+  as a memory, so Claude sessions start from `dev`. Done.
+- [ ] **Fix before CI can be green: `npm run check` fails at `prettier --check` on 12 files,
+  already at the committed `v0.3`** (for example `styles/theme/base.css` wants a long
+  `--font-body` value on one line; also `region-painters.mjs`, `tests/audio.test.mjs`, six more theme
+  CSS files). Run `npx prettier --write "**/*.{mjs,css}"` in `web/` and commit it on its own,
+  or CI will fail on its first run. Not done here because it rewrites files that hold your
+  uncommitted work.
+
+**Day-to-day workflow:**
+- **Work:** on `dev`, either directly or on a short branch (`feat/act-1`, `feat/handheld`)
+  merged back by pull request.
+- **Release:**
+  1. Open a pull request `dev` → `main`.
+  2. CI passes; you check the staging URL.
+  3. Merge with a merge commit, not a squash, so `dev` and `main` never drift apart.
+  4. Tag the merge on `main` (`v0.4.0`) and add the `CHANGELOG.md` entry.
+- **Hotfix:**
+  1. Branch from `main` (`fix/…`) and open a pull request to `main`.
+  2. Tag the patch release.
+  3. Merge `main` back into `dev` straight away.
+- **Handheld (S8):** an ordinary feature branch off `dev`. The firmware gets no deploy, so its
+  "release" is a tag and a flashed board, noted in ACCEPTANCE.
+
+**Deploys (wired up in W1 and W2, not now):**
+
+| Branch | Vercel (the page) | Railway (rooms, from W2) |
+| --- | --- | --- |
+| `main` | Production branch, the public domain | `production` environment, its own Redis |
+| `dev` | Preview with a fixed alias, e.g. `staging.<domain>`, behind deployment protection | `staging` environment, its own Redis |
+| `feat/*`, `fix/*` | Preview URLs, protected (or turned off) | none |
+
+- **Vercel:** builds only `web/` (W1), so a commit that only touches `firmware/` changes nothing
+  served. Add an ignored-build step (`git diff --quiet HEAD^ HEAD -- web engine`) so such a
+  commit does not even build.
+- **Railway:** set each service's watch paths to `web/server/**`, `engine/**` and the
+  `web/native` files the headless engine uses. A CSS-only or firmware-only release then does
+  not restart rooms.
+- **Data:** staging and production never share Redis or, with W3, Postgres.
+
+**Done when:**
+- `main` and `dev` exist, with `dev` as the default and `main` protected;
+- the `engine/` and `firmware/` layout builds on both targets, with no golden file moved;
+- CI is green on both branches;
+- `v0.3.0` went from `dev` to `main` by pull request and is tagged on `main`.
 
 ---
 
@@ -189,7 +305,7 @@ prestige rules below. The new rock types are built here first; Act 2 (C3) reuses
 **Today:** after wave 30 the run stays in the Outer rift forever. Bosses come back one tier
 harder every 30 waves (`bs_tier_for` in `native/boss/lifecycle.h` already works out tier
 = (wave − 1) / 30 on boss waves). Rock difficulty stops rising at wave 24, and the chain
-multiplier always restarts at ×1 and caps at ×5 (`src/core/scoring.c`).
+multiplier always restarts at ×1 and caps at ×5 (`engine/core/scoring.c`).
 
 **New rule:** clearing wave 30 starts **prestige 1** at wave 1 in the Celestial frontier, with
 the region themes and music in order again, and **new rock types and patterns**, so no lap
@@ -204,7 +320,7 @@ level can start a new run there.
   `lap_wave = (wave − 1) % 30 + 1`; regions, boss kinds and mini-bosses use `lap_wave`. Boss
   tiers already follow the prestige level, but nothing caps them today (wave 121 would ask for
   tier V): clamp at IV, or decide what tier V+ means.
-- [ ] Scoring (`src/core/scoring.c`, so the ESP32 can reuse it): `score_set_base(state, base)`;
+- [ ] Scoring (`engine/core/scoring.c`, so the ESP32 can reuse it): `score_set_base(state, base)`;
   `score_reset` returns to the base; the cap is base + 4. Clamp the base at ×99 and the score
   at the 32-bit maximum (saturating, never wrapping). Host tests.
 - [ ] Scene: `PRESTIGE` and `LAP_WAVE` fields (named in `scene-layout.mjs`); `WAVE` stays
@@ -233,7 +349,7 @@ painter and a sound):
   streams, an escort of comets around an iron rock). The share of new types rises over the
   lap, and the overall speed rises 8 % per prestige up to a cap. Still deterministic, so
   replays hold.
-- [ ] **Engine:** rock kinds live in the web layer (`native/`), not `src/asteroid.cpp`, which the
+- [ ] **Engine:** rock kinds live in the web layer (`native/`), not `engine/src/asteroid.cpp`, which the
   ESP32 shares (M8 decides later whether any move to the handheld). The scene's rock block
   (stride 8) has no spare slot: put the kind in the `active` value (0 empty, 1 + kind), or
   widen the stride to 10 with a health and a timer slot (scene golden and layout test change).
@@ -416,9 +532,9 @@ Combo progression is per player; the configured maximum is currently ×5. The bo
 - [ ] Decide whether boss defeat and mini-boss defeat can earn it (proposed: no, they
   already have the flawless bonus).
 
-**S2.2 Engine (`web/native/combat.h`, `coop.h`, `src/core/scoring.c`).** Keep ESP32 and host
+**S2.2 Engine (`web/native/combat.h`, `coop.h`, `engine/core/scoring.c`).** Keep ESP32 and host
 builds compiling. Put the single-player combo rule in the platform-free C17 core
-(`src/core/scoring.c`), not in `web/native/`, so the handheld gets it in S8 for free. Only
+(`engine/core/scoring.c`), not in `web/native/`, so the handheld gets it in S8 for free. Only
 the co-op assist logic belongs in `web/native/coop.h`.
 - [ ] Solo: add the capped-bonus award keyed to `max_multiplier`, not a literal 5.
 - [ ] Co-op: per-rock assist record (player, tick of last hit); a split fragment starts a
@@ -441,7 +557,7 @@ the co-op assist logic belongs in `web/native/coop.h`.
   simultaneous hits, death mid-window, pause mid-window, exactly-once, friendly fire,
   split fragments. Host tests for the C module; `coop.test.mjs` for the integration.
 - [ ] Record the stored-format impact (none expected) and run `npm run check`,
-  `sh tests/run_host.sh`, and the ESP32 build.
+  `sh engine/tests/run_host.sh`, and the ESP32 build.
 
 ---
 
@@ -633,8 +749,9 @@ picture, so they come last and only if you want what they give.
   `wasm-ld` there (it looks for Homebrew paths first): either install LLVM in the build
   command, or (simpler) build `dist/` in GitHub Actions and deploy it with the Vercel CLI
   (`vercel deploy --prebuilt`, from `dist/site/`). Check which works before W1.
-- [ ] **Previews:** every push gets a preview URL. Turn on deployment protection for previews,
-  or keep them public deliberately; production deploys only from a tag.
+- [ ] **Previews:** production deploys from `main` (every merge there is a tagged release);
+  `dev` is staging on a fixed preview alias; feature-branch previews are protected or off; a
+  `firmware/`-only commit skips the build (B1 has the table).
 - [ ] **Plan:** Hobby is free but limited to non-commercial use; move to Pro if the game ever
   takes money (ads, donations with perks, sales).
 - [ ] **Headers** (in `vercel.json`): `Content-Type: application/wasm` for `.wasm`; a strict
@@ -919,7 +1036,7 @@ Reuse the local and network lobbies; do not build a second stack.
 
 ## S8. ESP32 handheld: barebones single-player release
 
-The firmware (`src/`, `include/`, about 2,500 lines) is the original game: rocks, waves,
+S8 work happens on a feature branch off `dev`; the handheld-only code is in `firmware/` (B1). The firmware (`src/`, `include/`, about 2,500 lines; `engine/` and `firmware/` after B1) is the original game: rocks, waves,
 multishot and shield pickups, chain scoring, a persistent top-five table with initials, a
 demo, buzzer sound, on a 128×64 monochrome OLED with a joystick and one fire button. It
 has **no bosses, no aim, no laser and no hulls**. The web engine already compiles the
@@ -953,7 +1070,7 @@ needs a one-line justification, since each feature costs flash, RAM and frame ti
 
 **S8.2 Pull shared logic into the platform-free core.** Tools: strict C17 flags, host tests.
 - [ ] Move rules that both builds need out of `web/native/` and `src/*.cpp` into
-  `src/core/` (the C17 scoring, difficulty and score-table modules already show the style):
+  `engine/core/` (the C17 scoring, difficulty and score-table modules already show the style):
   chain/combo rule from S2, any boss state machine from S8.3, wave and region pacing.
 - [ ] Each new core module gets C-compatible headers, the existing `.clang-format`
   (`tools/format-core.sh`), and host tests in `tests/host/`. The web build must keep passing
@@ -988,7 +1105,7 @@ or move slowly enough to be lined up, and its weak point must be on that firing 
   notes within the passive buzzer's clear range; make sure sounds never block the loop.
 
 **S8.6 Verification.** Tools: ESP32, PlatformIO, serial monitor, host harness.
-- [ ] `sh tests/run_host.sh` (strict C17 + UBSan) and the PlatformIO build are green.
+- [ ] `sh engine/tests/run_host.sh` (strict C17 + UBSan) and the PlatformIO build are green.
 - [ ] Flash and play: a full run past wave 5 and the boss, pause, game over, initials,
   power cycle and confirm the table persists, a corrupted table loads empty, 10-minute
   soak with no heap growth or watchdog reset.
@@ -1008,8 +1125,10 @@ host and strict-C17 checks pass, the budgets hold, and the README describes the 
 ## Standing rules (every stage)
 
 - Solo and practice keep working at every commit.
-- Before merging: `cd web && npm run check`, `sh tests/run_host.sh` from the repo root,
-  and a PlatformIO build whenever shared C/C++ changes (the web build compiles `src/*.cpp`
+- Branches (B1): work on `dev`; `main` only by a release pull request from `dev` or a hotfix;
+  every merge to `main` is tagged.
+- Before merging: `cd web && npm run check`, `sh engine/tests/run_host.sh` from the repo root,
+  and a PlatformIO build (CI runs it, after B1) whenever shared C/C++ changes (the web build compiles `src/*.cpp`
   directly, so a firmware edit can move web goldens and the reverse). A new scene field means the
   scene golden and layout test change in the same commit.
 - Per-player shot ownership, 2× pending events, laser and shield state, CPS, accuracy,

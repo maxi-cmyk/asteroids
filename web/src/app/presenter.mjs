@@ -102,8 +102,6 @@ export class Presenter {
             scene,
             update,
             fightLogCount: runtime.fightLog.enabled ? runtime.fightLog.count : 0,
-            // A finished run's replay (nextSteps.md R3); none while one is still recording.
-            replay: !!runtime.replay && runtime.replays.fresh && !runtime.replays.recording,
         });
         renderPlayHud({ hud: this.hud, scene, update });
         const nextState = renderPlayChrome({

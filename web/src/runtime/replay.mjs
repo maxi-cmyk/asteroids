@@ -90,7 +90,6 @@ export class ReplayRecorder {
     // Starts a tape: a fresh seed for the run, then every state-changing call. Call it before
     // the engine call that starts the run; `rules` describe the run.
     begin(rules, seed) {
-        this.fresh = false; // true once this run finishes with a replay (Results offers it)
         if (!this.rng) return; // a test supplied its own randomness: nothing to replay
         this.rng.reseed(seed ?? randomSeed());
         let scores = null;
@@ -134,7 +133,6 @@ export class ReplayRecorder {
         if (this.group.length) this.tape.ticks.push([1, this.group]);
         this.last = this.tape;
         this.tape = null;
-        this.fresh = true;
         return this.last;
     }
     discard() {

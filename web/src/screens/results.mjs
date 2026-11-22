@@ -12,7 +12,6 @@ export function renderResultsScreen({
     scene,
     update,
     fightLogCount = 0,
-    replay = false,
 }) {
     if (results.hidden === showResults) {
         results.hidden = !showResults;
@@ -36,7 +35,6 @@ export function renderResultsScreen({
         update(bosses, line);
         setHidden(bosses, !line);
         setHidden(element('exportFightLog'), !fightLogCount);
-        setHidden(element('saveReplay'), !replay);
         update(element('resultScore'), String(result.score));
         update(
             element('resultRegion'),

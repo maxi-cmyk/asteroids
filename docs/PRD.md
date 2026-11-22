@@ -51,7 +51,7 @@ Arduino C++ / PlatformIO, fixed-size entity pools, 50 Hz target update rate. Gam
 
 Use general segment-circle bullet collisions ordered by first intersection and bounded rock outlines. Keep particles brief and shake subtle. Reset transient entities between runs. Keep saucers, extra statistics, and demo absent until their planned tasks are implemented. Multishot uses the shared per-hit scoring helpers. Call the successful-shot hook once only after a volley or fallback bullet spawns; collecting or expiring an effect does not delay primary fire. Piercing, slow field, score bonus, and demo integration remain deferred.
 
-Build with `pio run`. Run `sh tests/run_host.sh` for host gameplay checks. Host checks cover rapid fire, full-pool rejection, full-speed movement, pause/death/reset, press edges, and power-up bounds. Physical acceptance includes rapid-press feel, edge clearance, direction and neutral drift, legibility, pause during invincibility, repeated retries, and leaderboard retention across reset and a power cycle. Initials/leaderboard host checks and firmware build cover implementation; physical OLED readability and flash persistence remain pending.
+Build with `pio run`. Run `sh engine/tests/run_host.sh` for host gameplay checks. Host checks cover rapid fire, full-pool rejection, full-speed movement, pause/death/reset, press edges, and power-up bounds. Physical acceptance includes rapid-press feel, edge clearance, direction and neutral drift, legibility, pause during invincibility, repeated retries, and leaderboard retention across reset and a power cycle. Initials/leaderboard host checks and firmware build cover implementation; physical OLED readability and flash persistence remain pending.
 
 
 ## Randomness and validation boundary

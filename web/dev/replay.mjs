@@ -42,7 +42,7 @@ $('file').onchange = async () => {
     const file = $('file').files[0];
     if (!file) return;
     try {
-        // A saved .astr file (Results → Save replay) or a replay object as JSON.
+        // An .astr file (replay-codec.mjs) or a replay object as JSON.
         const data = new Uint8Array(await file.arrayBuffer());
         const replay = data[0] === 0x41 ? decodeReplay(data) : JSON.parse(await file.text());
         player = await ReplayPlayer.open(bytes, replay);

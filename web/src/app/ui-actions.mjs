@@ -1,5 +1,4 @@
 import { element } from './dom.mjs';
-import { encodeReplay } from '../runtime/replay-codec.mjs';
 
 // The plain button handlers: each one is a single call into the app, with no state of its own.
 export function installActions(app) {
@@ -86,20 +85,6 @@ export function installActions(app) {
         const link = Object.assign(document.createElement('a'), {
             href: url,
             download: `asteroids-fight-log-${new Date().toISOString().slice(0, 10)}.json`,
-        });
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-    });
-    // The finished run as a compact replay file (nextSteps.md R3): watch it on replay.html.
-    on('saveReplay', () => {
-        const replay = app.runtime.replay;
-        if (!replay) return;
-        const url = URL.createObjectURL(
-            new Blob([encodeReplay(replay)], { type: 'application/octet-stream' }),
-        );
-        const link = Object.assign(document.createElement('a'), {
-            href: url,
-            download: `asteroids-replay-${new Date().toISOString().slice(0, 19).replace(/:/g, '')}.astr`,
         });
         link.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);

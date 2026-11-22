@@ -8,11 +8,11 @@ Read order: 01 → 02 → 03 → 06 → 07 → 08 → 09 for the solo path, then
 
 | File | Aspect | Main source |
 | --- | --- | --- |
-| [01-tick-and-states.md](01-tick-and-states.md) | The per-tick loop, game states, the two clocks, update order | `src/game.cpp`, `native/combat.h`, `native/exports/game.h` |
-| [02-player-weapons.md](02-player-weapons.md) | Aim, movement, primary fire, multishot, 2× fire, laser, shield | `native/combat.h`, `src/bullet.cpp` |
-| [03-ship-damage-lives.md](03-ship-damage-lives.md) | The hit rule, shield, invincibility, death, respawn | `src/ship.cpp`, `combat_ship_hit` |
-| [04-asteroids-waves-pickups.md](04-asteroids-waves-pickups.md) | Rock pool, spawner, difficulty curve, splitting, pickups | `src/asteroid.cpp`, `src/core/difficulty.c`, `src/powerup.cpp` |
-| [05-scoring-combo.md](05-scoring-combo.md) | Chain, multiplier, boss payouts, flawless | `src/core/scoring.c`, `combat_award`, `bs_defeat` |
+| [01-tick-and-states.md](01-tick-and-states.md) | The per-tick loop, game states, the two clocks, update order | `engine/src/game.cpp`, `native/combat.h`, `native/exports/game.h` |
+| [02-player-weapons.md](02-player-weapons.md) | Aim, movement, primary fire, multishot, 2× fire, laser, shield | `native/combat.h`, `engine/src/bullet.cpp` |
+| [03-ship-damage-lives.md](03-ship-damage-lives.md) | The hit rule, shield, invincibility, death, respawn | `engine/src/ship.cpp`, `combat_ship_hit` |
+| [04-asteroids-waves-pickups.md](04-asteroids-waves-pickups.md) | Rock pool, spawner, difficulty curve, splitting, pickups | `engine/src/asteroid.cpp`, `engine/core/difficulty.c`, `engine/src/powerup.cpp` |
+| [05-scoring-combo.md](05-scoring-combo.md) | Chain, multiplier, boss payouts, flawless | `engine/core/scoring.c`, `combat_award`, `bs_defeat` |
 | [06-boss-framework.md](06-boss-framework.md) | `BossState`, `BossOps`, lifecycle, phases, scheduler, tiers | `native/boss/core.h`, `lifecycle.h`, `scheduler.h`, `kinds.h` |
 | [07-boss-projectiles.md](07-boss-projectiles.md) | Hostile shot pool, families, motion, endings | `native/boss/shots.h` |
 | [08-boss-hazards-fairness.md](08-boss-hazards-fairness.md) | Lanes, beams, rings, pools, telegraphs, the fairness rules | `native/boss/hazards.h` |
@@ -25,7 +25,7 @@ Read order: 01 → 02 → 03 → 06 → 07 → 08 → 09 for the solo path, then
 ## Conventions used everywhere
 
 - **Playfield** (web, `WEB_HD`): 480 × 270 px, origin top-left, y grows down. The 128 × 64 OLED
-  build uses `include/config.h` unchanged; `native/config.h` overrides sizes for the web.
+  build uses `engine/include/config.h` unchanged; `native/config.h` overrides sizes for the web.
 - **Tick** = 20 ms (`FRAME_TIME_MS`). All speeds in this folder are **px per tick** unless a
   unit says otherwise (3.66 px/tick = 183 px/s).
 - **`game_ms`** advances 20 ms per playing tick and is the only clock combat reads (see 01).

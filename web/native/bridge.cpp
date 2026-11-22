@@ -7,10 +7,10 @@
 
 // Compile the production gameplay unchanged. Sharing a translation unit also
 // lets the read-only browser snapshot expose state without firmware debug APIs.
-#include "../../src/input.cpp"
+#include "../../engine/src/input.cpp"
 #ifdef WEB_HD
 #define difficulty_for_wave oled_difficulty_for_wave
-#include "../../src/difficulty.cpp"
+#include "../../engine/src/difficulty.cpp"
 #undef difficulty_for_wave
 WaveDifficulty difficulty_for_wave(uint16_t wave) {
     WaveDifficulty result = oled_difficulty_for_wave(wave);
@@ -19,18 +19,18 @@ WaveDifficulty difficulty_for_wave(uint16_t wave) {
     return result;
 }
 #else
-#include "../../src/difficulty.cpp"
+#include "../../engine/src/difficulty.cpp"
 #endif
-#include "../../src/scoring.cpp"
-#include "../../src/asteroid.cpp"
-#include "../../src/bullet.cpp"
-#include "../../src/weapon.cpp"
-#include "../../src/ship.cpp"
-#include "../../src/powerup.cpp"
-#include "../../src/particle.cpp"
-#include "../../src/highscore.cpp"
+#include "../../engine/src/scoring.cpp"
+#include "../../engine/src/asteroid.cpp"
+#include "../../engine/src/bullet.cpp"
+#include "../../engine/src/weapon.cpp"
+#include "../../engine/src/ship.cpp"
+#include "../../engine/src/powerup.cpp"
+#include "../../engine/src/particle.cpp"
+#include "../../engine/src/highscore.cpp"
 #include "../demo/controller.cpp"
-#include "../../src/game.cpp"
+#include "../../engine/src/game.cpp"
 
 unsigned long browser_ms = 0;
 int browser_x = 2048, browser_y = 2048;

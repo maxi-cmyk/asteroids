@@ -8,6 +8,7 @@ import {
     SHOT,
     SIGN_KEY,
     NINEFOLD,
+    RAM_LANE,
     bossHazards,
     bossParts,
     bossShots,
@@ -48,7 +49,14 @@ export function hazardHits(h, px, py, r = SHIP) {
                 sa = Math.sin(h.a),
                 along = dx * ca + dy * sa,
                 across = -dx * sa + dy * ca;
-            const len = h.kind === HAZARD.beam ? 520 : h.b;
+            // The Bastion's ram lane starts at its nose and moves left with it as it charges:
+            // the whole row up to the left edge is where it goes, not just the marked length.
+            const len =
+                h.kind === HAZARD.beam
+                    ? 520
+                    : h.kind === HAZARD.lane && h.e === RAM_LANE
+                      ? Math.max(h.b, (h.x + 20) / Math.max(0.5, Math.abs(Math.cos(h.a))))
+                      : h.b;
             const half = h.kind === HAZARD.lane ? h.c : h.kind === HAZARD.beam ? 5 : 5 + r * 0.3;
             return along >= 0 && along <= len && Math.abs(across) < half + r;
         }
@@ -72,7 +80,7 @@ export class BossPilot {
     // `extraDanger(px, py, ahead)` adds a cost for anything else to avoid (the demo adds rocks).
     // `steadyOnlyInDanger` keeps the last heading only while something threatens: without it the
     // bonus outweighs the pull home, so a calm ship drifts into a wall and stays there (the demo
-    // sets it; the boss bot keeps the old steering so its baseline does not move).
+    // and the boss bot both set it).
     constructor(game, { margin = 12, extraDanger = null, steadyOnlyInDanger = false } = {}) {
         this.game = game;
         this.margin = margin;

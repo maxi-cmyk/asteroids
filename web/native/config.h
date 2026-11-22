@@ -1,7 +1,7 @@
 #pragma once
-#include "../../include/config.h"
+#include "../../engine/include/config.h"
 
-// Browser-only geometry. The OLED target retains include/config.h unchanged.
+// Browser-only geometry. The OLED target retains engine/include/config.h unchanged.
 #ifdef WEB_HD
 #undef SCREEN_W
 #undef SCREEN_H

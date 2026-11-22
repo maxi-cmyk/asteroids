@@ -1,7 +1,7 @@
 # 05 · Scoring, chain and boss payouts
 
-Source: `src/core/scoring.c` (portable C17), `src/scoring.cpp`, `award_asteroid_score` in
-`src/game.cpp`, `combat_award` in `native/combat.h`, `bs_defeat` in `native/boss/hits.h`.
+Source: `engine/core/scoring.c` (portable C17), `engine/src/scoring.cpp`, `award_asteroid_score` in
+`engine/src/game.cpp`, `combat_award` in `native/combat.h`, `bs_defeat` in `native/boss/hits.h`.
 
 ## The chain (portable core)
 
@@ -23,7 +23,7 @@ Source: `src/core/scoring.c` (portable C17), `src/scoring.cpp`, `award_asteroid_
 
 Death calls `scoring_reset()`. Pausing freezes `game_ms`, so it freezes the window.
 
-`src/scoring.cpp` wraps one global `score_state`; co-op keeps one `ScoringState` per player and
+`engine/src/scoring.cpp` wraps one global `score_state`; co-op keeps one `ScoringState` per player and
 swaps it in and out (11).
 
 ## Awarding points (web)

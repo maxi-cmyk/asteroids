@@ -1,6 +1,6 @@
 # 02 · Player weapons and movement
 
-Source: `native/combat.h`, `src/bullet.cpp`, `src/ship.cpp`. Constants: `native/config.h`.
+Source: `native/combat.h`, `engine/src/bullet.cpp`, `engine/src/ship.cpp`. Constants: `native/config.h`.
 
 ## Aim and movement
 
@@ -28,7 +28,7 @@ combat_primary_event()
   else:     primary_pool_blocked++   // event is DROPPED, never queued
 ```
 
-`bullets_fire` (`src/bullet.cpp`):
+`bullets_fire` (`engine/src/bullet.cpp`):
 - Looks for up to 3 free slots among `BULLET_MAX = 12`. None free → returns false.
 - Straight bullet: velocity `(BULLET_SPEED 18.75, 0)` before rotation.
 - Multishot (pickup active **and** 3 free slots): two more bullets with vertical component

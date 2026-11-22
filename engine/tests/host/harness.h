@@ -3,7 +3,7 @@
 // sound stubs, and helpers that advance the game one frame at a time.
 #include <cassert>
 #include <iostream>
-#include "../../src/rock_random.cpp"
+#include "../../../firmware/rock_random.cpp"
 #include "../../src/difficulty.cpp"
 #include "../../src/scoring.cpp"
 #include "../../src/asteroid.cpp"

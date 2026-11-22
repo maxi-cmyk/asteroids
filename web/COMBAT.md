@@ -88,18 +88,16 @@ Shields replenish when neither stored nor armed. Practice has no leaderboard ent
 and ends at the menu; it never unlocks hulls.
 
 **The practice range** (`native/exports/practice.h`, `src/screens/practice-range.mjs`).
-Play → Practice lists drills (Targets, Waves, Stream, Pickup lab, Boss, Custom); one press
-starts one, and the last drill and its settings are kept per profile. In flight, **T**
-(rebind-safe: ignored if T is bound to an action) or a controller's **View / Select** opens
-the tools drawer and the run waits until it closes. Rocks: *targets* (three still targets,
-refilled 1.5 s after the last one dies when Refill is on), *waves* (real waves from the chosen
-wave, moving on unless Stay on this wave is set), *stream* (one wave's rocks without end), or
-*none*. Rock speed (50–150 %) scales rocks as they enter from the right edge only, so the
-entrance warning is unchanged and fragments are not scaled twice. Respawn now, Clear field
-and Next wave act at once. Pickups: put a multishot, shield or 2× fire down ahead of the ship,
-make the laser ready, keep multishot or 2× fire on, and switch random drops on or off. Shortcuts
-while flying: R respawn, N next wave, 1–4 pickups. Every value is clamped in the engine, and
-every tool call is recorded, so practice runs replay exactly.
+Play → Practice lists drills (Targets, Waves, Stream, Boss) with a starting wave; one press
+starts one, and the last drill is kept per profile. *Targets* are three still targets that
+come back 1.5 s after the last one dies; *Waves* are real waves from the chosen wave, moving
+on as they are cleared; *Stream* is one wave's rocks without end. In flight, **T** (ignored if
+T is bound to an action) or a controller's **View / Select** opens a small tools panel and the
+run waits until it closes: **Start wave** (any wave, 1–30) or **Fight boss** (any boss or
+mini-boss, tier and starting phase). Multishot and 2× fire stay as toggles on the bottom bar.
+The engine also takes a rock speed, a refill switch, random drops and pickups on demand
+(`web_practice_config`, `web_practice_spawn`…), clamped and recorded so practice runs replay
+exactly; the page does not expose those.
 
 ## 2× fire pickup
 
@@ -190,7 +188,13 @@ the Cinderforge (a furnace golem) lights a heat lamp with each attack and at fiv
 its doors open and the core is bare for about 3.5 s, taking double, while shots glance off
 its shell otherwise (the laser reaches the core at half); the Bastion is hurt only at its
 two engines (double during its ramming run) while its hull turns shots away, and knocking out a
-gun silences that gun's attack; Tidecaller's bell is shielded
+gun silences that gun's attack. Its ramming run marks a lane edge to edge near your row (not a
+fixed top or bottom lane), sometimes sloping so it dives or climbs across, pulling back to the
+right as it turns so its nose never sweeps your row on the way; the hull never crosses a lane
+that is still only marked (the rise lasts as long as the warning, longer with the longer-warnings
+assist). From phase 2 it may turn off the field and make a second pass along another lane, marked
+while it is out of sight. It banks nose-up as it climbs and nose-down as it dives, and lists a
+little toward the side whose engine it lost; Tidecaller's bell is shielded
 by bubbles (the laser pops all three); the Zodiarch's pearl surfaces, for about 3 s, on the
 part of its body each of its attacks comes from.
 
@@ -322,7 +326,7 @@ once, its own attacks) and after the pilot learned to keep out of a sweeping bea
 as a person reads it (that moved the Ringwarden, Cinderforge and Tidecaller hit counts a little;
 no fairness faults); the Zodiarch row again on 2026-11-18 after P3 (steered swim, forehead pearl,
 coil-spit, lunge) and again after the pearl moved to the attacking body part and the signs out
-were capped at two (its health is 2 sub-hits per design hit, a break costs it 3). Ninefold again on 2026-11-19 after P2.1 (it moves between perches and sits before each attack, about 5 s longer). The Sentinel on 2026-11-19 after P4.1 (the plate throw and a third phase with its eye always open: 1 to 5 s shorter). The Ringwarden on 2026-11-19 after P4.2 (tilting rings with gaps, prism splits, the halo lock: 1 to 2 s longer; most of its hits are the repel ring and the beam, not the halo lock). The Cinderforge on 2026-11-19 after P4.3 (redesigned as a furnace golem: it can only be hurt while it vents, so tier I is 5 s longer and tiers II and III 3 to 5 s shorter; its health is now 2 sub-hits per design hit, and the bare core takes double). The Bastion on 2026-11-19 after P4.4 (engines as its weak point, the ramming run instead of the mines: 2 to 8 s longer; the scripted pilot now looks further ahead in a lane wider than it can cross in 22 ticks, as it already did for sweeping wedges). The Tidecaller and the minis on 2026-11-19 after P4.5 and P4.6 (the bell swims in pulses with drifting bubbles; the Shardling's tilting ring and the Cinderling's golem shape changed their times by up to 9 s). Every fight again on 2026-11-20 after R2: unchanged except the Zodiarch, whose head contact now follows its turned head frames (the pilot, which steers around contact, is touched less: 0.2 to 0.4 times), and Ninefold, 1 to 2 s quicker. The pilot keeps out of the space level with or behind a boss, as a sensible player
+were capped at two (its health is 2 sub-hits per design hit, a break costs it 3). Ninefold again on 2026-11-19 after P2.1 (it moves between perches and sits before each attack, about 5 s longer). The Sentinel on 2026-11-19 after P4.1 (the plate throw and a third phase with its eye always open: 1 to 5 s shorter). The Ringwarden on 2026-11-19 after P4.2 (tilting rings with gaps, prism splits, the halo lock: 1 to 2 s longer; most of its hits are the repel ring and the beam, not the halo lock). The Cinderforge on 2026-11-19 after P4.3 (redesigned as a furnace golem: it can only be hurt while it vents, so tier I is 5 s longer and tiers II and III 3 to 5 s shorter; its health is now 2 sub-hits per design hit, and the bare core takes double). The Bastion on 2026-11-19 after P4.4 (engines as its weak point, the ramming run instead of the mines: 2 to 8 s longer; the scripted pilot now looks further ahead in a lane wider than it can cross in 22 ticks, as it already did for sweeping wedges). The Tidecaller and the minis on 2026-11-19 after P4.5 and P4.6 (the bell swims in pulses with drifting bubbles; the Shardling's tilting ring and the Cinderling's golem shape changed their times by up to 9 s). Every fight again on 2026-11-20 after R2: unchanged except the Zodiarch, whose head contact now follows its turned head frames (the pilot, which steers around contact, is touched less: 0.2 to 0.4 times), and Ninefold, 1 to 2 s quicker. Every fight again on 2026-11-22: the Bastion's ramming run was reworked (lanes near your row, some sloping, a second pass from phase 2; it banks both ways) and the pilot no longer drifts into a wall and stays there (the fix the Home demo got), so times and hits moved across the table; most minis are a few seconds slower and the Bastion about 15 s quicker. Hits count every tick of contact in practice, so they are noisy. The pilot keeps out of the space level with or behind a boss, as a sensible player
 would. Times are seconds from the start of the fight (the 1.4 s entrance included) to the defeat,
 averaged over the seeds; **hits** is how often the pilot was touched (practice loses no lives).
 People are expected to take about 1.5× the bot time; that figure is an estimate until the S0.2
@@ -330,18 +334,18 @@ playtest records real ones.
 
 | Fight | Tier I | Tier II | Tier III | Hits (tier I / II / III) | Expected person, tier I |
 | --- | --- | --- | --- | --- | --- |
-| Sentinel | 27 | 43 | 43 | 0 / 0 / 0 | 41 s |
-| Ringwarden | 30 | 35 | 35 | 15 / 24 / 25 | 45 s |
+| Sentinel | 25 | 37 | 36 | 0 / 0 / 0 | 38 s |
+| Ringwarden | 29 | 34 | 34 | 15.2 / 30.4 / 30.4 | 44 s |
 | Cinderforge | 41 | 39 | 40 | 0 / 0 / 0 | 62 s |
-| Bastion | 46 | 58 | 59 | 0 / 0 / 0 | 69 s |
-| Tidecaller | 40 | 47 | 46 | 1 / 2 / 2 | 60 s |
-| Zodiarch | 48 | 55 | 55 | 0.2 / 0.4 / 0.4 | 72 s |
-| Picket | 18 | 24 | 24 | 0 | 27 s |
-| Shardling | 17 | 20 | 20 | 0 | 26 s |
-| Cinderling | 11 | 14 | 14 | 0 | 17 s |
-| Gunnery | 19 | 23 | 23 | 0 | 29 s |
-| Moonjelly | 19 | 22 | 22 | 0 | 29 s |
-| Ninefold | 24 | 34 | 34 | 0 | 36 s |
+| Bastion | 35 | 42 | 43 | 0 / 0.8 / 0.8 | 52 s |
+| Tidecaller | 37 | 42 | 42 | 1 / 1.4 / 0.2 | 56 s |
+| Zodiarch | 40 | 54 | 53 | 2.2 / 6.2 / 6.2 | 60 s |
+| Picket | 16 | 21 | 21 | 0 | 24 s |
+| Shardling | 20 | 21 | 21 | 0 | 30 s |
+| Cinderling | 18 | 27 | 27 | 0 | 27 s |
+| Gunnery | 23 | 27 | 27 | 0 | 34 s |
+| Moonjelly | 19 | 22 | 22 | 0 | 28 s |
+| Ninefold | 21 | 27 | 27 | 0 | 32 s |
 
 Fairness counters over the same 36 fights (tiers I to III): no lethal hazard without its warning,
 no entrance hit, shots never above the cap of 48 (the Tidecaller reaches it), hazards never above

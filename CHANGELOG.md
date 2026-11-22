@@ -14,7 +14,8 @@ The v0.3 release is waiting on a playtest and the release checks (`nextSteps.md`
     where each attack comes from;
   - Ninefold walks, runs, leaps and splits;
   - the Sentinel, Ringwarden, Cinderforge, Bastion and Tidecaller each have new motion,
-    tells and deaths;
+    tells and deaths; the Bastion's ramming run varies (lanes near you, sloping lanes, a
+    second pass) and it banks both ways;
   - the minis were reworked too.
 - Readability:
   - blocked-shot sparks on every boss;
@@ -31,10 +32,10 @@ The v0.3 release is waiting on a playtest and the release checks (`nextSteps.md`
   itself after 30 s on Home (or from Help).
 - Menu look: the menus can show the sky of any region you have reached, and the menu music
   can follow it.
-- The practice range: drills (targets, real waves from any wave, an endless stream, a pickup
-  lab, any boss), and a tools drawer in flight (T or View / Select) for rocks, speed, pickups
-  and the boss picker. Practice runs replay exactly.
-- The Home demo pilot no longer hugs the walls or wastes shots.
+- The practice range: drills (targets, real waves from any wave, an endless stream, any
+  boss), and a small tools panel in flight (T or View / Select) to start any wave or fight any
+  boss. Practice runs replay exactly.
+- The Home demo pilot no longer hugs the walls, wastes shots or dies to the Bastion's ramming run.
 
 **Engine and data**
 - Deterministic engine: own `sinf`/`cosf`, seeded runs and replays of every run, the same in

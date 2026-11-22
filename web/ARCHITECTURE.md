@@ -108,7 +108,7 @@ whole pixel.
 
 ## Engine (native)
 
-`bridge.cpp` includes the firmware sources (`../src/*.cpp`) and the web layers into one
+`bridge.cpp` includes the firmware sources (`../engine/src/*.cpp`) and the web layers into one
 translation unit with no standard library. `exports/` holds the `web_*` functions grouped by
 purpose (`game`, `practice`, `read`, `coop`, and `test` for the test build only).
 `combat.h` and `coop.h` add the HD combat and two-player layers on top of the shared game.
@@ -139,7 +139,7 @@ declarations that a later same-selector rule always overrides.
 | --- | --- |
 | All unit, golden and engine tests | `npm test` (from `web/`) |
 | Format + lint + tests | `npm run check` |
-| Firmware host tests | `sh tests/run_host.sh` (repository root) |
+| Firmware host tests | `sh engine/tests/run_host.sh` (repository root) |
 | Engine scene unchanged | `tests/scene-golden.test.mjs` (`UPDATE_GOLDEN=1` rewrites `tests/golden/`) |
 | Rendering unchanged | `tests/render-golden.test.mjs` (recording canvas, `tests/render-harness.mjs`) |
 | Boss sound unchanged | `tests/sound-golden.test.mjs` |

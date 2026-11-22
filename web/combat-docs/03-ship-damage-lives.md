@@ -1,7 +1,7 @@
 # 03 · Ship, damage, lives
 
-Source: `src/ship.cpp`, `combat_ship_hit` / `combat_collisions` in `native/combat.h`,
-`src/game.cpp` (`update_death_animation`).
+Source: `engine/src/ship.cpp`, `combat_ship_hit` / `combat_collisions` in `native/combat.h`,
+`engine/src/game.cpp` (`update_death_animation`).
 
 ## Ship state (`struct Ship`)
 

@@ -233,13 +233,6 @@ body[data-practice='true']:is([data-screen='play'], [data-screen='pause']):not([
 .practice-drawer section {
     border-top: 1px solid #3a2a64;
 }
-.drawer-note,
-.drawer-keys {
-    margin: 2px 0;
-    color: #8a76b0;
-}
-.drawer-choices,
-.drawer-actions,
 .drawer-fields {
     display: flex;
     flex-wrap: wrap;
@@ -252,21 +245,10 @@ body[data-practice='true']:is([data-screen='play'], [data-screen='pause']):not([
     padding: 2px 8px;
     font-size: var(--size-small);
 }
-.practice-drawer button[aria-pressed='true'] {
-    color: #0a0518;
-    background: #ffbe6e;
-    border-color: #ffbe6e;
-}
 .practice-drawer .drawer-fields label {
     display: flex;
     align-items: center;
     gap: 6px;
-}
-.practice-drawer .toggle-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 2px 0;
 }
 .practice-drawer :disabled {
     opacity: 0.45;

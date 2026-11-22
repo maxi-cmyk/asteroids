@@ -72,7 +72,8 @@ test('the Home demo plays the whole game: bosses, deaths and all, until it is st
         maxWave = 0,
         lastLives = 3,
         livesLost = 0;
-    for (let i = 0; i < 20000; i++) {
+    // The pilot now clears the early game cleanly; its first lost lives come around wave 40.
+    for (let i = 0; i < 35000; i++) {
         demo.step();
         const scene = demo.scene();
         // Never the menu, score entry or game over: the run goes on whatever happens.
@@ -126,5 +127,45 @@ test('demo pilot keeps off the walls and wastes few shots', async () => {
         const hits = g.stats().hits;
         assert(wall / flying < 0.1, `seed ${start}: at a wall ${wall} of ${flying} ticks`);
         assert(hits / fired > 0.8, `seed ${start}: ${hits} hits from ${fired} shots`);
+    }
+});
+
+// The demo pilot used to park just past the end of the Bastion's marked ram lane (which moves
+// left with the charging ship) and die to every ram, then chase its last engine below the field.
+test('demo pilot beats the Bastion without dying to the ramming run', async () => {
+    const { Pilot } = await import('../src/demo/pilot.mjs');
+    const { S, BOSS_AT, BOSS } = await import('../src/runtime/scene-layout.mjs');
+    const bytes = await readFile(new URL('../dist/test.wasm', import.meta.url));
+    for (const start of [1, 2]) {
+        let seed = start;
+        const g = await createRuntime(bytes, {
+            random: () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0),
+            storage: { getItem: () => null, setItem: () => {} },
+        });
+        g.api.web_boss_assist(1, 0);
+        g.start(false);
+        g.step();
+        g.api.web_test_boss(20, 1, 0);
+        const pilot = new Pilot(g);
+        let deaths = 0,
+            beaten = false,
+            previous = g.state;
+        for (let t = 0; t < 50 * 60 && !beaten; t++) {
+            const s = g.scene();
+            if (g.state === 'playing') {
+                const input = pilot.decide(s);
+                g.api.web_fire_press(+input.firePressed);
+                g.api.web_actions(input.aimX, input.aimY, +input.laser, 0, +input.shield);
+                g.api.web_step(input.x, input.y, +input.fire, 0, 0);
+            } else {
+                if (g.state === 'death' && !s[S.LIVES]) g.api.web_demo_lives(3);
+                g.step();
+            }
+            if (g.state === 'death' && previous !== 'death') deaths++;
+            previous = g.state;
+            beaten = !!(g.scene()[BOSS_AT + BOSS.DEFEATED_MASK] & (1 << 3));
+        }
+        assert.ok(beaten, `seed ${start}: the Bastion still stands after 60 s`);
+        assert.equal(deaths, 0, `seed ${start}: died ${deaths} times`);
     }
 });

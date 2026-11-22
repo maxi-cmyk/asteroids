@@ -10,7 +10,7 @@ export { hazardHits } from '../src/demo/boss-pilot.mjs';
 export class BossBot {
     constructor(game, { shotsPerSecond = 6, margin = 12 } = {}) {
         this.game = game;
-        this.pilot = new BossPilot(game, { margin });
+        this.pilot = new BossPilot(game, { margin, steadyOnlyInDanger: true });
         this.every = Math.max(1, Math.round(50 / shotsPerSecond));
         this.tick = 0;
         this.stats = { shots: 0 };
@@ -37,8 +37,14 @@ export class BossBot {
         const sx = scene[S.SHIP_X],
             sy = scene[S.SHIP_Y];
         const tgt = this.pilot.target(scene, boss, parts);
-        // Prefer a standing spot near x=110 and the target's height, away from the body.
-        const home = { x: 110, y: tgt ? Math.max(40, Math.min(230, tgt.y)) : 135 };
+        // Prefer a standing spot near x=110 and the target's height, away from the body. A
+        // target off the top or bottom (a Bastion engine when it sits high or low) is not
+        // chased: bosses follow your row, so holding mid-field brings it back (as the demo does).
+        const offField = tgt && (tgt.y < 12 || tgt.y > 258);
+        const home = {
+            x: 110,
+            y: tgt && !offField ? Math.max(40, Math.min(230, tgt.y)) : 135,
+        };
         const best = this.pilot.steer(scene, { shots, hazards, body }, home);
         let aimX = 1,
             aimY = 0,

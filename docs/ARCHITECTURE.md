@@ -16,8 +16,8 @@ leaderboard writes.
 | `web/src/audio/` | Synthesised effects, the streamed soundtracks and the launch sound | Web Audio, `web/assets/soundtracks/`, applied preferences |
 | `web/src/demo/` | Explicit, isolated demonstration run | Separate WASM instance; no persistence/audio |
 | `web/src/render/`, `web/src/boss/` | Pixel rendering, presentation clocks, boss painters, deaths, sound, defeat records, hull unlocks and the optional fight log | Read-only scene; original assets |
-| `src/core/*.c`, `include/core/*.h` | Portable scoring state, difficulty and score-table codec | C standard integer/boolean types only |
-| `src/scoring.cpp`, `difficulty.cpp`, `highscore.cpp` | Preserve legacy gameplay APIs and platform storage | Portable C core; Arduino/Preferences |
+| `engine/core/*.c`, `engine/include/core/*.h` | Portable scoring state, difficulty and score-table codec | C standard integer/boolean types only |
+| `engine/src/scoring.cpp`, `difficulty.cpp`, `highscore.cpp` | Preserve legacy gameplay APIs and platform storage | Portable C core; Arduino/Preferences |
 | `web/native/`, `web/native/boss/` | Browser platform adapter, `web_*` exports, scene serialiser, HD combat, co-op and the boss engine (one header per boss behind a `BossOps` table) | Shared C++ gameplay and linked C objects |
 
 The web source tree, the scene ABI and the boss engine are described in
@@ -51,7 +51,7 @@ CSS ownership: `web/styles/shared.css` contains primitives/HUD;
 viewport geometry; `web/theme.css` imports `web/styles/theme/` (pixel identity and presentation).
 
 Run `npm --prefix web test`, `npm --prefix web run build`,
-`sh tests/run_host.sh`, and PlatformIO's ESP32 build. Host tests compile core
+`sh engine/tests/run_host.sh`, and PlatformIO's ESP32 build. Host tests compile core
 objects as strict C17 before linking the C++ harness; WASM does the same.
 Check the browser flow Home → launch → play → pause → utility → resume →
 results → initials/leaderboard → retry/Home, including storage denial, history,

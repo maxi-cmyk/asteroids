@@ -13,15 +13,9 @@ test('practice tools: End practice in Pause, everything else in the tools drawer
         html.indexOf('id="practiceDrawer"'),
         html.indexOf('id="unlockToast"'),
     );
-    for (const id of [
-        'practiceRespawn',
-        'practiceClear',
-        'practiceNext',
-        'bossPick',
-        'bossPracticeStart',
-        'practiceDrops',
-    ])
+    for (const id of ['practiceWave', 'practiceStartWave', 'bossPick', 'bossPracticeStart'])
         assert.ok(drawer.includes(`id="${id}"`), `${id} should be in the drawer`);
+    assert.equal(drawer.match(/<button/g).length, 3, 'only Close, Start wave and Fight boss');
     assert.ok(html.includes('data-view="drills"'), 'the drill list is its own screen');
     for (const id of ['practiceMultishot', 'practiceDoubleFire']) {
         assert.ok(!pause.includes(`id="${id}"`), `${id} moved out of the pause menu`);

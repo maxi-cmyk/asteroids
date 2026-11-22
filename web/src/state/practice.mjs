@@ -11,16 +11,7 @@ export const PRACTICE_DEFAULTS = Object.freeze({
     drops: true,
     hold: false,
 });
-// Pickups the drawer and the number keys can put down: engine kinds 0 to 3.
-export const PRACTICE_SPAWNS = Object.freeze([
-    { kind: 0, label: 'Multishot' },
-    { kind: 1, label: 'Shield' },
-    { kind: 2, label: '2× fire' },
-    { kind: 3, label: 'Laser ready' },
-]);
-
-// One press starts a drill: it sets the rocks and pickups it needs and keeps the rest (the
-// wave and speed you chose last). "custom" changes nothing, so it is whatever you set last.
+// One press starts a drill: it sets the rocks it needs and keeps the wave you chose last.
 export const DRILLS = Object.freeze([
     {
         id: 'targets',
@@ -41,24 +32,11 @@ export const DRILLS = Object.freeze([
         config: { rocks: 'stream', drops: true },
     },
     {
-        id: 'pickups',
-        name: 'Pickup lab',
-        note: 'Targets plus every pickup on demand (keys 1–4 or the tools).',
-        config: { rocks: 'targets', refill: true, drops: true },
-        tools: true,
-    },
-    {
         id: 'boss',
         name: 'Boss',
         note: 'Pick any boss or mini-boss, its tier and phase.',
         config: { rocks: 'none' },
         tools: 'boss',
-    },
-    {
-        id: 'custom',
-        name: 'Custom',
-        note: 'Exactly what you set in the tools last time.',
-        config: {},
     },
 ]);
 export const drillById = (id) => DRILLS.find((drill) => drill.id === id) ?? DRILLS[0];

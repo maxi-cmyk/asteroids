@@ -1,4 +1,8 @@
-# ESP32 Asteroids — Setup Guide
+# ESP32 handheld: wiring, parts and flashing
+
+The handheld build lives in `firmware/` (`main.cpp`, `rock_random.cpp`) and compiles the shared game from
+`engine/`. Run the `pio` commands below from the repository root, where `platformio.ini` is. For the
+repository layout and branches see [docs/SETUP.md](../docs/SETUP.md).
 
 ## Wiring
 
@@ -36,10 +40,10 @@ pio device monitor --baud 115200
 
 **No sound** — confirm the buzzer is a *passive* type and shares ground with the ESP32. The firmware generates the tone frequency.
 
-**Double-click to pause not registering** — the detection window is 300 ms (`DBLCLICK_WINDOW` in `config.h`). Adjust if needed.
+**Double-click to pause not registering** — the detection window is 300 ms (`DBLCLICK_WINDOW` in `engine/include/config.h`). Adjust if needed.
 
 ## Controls and board checks
 
 Move up/down with the joystick; press fire once per shot. Holding does not repeat. Rapid presses have no shot cooldown; debounce is 20 ms. Double-click the joystick to pause/resume.
 
-After upload, check vertical direction, center drift, rapid presses, display readability, pause during blinking invincibility, and repeated retries. Set a best score, power-cycle the board, and confirm it remains. Adjust `SHIP_MAX_SPEED` in `include/config.h` if needed.
+After upload, check vertical direction, center drift, rapid presses, display readability, pause during blinking invincibility, and repeated retries. Set a best score, power-cycle the board, and confirm it remains. Adjust `SHIP_MAX_SPEED` in `engine/include/config.h` if needed.

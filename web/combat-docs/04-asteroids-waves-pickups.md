@@ -1,6 +1,6 @@
 # 04 · Asteroids, waves, pickups
 
-Source: `src/asteroid.cpp`, `src/core/difficulty.c`, `src/difficulty.cpp`, `src/powerup.cpp`,
+Source: `engine/src/asteroid.cpp`, `engine/core/difficulty.c`, `engine/src/difficulty.cpp`, `engine/src/powerup.cpp`,
 `web/native/bridge.cpp` (HD difficulty wrapper).
 
 ## Rock pool
@@ -137,7 +137,7 @@ way.
 
 Laser kills skip splitting (see 02). Co-op resolves splits after all of a tick's impacts (11).
 
-## Pickups (`src/powerup.cpp`)
+## Pickups (`engine/src/powerup.cpp`)
 
 One `pickup` slot (no second one while one is on screen).
 
