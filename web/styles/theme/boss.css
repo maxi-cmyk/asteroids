@@ -105,12 +105,11 @@
     image-rendering: pixelated;
 }
 .boss-pearl[data-state='tell'] {
-    background:
-        radial-gradient(circle at 50% 50%, #ffd6f0 0 22%, #6a3a8c 26% 45%, transparent 47%), #8a5cc8;
+    background: radial-gradient(circle at 50% 50%, #ffd6f0 0 22%, #6a3a8c 26% 45%, transparent 47%),
+        #8a5cc8;
 }
 .boss-pearl[data-state='open'] {
-    background:
-        radial-gradient(circle at 40% 38%, #ffffff 0 14%, #ff9ad8 18% 45%, transparent 47%),
+    background: radial-gradient(circle at 40% 38%, #ffffff 0 14%, #ff9ad8 18% 45%, transparent 47%),
         conic-gradient(#ff5ac0 calc(var(--left, 0) * 360deg), #2a1840 0);
     box-shadow: 0 0 8px #ff5ac0aa;
 }

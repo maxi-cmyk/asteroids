@@ -126,7 +126,7 @@ S[9] = signTile(9, {
                     spark(ctx, px, py, w ? '#cfe6ff' : '#a0c8ff', 2);
                 });
             }
-            (void x, y, d, gone);
+            void x, y, d, gone;
         },
     },
 });

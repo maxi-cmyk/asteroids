@@ -129,8 +129,7 @@ body[data-screen='pause'] .screen {
 }
 /* Reading screens keep the same backdrop, dimmed and static. */
 .utility-view {
-    background:
-        var(--menu-veil, linear-gradient(#0b1328f0, #0b1328f2)),
+    background: var(--menu-veil, linear-gradient(#0b1328f0, #0b1328f2)),
         var(--menu-backdrop, url('../../assets/home-scene.png') center / cover);
 }
 /* First-person launch overlay. */

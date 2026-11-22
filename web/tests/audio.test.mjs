@@ -320,8 +320,9 @@ test('a play() the browser refuses is marked blocked and retried on the next ges
 });
 
 test('menu look: regions open as they are reached, and matching music follows the look', async () => {
-    const { lookRegion, regionsReached, lookTrack, furthestWave, isMenuLook } =
-        await import('../src/app/menu-look.mjs');
+    const { lookRegion, regionsReached, lookTrack, furthestWave, isMenuLook } = await import(
+        '../src/app/menu-look.mjs'
+    );
     assert.equal(sanitizeSettings({}).menuLook, 'classic');
     assert.equal(sanitizeSettings({ menuLook: 'ember' }).menuLook, 'ember');
     assert.equal(sanitizeSettings({ menuLook: 'nope' }).menuLook, 'classic');

@@ -163,10 +163,12 @@ so this costs nothing yet. Do it before R8, so `v0.3.0` is the first tag release
   - It is a move, not a change: every check passes, `pio run` builds, and no golden file moves.
     If `build_src_filter` will not reach outside `src_dir`, fall back to `engine/` as a
     PlatformIO library (a `library.json` in `engine/`, plus `lib_extra_dirs`).
-- [ ] **Branch `dev`** from `main`, then `git push -u origin dev`. **You:** after committing.
+- [x] **Branch `dev`** from `main`, pushed (2026-11-23).
 - [ ] **On GitHub:** **You** (needs your account).
-  - Make `dev` the default branch, so pull requests (yours, Claude sessions' and CI's) target
-    it.
+  - **`main` stays the default branch** (decided 2026-11-23). Vercel's Production Branch is its own
+    setting, so it does not depend on this; keeping `main` as the default just means the repo page
+    and clones show what is released. The cost: a pull request opens against `main` unless you pick
+    `dev` (`gh pr create --base dev`), so say "base `dev`" when asking Claude for one.
   - Protect `main`: changes only by pull request, checks must pass, no force-push, no
     deletion.
   - Protect `dev` from force-push and deletion only; you can still push to it directly.
@@ -219,7 +221,7 @@ so this costs nothing yet. Do it before R8, so `v0.3.0` is the first tag release
 - **Data:** staging and production never share Redis or, with W3, Postgres.
 
 **Done when:**
-- `main` and `dev` exist, with `dev` as the default and `main` protected;
+- `main` and `dev` exist, with `main` protected (and still the default);
 - the `engine/` and `firmware/` layout builds on both targets, with no golden file moved;
 - CI is green on both branches;
 - `v0.3.0` went from `dev` to `main` by pull request and is tagged on `main`.

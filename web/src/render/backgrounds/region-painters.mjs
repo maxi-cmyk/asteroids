@@ -137,7 +137,7 @@ export const BUILDERS = {
         bg.bloom(40, 14, 200, [220, 190, 170], 0.2);
         // Ruined skyline: tall at the edges, low in the middle, windows mostly dark.
         const next = rand(41);
-        for (let x = 0; x < WIDTH;) {
+        for (let x = 0; x < WIDTH; ) {
             const width = 8 + Math.floor(next() * 14),
                 edge = Math.min(x, WIDTH - x) / 150;
             const height = Math.round(

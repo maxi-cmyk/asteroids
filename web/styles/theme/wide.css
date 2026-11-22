@@ -4,12 +4,12 @@
    stops growing at --wide-w, so a big window shows neither tiny text nor an empty
    right-hand side. (How to Play and the lobby do the same in guide.css.) */
 .utility-view:is(
-    [data-view='settings'],
-    [data-view='mode'],
-    [data-view='hangar'],
-    [data-view='records'],
-    [data-view='developer']
-) {
+        [data-view='settings'],
+        [data-view='mode'],
+        [data-view='hangar'],
+        [data-view='records'],
+        [data-view='developer']
+    ) {
     --wide-w: 1500px;
     --size-label: clamp(18px, 1.3vw, 30px);
     --size-body: clamp(17px, 1.25vw, 28px);
@@ -64,8 +64,7 @@
 /* ---- Developer tools on the violet theme --------------------------------------- */
 .utility-view[data-view='developer'] {
     border: 0;
-    background:
-        var(--menu-veil, linear-gradient(#0a0518d9, #0a0518f0)),
+    background: var(--menu-veil, linear-gradient(#0a0518d9, #0a0518f0)),
         var(--menu-backdrop, url('../../assets/home-scene.png') center / cover);
     image-rendering: pixelated;
 }

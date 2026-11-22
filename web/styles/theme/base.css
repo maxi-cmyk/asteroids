@@ -25,8 +25,7 @@
 
 :root {
     --font-display: 'Jersey 10', 'Pixelify Sans', ui-monospace, Consolas, monospace;
-    --font-body:
-        'Body Digits', 'Pixelify Sans', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+    --font-body: 'Body Digits', 'Pixelify Sans', ui-monospace, 'SFMono-Regular', Consolas, monospace;
     /* Jersey 10 is condensed and small on the page: these sizes are tuned to it. */
     --size-label: 18px;
     --size-menu: 24px;

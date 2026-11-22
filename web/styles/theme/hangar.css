@@ -9,8 +9,7 @@
     padding: clamp(16px, 3.4vh, 36px) clamp(18px, 5vw, 64px);
     overflow: auto;
     border: 0;
-    background:
-        var(--menu-veil, linear-gradient(#0a0518d9, #0a0518f0)),
+    background: var(--menu-veil, linear-gradient(#0a0518d9, #0a0518f0)),
         var(--menu-backdrop, url('../../assets/home-scene.png') center / cover);
     image-rendering: pixelated;
 }
