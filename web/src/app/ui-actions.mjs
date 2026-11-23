@@ -15,13 +15,40 @@ export function installActions(app) {
         if (app.consumeDemo()) return;
         app.router.navigate('drills');
     });
-    on('soloPlay', () => {
+    // Play: Campaign opens the level select; Endless starts at once (one pilot) or goes through
+    // the lobby (two); the pilot switch decides which.
+    on('campaignPlay', () => {
+        if (app.consumeDemo()) return;
+        app.router.navigate('levels');
+    });
+    on('endlessPlay', () => {
+        if (!app.modeScreen.endlessOpen()) return;
+        app.pendingLevel = 0;
+        if (app.modeScreen.pilots === 2) {
+            nav().lobbyFrom = 'mode';
+            app.coopScreen.reset();
+            nav().request('lobby');
+            return;
+        }
         app.coopInput.live = false;
         app.launch.begin(() => nav().start());
     });
-    on('localPlay', () => {
-        app.coopScreen.reset();
-        nav().request('lobby');
+    on('pilotsOne', () => app.modeScreen.setPilots(1));
+    on('pilotsTwo', () => app.modeScreen.setPilots(2));
+    // The level result's buttons, and Restart level in the pause menu.
+    on('levelNext', () => {
+        const next = app.runtime.nextLevel();
+        if (next && app.runtime.campaign.isOpen(app.runtime.runProfile, next)) app.runLevel(next);
+    });
+    on('levelRetry', () => app.runLevel(app.runtime.level.level));
+    on('levelSelect', () => {
+        app.runtime.abandon();
+        app.controls.clear();
+        nav().request('levels');
+    });
+    on('restartLevel', () => {
+        if (!app.runtime.level) return;
+        app.runLevel(app.runtime.level.level);
     });
     // Help's "Watch a flight": the demo plays on Home, so go there first.
     on('watchDemo', () => {

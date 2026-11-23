@@ -10,6 +10,7 @@ const TITLES = {
     help: 'How to Play',
     developer: 'Developer tools',
     mode: 'Choose flight',
+    levels: 'Campaign',
     hangar: 'Hangar',
     lobby: 'Local co-op',
     drills: 'Practice',
@@ -65,6 +66,7 @@ export class ScreenRouter {
         }
         if (screen === 'hangar') app.hangarScreen.open();
         if (screen === 'mode') app.modeScreen.render();
+        if (screen === 'levels') app.levelsScreen.render();
         if (screen === 'drills') app.practiceRange.renderDrills();
         if (navigation.pending) this.#showDecision();
         else this.#restoreFocus(screen);
@@ -124,17 +126,22 @@ export class ScreenRouter {
             { navigation, runtime } = app;
         const decision = element('navigationDecision');
         const draft = navigation.pending.kind === 'draft',
-            postRun = ['results', 'initials'].includes(runtime.state);
+            postRun = ['results', 'initials'].includes(runtime.state),
+            levelDone = !!runtime.result?.levelRun && runtime.state === 'results';
         element('decisionTitle').textContent = draft
             ? 'Unapplied settings'
-            : postRun
-              ? 'Leave score review?'
-              : 'Quit this run?';
+            : levelDone
+              ? 'Leave the level result?'
+              : postRun
+                ? 'Leave score review?'
+                : 'Quit this run?';
         element('decisionMessage').textContent = draft
             ? 'Apply your changes, discard them, or stay here.'
-            : postRun
-              ? 'Any initials you have not saved will be lost. Your personal bests are kept.'
-              : 'Your current run will end. Stay paused to keep playing.';
+            : levelDone
+              ? 'Your stars and best times are already saved.'
+              : postRun
+                ? 'Any initials you have not saved will be lost. Your personal bests are kept.'
+                : 'Your current run will end. Stay paused to keep playing.';
         for (const button of decision.querySelectorAll('[data-decision]'))
             button.hidden = draft
                 ? button.dataset.decision === 'quit'

@@ -29,6 +29,11 @@ static uint8_t collection_kind
 void powerups_init() {
     pickup = {};
     collection_cue_left = 0;
+    // The cue's last position and kind do not matter once its time is out, but a run must not
+    // inherit them: a replay on a fresh engine would otherwise differ in the scene.
+    collection_x = 0;
+    collection_y = 0;
+    collection_kind = 0;
 }
 
 void powerups_drop(float position_x, float position_y) {

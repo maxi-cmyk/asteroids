@@ -44,6 +44,7 @@ struct CombatState {
 static CombatInput combat_input = {};
 static CombatState combat = {};
 static bool practice_mode = false;
+#include "level.h"
 // Practice pickups the player has switched on: held at full time until switched
 // off.
 static bool practice_hold_multishot = false;
@@ -357,6 +358,8 @@ static void combat_ship_hit() {
     if (ship.invincible_left) {
         return;
     }
+    // A hit that a shield absorbs still counts as taken (practice has no level).
+    level_hit(0, false);
     if (ship.effects.shield) {
         ship.effects.shield = false;
         ship.invincible_left = SHIELD_PROTECTION_MS;
@@ -369,6 +372,9 @@ static void combat_ship_hit() {
         }
         practice_last_hit_ms = game_ms;
         return;
+    }
+    if (level_run.active) {
+        level_run.lives_lost[0]++;
     }
     ship_die(ship);
     // Dying never resets a boss, but its attacks are cleared so the return is
@@ -465,6 +471,7 @@ static void combat_update_playing(bool laser_pressed) {
     if (state == STATE_PLAYING && (!practice_mode || boss.practice)) {
         boss_update(laser_fired);
     }
+    level_tick();
 }
 
 static void combat_game_update() {
@@ -477,6 +484,11 @@ static void combat_game_update() {
     } else {
         GameState previous = state;
         game_update();
+        // A lost level never reaches the leaderboard: it goes straight to game over.
+        if (level_run.active && state == STATE_INITIALS) {
+            saved_rank = -1;
+            set_state(STATE_GAME_OVER);
+        }
         if (state == STATE_COUNTDOWN && previous != STATE_COUNTDOWN) {
             combat_reset();
             boss = {};

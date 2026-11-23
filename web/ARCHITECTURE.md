@@ -17,8 +17,10 @@ web/
     boss/              boss presentation: scene decoding, painters, death, sound, UI
     screens/           one module per screen (DOM rendering and wiring)
     state/             persisted state: settings, records, hangar, navigation, the practice
-                       range's drills and config (practice.mjs), and the one save that
-                       bundles them for export, import and merging (save.mjs)
+                       range's drills and config (practice.mjs), the campaign's levels, stars
+                       and progress (campaign-data.mjs is pure data; campaign.mjs stores it),
+                       and the one save that bundles them for export, import and merging
+                       (save.mjs)
     input/             controllers, keyboard/pad bindings, co-op input, calibration
     audio/             sound effects and music
     demo/              the isolated Home demo run
@@ -67,7 +69,10 @@ A scene is a point in ℝ¹⁴⁰⁸; snapshot deltas and drawing between two sc
 | `settings-controller.mjs`, `ui-actions.mjs`, `boss-unlock-toast.mjs` | Settings glue, plain button handlers, unlock toast |
 | `menu-look.mjs` | The menus' backdrop (Classic or a region reached), applied as `--menu-backdrop` / `--menu-veil` and `body[data-look]` |
 
-The practice range's drill list and in-flight tools drawer are `src/screens/practice-range.mjs`;
+The Play screen (`mode.mjs`: Campaign, Endless, Practice and the one-or-two-pilots switch) and the
+level select (`levels.mjs`) are screens of their own; a level's end is the results overlay in a
+level layout (`results.mjs`), so it shares the results plumbing. `App.chooseLevel` / `runLevel`
+start levels. The practice range's drill list and in-flight tools drawer are `src/screens/practice-range.mjs`;
 while the drawer is open the game loop does not step and the menu keys drive the drawer.
 
 ## Runtime (src/runtime)

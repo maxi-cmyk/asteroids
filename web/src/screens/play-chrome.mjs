@@ -43,6 +43,7 @@ export function renderPlayChrome({
     setProp(toolbar, 'inert', navigation.screen === 'pause' || showResults);
     if (!showResults) setProp(canvas, 'inert', navigation.screen !== 'play');
     setHidden(element('gameHome'), state !== 'game-over');
+    setHidden(element('restartLevel'), !runtime.level);
     setHidden(fireButton, !['initials', 'game-over'].includes(state));
     setText(
         fireButton,

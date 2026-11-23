@@ -108,3 +108,35 @@ Device and browser as above (the built-in Chromium pane).
 | Menu look (H2) | `tests/audio.test.mjs`: regions open as reached, practice runs do not count, locked looks fall back to Classic, matched music follows the look. Rendered: Celestial frontier behind Settings and Ember orbit behind Home, live while choosing |
 | Practice range (H3) | `tests/practice-range.test.mjs`: every rock mode, clamping, rock speed (×1.5 exactly on entry), refill off, Respawn, Next wave, pickups on demand, laser ready, nothing outside practice, and a practice run with tool changes replays tick for tick. Rendered: drill list, Waves from wave 6, T opens and closes the tools panel, Escape closes it. The panel was later cut to Start wave and Fight boss only (2026-11-22), with the buffs left on the bottom bar. Scene golden: only the three new practice fields changed (checked by zeroing them against the old golden) |
 | Colour-blind check (R6) | Machado 2009 protanopia, deuteranopia and tritanopia matrices over the dev boss sheets (`boss-states.html`): the Ringwarden's prism sweep, the Sentinel's plate-throw loops and the Bastion's ram lane all stay visible in every simulation, because the marks are light dots read by brightness and shape. The faintest is the Bastion's lane line under tritanopia over the red sky: legible, but the first to strengthen if a player reports it |
+
+## v0.3 leftovers and release prep (R8) — 2026-11-23
+
+Device and browser as above (the built-in Chromium pane, M4 MacBook Pro).
+
+| Check | Evidence / status |
+| --- | --- |
+| Menu look contrast (R6 leftover) | Each region's still, with its veil composited at the lightest alpha any menu uses (`d9`), compared with the menu text colours on the **brightest pixel** of the still (the worst case for light text). Ink `#eef2ff` 9.98 to 12.19:1, muted `#aab6dc` 5.55 to 6.77:1 (Ember is lowest), accent `#6ef0ff` 8.28 to 10.11:1; AA needs 4.5:1. Home, whose veil is a left-to-right gradient, was measured on the live page under each menu entry and the How to play link: lowest 4.70:1 (Hangar on Ember), How to play 4.71 to 5.00:1. The title is large gradient text in the darkest part of the veil and was not computed. No look fails AA, so no veil was changed |
+| First-run How to play (polish leftover) | `tests/home.test.mjs` (first run = no real run on either profile; practice never ends it). Rendered with an empty save: the link is amber (`#ffd68c`) with a pulsing underline; after opening How to play and returning Home it is the quiet colour again. The state is per visit, so a reload with still no records highlights it again; nothing new is saved. Reduced motion stops the pulse |
+| Practice Waves drill (polish leftover) | Decision: rocks only. Bosses and mini-bosses stay in the Boss drill (kind, tier, phase), so a Waves run never mixes the two engine modes. The drill card now says so |
+| Folders and builds (B1) | After the `engine/` and `firmware/` move: `npm run check` (293 tests, 0 lint errors, no golden changed), `sh engine/tests/run_host.sh`, `pio run` (flash 789,169 bytes, same as before the move) |
+| Render stress, Zodiarch phase 2 | Not a valid pass this pass. The app throttles the built-in pane once the Claude window is not in view. One 60 s run was clean for 4,109 frames (frame interval p99 6.8 ms, frame work mean 0.9 ms, none over 25 ms) and then stalled for about 6 s in its last frames, so the tool marked it failed; two other runs were throttled from the start. The 2026-11-20 result above stands. Run `npm run stress` with the window in front |
+
+- [ ] Stress run in a watched window, then on a mid laptop.
+- [ ] Replay check in Firefox (`replay.html?check=1`).
+
+## Campaign Act 1 (C1) — 2026-11-23
+
+Device and browser as above (the built-in Chromium pane, M4 MacBook Pro). Nothing here was tried on a controller or on two real input devices.
+
+| Check | Evidence / status |
+| --- | --- |
+| Levels, clear and fail | `tests/campaign.test.mjs`: the table (waves, regions, minis, bosses), each level's start (wave, lives, ×1, no pickups), every level cleared by the scripted pilot with the mini and boss both defeated and the wave counter held at the boss's wave, a failed level going to game over without the initials entry, and nothing written to the leaderboard or Endless bests |
+| Stars, progress, save | The three star rules at the par boundary; level 1 open, each clear opening the next, level 6 opening Endless; a failed level changing nothing; best stars, lowest time, highest score; a storage failure keeping progress for the visit; the returning-player floor and Endless from wave 30 (practice ignored, kept after a records reset); clearing records clearing the campaign; save round trip, merge (twice is a no-op), parse of a save from before the campaign |
+| Replays and co-op | A level replays tick for tick on a fresh engine; a co-op level credits both profiles with their own stars (player two lost every life and has no flawless star), writes no co-op board entry, and a lost co-op level reaches the level result, not the initials |
+| Scene golden | New `levels` (each level from its first wave) and `levelCoop` scenarios; every older entry is unchanged |
+| Screens, rendered | Play with the locked Endless card and the pilot switch; the level select with cleared, open and locked cards; the Records Campaign tab; Level 1 starting from the card with the warp, the HUD label "Level 1 · Act 1", and Restart level from Pause; the level result for a level 6 clear (three stars, "Act 1 complete · Endless unlocked", no Next level) and a failed level (Retry and Level select only); two pilots reaching the lobby and Back returning to the level select; Endless starting a normal solo run once Act 1 is finished. The results were produced by flying real levels in a second engine in the page and rendering them in the live overlay |
+| Existing flows | `npm run check` (315 tests), `sh engine/tests/run_host.sh`, `pio run` (flash 789,181 bytes), the release build (`dist/site` has the new stylesheet, view and modules) |
+| Found on the way | A pre-existing replay flake (the collect-cue position leaking between runs, about 1 in 80 of the replay test) was found and fixed in `engine/src/powerup.cpp` |
+
+- [ ] Play Act 1 by hand with a keyboard and a controller; check par against real play times (R1).
+- [ ] Two real input devices through a co-op level, including Retry and Next level.

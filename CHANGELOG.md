@@ -4,6 +4,35 @@ Versions before v0.3 were never tagged. Their boundaries below come from the git
 the plan archives in `docs/nextSteps-*.archive.md`. The web build shows its version and commit
 in Settings → About (`web/package.json`, `web/tools/build-info.mjs`).
 
+## v0.4: the campaign (unreleased)
+
+Built so far: **C1, Act 1** (`nextSteps.md`). Endless with prestige, achievements and Act 2 follow.
+
+**Campaign Act 1**
+- Six levels, one for each region. Each is five waves (rocks, rocks, the mini-boss on wave 3,
+  rocks, the region's boss on wave 5), three lives, and ends when the boss falls.
+- Three stars a level: clear it, clear it without losing a life, clear it under par time.
+  Best stars, time and score are kept per profile and shown on the level select and on
+  Records → Campaign. A level opens when the one before it is cleared; clearing level 6 opens
+  Endless. A save from before the campaign opens the levels its earlier runs reached.
+- Play is now Campaign, Endless (locked until Act 1 is finished) and Practice, with a switch
+  for one or two pilots. Local co-op plays the campaign too: the level counts for both
+  profiles, each with their own stars.
+- The level select, the level result (stars, time against par, what it unlocked; Next level,
+  Retry, Level select) and Restart level in the pause menu.
+- A level run never touches the Endless leaderboard or personal bests; it does count boss
+  defeats, so mini-bosses earn hulls in levels too.
+- Help covers the campaign, the stars and Endless. `tests/level-baseline.mjs` flies every level
+  with the scripted pilot (par is its time × 1.5).
+
+**Fixed**
+- A pickup collected in one run left its collect-cue position in the next run's scene, so a
+  replay on a fresh engine could differ from the live run (about 1 run in 80 in the replay test).
+
+**Engine**
+- A new `level-clear` state and nine `LEVEL_*` scene fields; `web_start_level`. The handheld
+  firmware is unaffected (one inert enum value).
+
 ## v0.3: living bosses (unreleased)
 
 The v0.3 release is waiting on a playtest and the release checks (`nextSteps.md` R1 to R8).
@@ -41,6 +70,17 @@ The v0.3 release is waiting on a playtest and the release checks (`nextSteps.md`
 - Deterministic engine: own `sinf`/`cosf`, seeded runs and replays of every run, the same in
   Node, Chrome and JavaScriptCore.
 - One save format: export, import and merge every record, unlock and setting in Records.
+
+**Polish**
+- On a first run (no finished run on either profile) How to play is highlighted on Home until
+  you open it.
+- The Waves practice drill says it is rocks only; bosses are in the Boss drill.
+- Menu looks measured against WCAG AA text contrast on every region; none needed a change.
+
+**Repository**
+- The shared game moved to `engine/` and the ESP32 code to `firmware/`; `main` is deployed and
+  `dev` is staging, with CI on both (`docs/SETUP.md`). No gameplay change: the goldens did not
+  move and the handheld build is the same size.
 
 **Release hygiene**
 - Developer tools exist only on the local dev server.

@@ -11,6 +11,14 @@ numbers; names come from `S`, `BLOCKS`, `BOSS`). Decoder: `src/boss/scene.mjs`.
 plus shared state: `SHIP_X/Y`, `LIVES`, `INVINCIBLE_MS`, `SCORE`, `MULTIPLIER`, `CHAIN_MS`, `WAVE`.
 Entity blocks: `ROCKS` (24 × 8), `BULLETS` (12 × 6), `PARTICLES` (30 × 5), `HIGHSCORES` (5 × 5).
 
+## Campaign level fields (`S.LEVEL_*`, floats 525–533)
+
+`LEVEL_INDEX` (1–6, 0 outside an Act 1 level), `LEVEL_ACT`, `LEVEL_FIRST_WAVE`, `LEVEL_LAST_WAVE`
+(the boss's wave), `LEVEL_TIME_MS` (game time at which the boss fell, 0 until then),
+`LEVEL_LIVES_LOST` (solo, or player one) and `LEVEL_LIVES_LOST_2` (player two), `LEVEL_HITS_TAKEN`,
+`LEVEL_CLEARED`. State 8 (`level-clear`) is the engine's stopped end of a cleared level. See
+`COMBAT.md`, "Campaign levels (Act 1)".
+
 ## Boss header (`S.BOSS_*`, floats 512–524)
 
 `BOSS_ACTIVE`, `BOSS_X/Y`, `BOSS_HEALTH`, `BOSS_MAXIMUM`, `BOSS_STAGE` (phase), `BOSS_STAGE_MS`

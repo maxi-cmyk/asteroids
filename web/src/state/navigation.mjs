@@ -36,6 +36,7 @@ export class Navigation {
         this.screen = 'home';
         this.origin = 'home';
         this.pending = null;
+        this.lobbyFrom = 'mode'; // where Back from the co-op lobby goes: Play, or the level select
     }
     get live() {
         return LIVE_STATES.includes(this.runtime.state);
@@ -53,7 +54,7 @@ export class Navigation {
         if (this.live) this.set('pause');
     }
     request(target, skipDraft = false) {
-        if (!['home', 'pause', 'mode', 'lobby', 'drills', ...UTILITIES].includes(target))
+        if (!['home', 'pause', 'mode', 'levels', 'lobby', 'drills', ...UTILITIES].includes(target))
             target = 'home';
         if (this.screen === 'settings' && target !== 'settings' && !skipDraft && this.dirty()) {
             this.pending = { kind: 'draft', target };
@@ -82,7 +83,8 @@ export class Navigation {
         if (UTILITIES.includes(this.screen)) this.request(this.origin);
         else if (this.screen === 'play') this.pause();
         else if (this.screen === 'pause') this.request('home');
-        else if (this.screen === 'lobby' || this.screen === 'drills') this.request('mode');
+        else if (this.screen === 'lobby') this.request(this.lobbyFrom);
+        else if (this.screen === 'drills' || this.screen === 'levels') this.request('mode');
         else if (this.screen === 'mode') this.request('home');
     }
     resolve(choice) {
@@ -110,7 +112,19 @@ export class Navigation {
         this.origin = 'home';
         this.set('play');
     }
+    // Campaign level 1-6 (nextSteps.md C1): `profiles` makes it a co-op level.
+    startLevel(level, options = {}) {
+        this.pending = null;
+        this.runtime.startLevel(level, options);
+        this.origin = 'home';
+        this.set('play');
+    }
     startCoop(options) {
+        if (options.level) {
+            const { level, ...rest } = options;
+            this.startLevel(level, rest);
+            return;
+        }
         this.pending = null;
         this.runtime.startCoop(options);
         this.origin = 'home';

@@ -53,6 +53,7 @@ const exports = [
     'web_height',
     'web_actions',
     'web_start',
+    'web_start_level',
     'web_demo',
     'web_demo_lives',
     'web_reload_scores',

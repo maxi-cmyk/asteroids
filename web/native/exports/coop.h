@@ -5,6 +5,7 @@
 // Co-op ABI version 1: two independent inputs, legacy read-only player scenes.
 void web_coop_start(int friendly) {
 #ifdef WEB_HD
+    level_reset();
     coop_begin(friendly != 0);
 #endif
 }

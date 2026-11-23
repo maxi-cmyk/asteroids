@@ -90,8 +90,8 @@ and ends at the menu; it never unlocks hulls.
 **The practice range** (`native/exports/practice.h`, `src/screens/practice-range.mjs`).
 Play → Practice lists drills (Targets, Waves, Stream, Boss) with a starting wave; one press
 starts one, and the last drill is kept per profile. *Targets* are three still targets that
-come back 1.5 s after the last one dies; *Waves* are real waves from the chosen wave, moving
-on as they are cleared; *Stream* is one wave's rocks without end. In flight, **T** (ignored if
+come back 1.5 s after the last one dies; *Waves* are the real waves' rocks from the chosen wave, moving
+on as they are cleared (no mini-bosses or bosses: those are the Boss drill, decided 2026-11-23); *Stream* is one wave's rocks without end. In flight, **T** (ignored if
 T is bound to an action) or a controller's **View / Select** opens a small tools panel and the
 run waits until it closes: **Start wave** (any wave, 1–30) or **Fight boss** (any boss or
 mini-boss, tier and starting phase). Multishot and 2× fire stay as toggles on the bottom bar.
@@ -138,6 +138,68 @@ Local co-op now attributes every projectile/laser and statistic to a player.
 Friendly hits do not count as enemy accuracy or scoring progress. See the
 local co-op rules below.
 
+
+## Campaign levels (Act 1)
+
+Source: `native/level.h`, `native/exports/game.h` (`web_start_level`), `src/state/campaign*.mjs`.
+
+Act 1 is six levels, one per region. Level *n* is waves 5n-4 to 5n: rocks, rocks, the region's
+mini-boss on wave 3, rocks, then its boss on wave 5. Nothing about those waves is special-cased: a
+level meets the rocks, mini and boss that an Endless run meets at the same wave numbers, at boss tier I.
+
+| Level | Region | Waves | Mini (wave 3) | Boss (wave 5) |
+| --- | --- | --- | --- | --- |
+| 1 | Celestial frontier | 1–5 | Picket | Sentinel |
+| 2 | Violet orbit | 6–10 | Shardling | Ringwarden |
+| 3 | Ember orbit | 11–15 | Cinderling | Cinderforge |
+| 4 | Ruined moon | 16–20 | Gunnery | Bastion |
+| 5 | Lunar passage | 21–25 | Moonjelly | Tidecaller |
+| 6 | Outer rift | 26–30 | Ninefold | Zodiarch |
+
+- **Start:** `web_start_level(level, players, friendly)` begins at the level's first wave with three
+  lives, a ×1 multiplier, no pickups and the wave difficulty of those wave numbers. It is recorded in
+  replays (`RECORDED_CALLS`, appended so earlier ids stay), so a level is one short replay. Every
+  other start (`web_start`, `web_demo`, `web_menu`, `web_coop_start`) clears the level.
+- **Clear:** the level ends when the wave-5 boss falls (not a mini, not practice). The boss's death
+  plays for 3.2 s (`LEVEL_CLEAR_DELAY_MS`, the longest death is 3.0 s) with the rocks held back, so the
+  wave counter never moves on; then the engine enters `STATE_LEVEL_CLEAR` (state 8, `level-clear`) and
+  stops. The time is the game time at which the boss fell.
+- **Fail:** losing the last life (every life in co-op) goes to the ordinary game over, skipping the
+  initials entry: a level never touches the leaderboard. A failed level offers Retry and Level select;
+  it never ends the act.
+- **Counted:** *lives lost* by pilot, and *hits taken* (every hit that lands, including ones a shield
+  absorbs). Scene fields `LEVEL_INDEX`, `LEVEL_ACT`, `LEVEL_FIRST_WAVE`, `LEVEL_LAST_WAVE`,
+  `LEVEL_TIME_MS`, `LEVEL_LIVES_LOST`, `LEVEL_LIVES_LOST_2`, `LEVEL_HITS_TAKEN`, `LEVEL_CLEARED`
+  (floats 525–533).
+- **Records:** a level run writes no Endless personal best and no leaderboard entry. It does count
+  boss defeats (and so earns hulls from mini-bosses); practice never does.
+
+**Stars** (three per level, 18 in Act 1): clear the level; finish with at least the 3 starting lives remaining
+(extra lives offset losses, per pilot in co-op); finish strictly under the time target.
+Campaign bosses and mini-bosses do not drop hearts. Par is the scripted pilot's mean time × 1.5, rounded to five seconds
+(`PAR_SECONDS` in `campaign-data.mjs`); people are expected to take 1.5–2.5× the pilot. In co-op the
+level counts for both profiles, each with its own stars (the no-life-lost star is per pilot; the time
+is the team's).
+
+**Progress** (`asteriods.web.campaign-v1`, part of the save): per profile and level, the stars, the best
+time and the best score; merging unites stars and keeps the lowest time and highest score. Level 1 is
+open, each clear opens the next, and clearing level 6 opens Endless. A save with no campaign part
+opens levels by its highest real-run wave (a wave past a level's boss opens the next level; wave 30
+also opens Endless) and gives no stars; what that opens is kept.
+
+**Baseline** (`node tests/level-baseline.mjs 5`, the Home demo's pilot, five seeds; 2026-11-23):
+
+| Level | Region | Cleared | Time min / mean / max | Lives lost | Hits | Par |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Celestial frontier | 5/5 | 46 / 51 / 56 s | 0.0 | 0.0 | 75 s |
+| 2 | Violet orbit | 5/5 | 56 / 59 / 61 s | 1.0 | 1.6 | 90 s |
+| 3 | Ember orbit | 5/5 | 74 / 77 / 82 s | 0.2 | 0.6 | 115 s |
+| 4 | Ruined moon | 5/5 | 68 / 72 / 78 s | 0.0 | 0.0 | 110 s |
+| 5 | Lunar passage | 5/5 | 51 / 64 / 71 s | 0.0 | 0.2 | 95 s |
+| 6 | Outer rift | 5/5 | 73 / 76 / 82 s | 0.2 | 0.4 | 115 s |
+
+At 1.5–2.5× the pilot, a level takes people about 1½ to 3 minutes: close to the 3-minute target, so
+no wave was trimmed or padded. Re-check in the R1 playtest and tune par from the logs.
 
 ## Bosses and mini-bosses (browser solo and co-op)
 

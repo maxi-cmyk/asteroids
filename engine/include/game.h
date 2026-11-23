@@ -10,7 +10,9 @@ enum GameState {
     STATE_DEATH_ANIM,
     STATE_INITIALS,
     STATE_GAME_OVER,
-    STATE_DEMO
+    STATE_DEMO,
+    // Browser campaign only (web/native/level.h); the handheld never enters it.
+    STATE_LEVEL_CLEAR
 };
 
 void game_init();

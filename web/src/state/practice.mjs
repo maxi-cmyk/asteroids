@@ -22,7 +22,7 @@ export const DRILLS = Object.freeze([
     {
         id: 'waves',
         name: 'Waves',
-        note: 'Real waves from the wave you pick, moving on as you clear them.',
+        note: 'Real rocks from the wave you pick, moving on as you clear them. Bosses are in Boss.',
         config: { rocks: 'waves', hold: false, drops: true },
     },
     {

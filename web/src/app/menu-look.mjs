@@ -1,4 +1,5 @@
 import { REGIONS, regionIndexForWave } from '../render/regions.mjs';
+import { furthestWave } from '../state/records.mjs';
 import { Backgrounds, WIDTH, HEIGHT } from '../render/backgrounds.mjs';
 
 // Menu look (nextSteps.md H2): the backdrop behind every menu screen. "classic" is the
@@ -12,20 +13,8 @@ export const MENU_LOOKS = Object.freeze([
 ]);
 export const isMenuLook = (id) => MENU_LOOKS.some((look) => look.id === id);
 
-// The highest wave a profile has reached in a real (not practice) run, from its personal bests.
-export function furthestWave(records, profile) {
-    let wave = 0;
-    for (const [key, record] of Object.entries(records?.profiles?.[profile] ?? {})) {
-        let practice = false;
-        try {
-            practice = JSON.parse(key)[3] === true;
-        } catch {
-            continue;
-        }
-        if (!practice) wave = Math.max(wave, record?.wave ?? 0);
-    }
-    return wave;
-}
+// The highest wave a profile has reached in a real (not practice) run: see state/records.mjs.
+export { furthestWave };
 // Regions this profile may pick: the first is always open, the rest once reached.
 export function regionsReached(wave) {
     return wave > 0 ? regionIndexForWave(wave) + 1 : 1;

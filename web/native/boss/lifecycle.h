@@ -82,6 +82,9 @@ static bool boss_controls_wave(unsigned players = 1) {
     if (practice_mode || boss.practice) {
         return boss.practice;
     }
+    if (level_run.final_fell) {
+        return true; // the level's boss is down: no more rocks while its death plays
+    }
     if (!boss_wave_is_boss(wave_number)) {
         return false;
     }

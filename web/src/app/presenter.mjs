@@ -4,7 +4,7 @@ import { renderPlayChrome } from '../screens/play-chrome.mjs';
 import { renderPlayHud } from '../screens/play.mjs';
 import { renderResultsScreen } from '../screens/results.mjs';
 import { renderRecordsScreen } from '../screens/records.mjs';
-import { renderHomeScreen } from '../screens/home.mjs';
+import { renderHomeScreen, isFirstRun } from '../screens/home.mjs';
 import { accuracyText } from '../state/records.mjs';
 import { needsRelease } from '../state/navigation.mjs';
 import { MusicDirector } from '../audio/soundtrack.mjs';
@@ -32,6 +32,8 @@ export class Presenter {
         this.hud = Object.fromEntries(HUD_IDS.map((id) => [id, element(id)]));
         this.lastState = '';
         this.music = new MusicDirector();
+        // Opening How to play ends its first-run highlight for this visit.
+        this.helpSeen = false;
     }
     draw() {
         const { app } = this,
@@ -50,12 +52,14 @@ export class Presenter {
             navigation.screen === 'play' &&
                 ['playing', 'countdown', 'death'].includes(runtime.state),
         );
+        if (navigation.screen === 'help') this.helpSeen = true;
         renderHomeScreen({
             demoEngine: app.demo,
             navigation,
             controllerLabel: element('controller'),
             menuDevice: app.input.device,
             profileStore: app.profileStore,
+            helpNew: !this.helpSeen && isFirstRun(runtime.records),
         });
         renderDiagnostics({
             inputDiagnostics: app.inputDiagnostics,

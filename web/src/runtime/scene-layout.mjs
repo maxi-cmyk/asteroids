@@ -88,6 +88,16 @@ export const S = Object.freeze({
     BOSS_WAVE: 522,
     BOSS_KILLS: 523,
     BOSS_TARGET_X: 524,
+    // campaign level (nextSteps.md C1); all 0 outside a level run
+    LEVEL_INDEX: 525, // 1-6 in an Act 1 level, 0 otherwise
+    LEVEL_ACT: 526,
+    LEVEL_FIRST_WAVE: 527,
+    LEVEL_LAST_WAVE: 528, // the wave of the level's boss
+    LEVEL_TIME_MS: 529, // game time at which the level's boss fell (0 until then)
+    LEVEL_LIVES_LOST: 530, // solo, or player one in co-op
+    LEVEL_LIVES_LOST_2: 531, // player two in co-op
+    LEVEL_HITS_TAKEN: 532, // every hit that landed, including ones a shield absorbed
+    LEVEL_CLEARED: 533, // 1 once the boss has fallen
     // co-op player wrapper
     COOP_VERSION: 552,
     COOP_ID: 553,

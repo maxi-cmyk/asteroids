@@ -1,5 +1,6 @@
 import { COOP_SCORE_KEYS } from './coop-records.mjs';
 import { BOSS_RECORDS_KEY, emptyBossRecords } from '../boss/records.mjs';
+import { CAMPAIGN_KEY } from './campaign-data.mjs';
 export const RECORDS_KEY = 'asteroids.web.personal-bests-v1';
 export const MIN_ACCURACY_SHOTS = 50;
 const metrics = ['score', 'wave', 'peakCps', 'longestChain'];
@@ -122,6 +123,7 @@ export function clearBrowserRecords(storage, scoreKey) {
         [scoreKey, JSON.stringify(emptyScores)],
         [RECORDS_KEY, emptyBests],
         [BOSS_RECORDS_KEY, emptyBossRecords()],
+        [CAMPAIGN_KEY, JSON.stringify({ version: 1, profiles: [{}, {}] })],
         ...COOP_SCORE_KEYS.map((key) => [key, JSON.stringify({ version: 1, entries: [] })]),
     ];
     const previous = [];
@@ -147,4 +149,19 @@ export function clearBrowserRecords(storage, scoreKey) {
                 : 'Record reset could not finish. Reload to check stored records before retrying.',
         };
     }
+}
+
+// The highest wave a profile has reached in a real (not practice) run, from its personal bests.
+export function furthestWave(records, profile) {
+    let wave = 0;
+    for (const [key, record] of Object.entries(records?.profiles?.[profile] ?? {})) {
+        let practice = false;
+        try {
+            practice = JSON.parse(key)[3] === true;
+        } catch {
+            continue;
+        }
+        if (!practice) wave = Math.max(wave, record?.wave ?? 0);
+    }
+    return wave;
 }

@@ -2,7 +2,8 @@
                 <h1 tabindex="-1">Records</h1>
                 <div class="records-filters" role="group" aria-label="Which records to show">
                     <div class="chips" data-for="recordsMode" role="group" aria-label="Mode">
-                        <button type="button" data-value="solo">Solo</button>
+                        <button type="button" data-value="campaign">Campaign</button>
+                        <button type="button" data-value="solo">Endless</button>
                         <button type="button" data-value="coop-off">Co-op</button>
                         <button type="button" data-value="coop-on">Co-op · friendly fire</button>
                     </div>
@@ -15,12 +16,20 @@
                         <button type="button" data-value="practice">Practice</button>
                     </div>
                     <div hidden>
-                        <select id="recordsMode"><option value="solo">Solo</option><option value="coop-off">Co-op · Friendly fire off</option><option value="coop-on">Co-op · Friendly fire on</option></select>
+                        <select id="recordsMode"><option value="campaign">Campaign</option><option value="solo">Endless solo</option><option value="coop-off">Co-op · Friendly fire off</option><option value="coop-on">Co-op · Friendly fire on</option></select>
                         <select id="recordsProfile"><option value="0">Player 1</option><option value="1">Player 2</option></select>
                         <select id="recordsType"><option value="normal">Normal</option><option value="practice">Practice</option></select>
                     </div>
                 </div>
-                <div class="records-grid">
+                <section id="recordsCampaign" class="records-campaign" aria-labelledby="campaignTitle" hidden>
+                    <h2 id="campaignTitle">Campaign · Act 1</h2>
+                    <p id="campaignSummary" class="records-note"></p>
+                    <table class="campaign-table">
+                        <thead><tr><th scope="col">Level</th><th scope="col">Stars</th><th scope="col">Best time</th><th scope="col">Par</th><th scope="col">Best score</th></tr></thead>
+                        <tbody id="campaignRows"></tbody>
+                    </table>
+                </section>
+                <div id="recordsGrid" class="records-grid">
                     <section class="records-board" aria-labelledby="boardTitle">
                         <h2 id="boardTitle">Top five</h2>
                         <p id="leaderboardContext" class="records-note"></p>

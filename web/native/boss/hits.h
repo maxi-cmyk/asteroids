@@ -53,11 +53,11 @@ static void bs_damage(unsigned owner, unsigned damage) {
     }
     bs_defeat(owner);
 }
-// Every boss leaves one health pickup behind, a mini-boss one time in two. The
+// In Endless, every boss leaves a health pickup, a mini-boss one time in two. The
 // single pickup slot keeps it to one on screen; practice fights lose no lives,
-// so they drop nothing.
+// so they drop nothing. Campaign bosses and minis also drop no hearts.
 static void bs_drop_health() {
-    if (boss.practice || (boss.mini && bs_rand(0, 100) >= 50)) {
+    if (boss.practice || level_run.active || (boss.mini && bs_rand(0, 100) >= 50)) {
         return;
     }
     pickup = {constrain(boss.x, 140.0f, float(SCREEN_W - 24)),
@@ -69,6 +69,7 @@ static void bs_defeat(unsigned owner) {
     boss.active = false;
     boss.defeated = game_ms;
     boss.kills++;
+    level_boss_defeated(boss.mini, boss.practice, boss.wave);
     boss.killer = owner;
     boss.defeated_mask |= 1u << boss.kind;
     if (boss.hold) {

@@ -75,6 +75,7 @@ export class GameLoop {
         if (vignette !== this.vignetteFrame) {
             if (navigation?.screen === 'hangar') app.hangarScreen.draw(app.clock.time);
             else if (navigation?.screen === 'mode') app.modeScreen.draw(app.clock.time);
+            else if (navigation?.screen === 'levels') app.levelsScreen.draw();
             this.vignetteFrame = vignette;
         }
         session.pauseFrame(now);

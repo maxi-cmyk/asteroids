@@ -89,6 +89,7 @@ void web_audio_step() {
 }
 void web_start(int practice) {
 #ifdef WEB_HD
+    level_reset();
     coop_active = false;
     boss_bind_solo();
     practice_mode = practice != 0;
@@ -109,7 +110,34 @@ void web_start(int practice) {
     begin_game();
 #endif
 }
+// Campaign Act 1 (nextSteps.md C1): level 1-6 for one or two pilots, from the level's first
+// wave with the usual three lives and a x1 multiplier. Level n is waves 5n-4 to 5n.
+void web_start_level(int level, int players, int friendly) {
+#ifdef WEB_HD
+    practice_mode = false;
+    practice_hold_multishot = practice_hold_double_fire = false;
+    practice_goals = 0;
+    if (players >= 2) {
+        coop_begin(friendly != 0);
+    } else {
+        coop_active = false;
+        boss_bind_solo();
+        begin_game();
+        combat_reset();
+        boss = {};
+    }
+    level_begin(level);
+#else
+    (void)level;
+    (void)players;
+    (void)friendly;
+    begin_game();
+#endif
+}
 void web_demo() {
+#ifdef WEB_HD
+    level_reset();
+#endif
     begin_game();
     demo_reset(demo);
     demo_running = true;
@@ -124,6 +152,7 @@ void web_menu() {
     demo_running = false;
     menu_input_ready = false;
 #ifdef WEB_HD
+    level_reset();
     coop_active = false;
     practice_mode = false;
     practice_hold_multishot = practice_hold_double_fire = false;

@@ -2,6 +2,19 @@ import { S, BOSS, BOSS_AT } from './scene-layout.mjs';
 
 // Turns the end of a run into a result and writes it to the personal-best and boss-defeat
 // records. Solo and co-op share the bookkeeping; only the numbers they read differ.
+// What a level run reports, read from the scene when the run ends: the level, whether its boss
+// fell, the time it fell at, and the lives lost (by pilot) and hits taken.
+function levelFacts(scene, level, players = null) {
+    return {
+        level,
+        cleared: scene[S.LEVEL_CLEARED] === 1,
+        timeMs: scene[S.LEVEL_TIME_MS],
+        livesLost: [scene[S.LEVEL_LIVES_LOST], scene[S.LEVEL_LIVES_LOST_2]],
+        hitsTaken: scene[S.LEVEL_HITS_TAKEN],
+        livesRemaining: players ? players.map((p) => p.lives) : [scene[S.LIVES]],
+    };
+}
+
 export class RunRecorder {
     constructor({ records, bossRecords, profile }) {
         this.records = records;
@@ -13,16 +26,19 @@ export class RunRecorder {
     get runProfile() {
         return this.run?.profile ?? this.result?.profile ?? (this.profile() === 1 ? 1 : 0);
     }
-    beginSolo(practice = false) {
+    // A campaign level (`level` 1-6) is a solo run that never touches the Endless personal bests.
+    beginSolo(practice = false, level = 0) {
         this.run = {
             profile: this.profile() === 1 ? 1 : 0,
             rules: { mode: 'solo', friendlyFire: false, modifiers: [], practice },
+            level,
         };
         this.result = null;
     }
-    beginCoop(friendlyFire) {
+    beginCoop(friendlyFire, level = 0) {
         this.run = {
             rules: { mode: 'co-op', friendlyFire: !!friendlyFire, modifiers: [], practice: false },
+            level,
         };
         this.result = null;
     }
@@ -51,8 +67,9 @@ export class RunRecorder {
             elapsedMs: scene[S.GAME_MS],
             destroyed: scene[S.RUN_DESTROYED],
             bestMultiplier: scene[S.RUN_BEST_MULTIPLIER],
+            ...(run.level ? { levelRun: levelFacts(scene, run.level) } : {}),
         };
-        this.records.record(run.profile, run.rules, this.result);
+        if (!run.level) this.records.record(run.profile, run.rules, this.result);
         if (!run.rules.practice) this.bossRecords.record(run.profile, this.result.bossMask || 0);
         this.run = null;
     }
@@ -84,8 +101,9 @@ export class RunRecorder {
             elapsedMs: players[0].scene[S.GAME_MS],
             bossKills: players[0].scene[S.BOSS_KILLS],
             bossMask: mask,
+            ...(run.level ? { levelRun: levelFacts(players[0].scene, run.level, players) } : {}),
         };
-        summaries.forEach((p) => this.records.record(p.profile, run.rules, p));
+        if (!run.level) summaries.forEach((p) => this.records.record(p.profile, run.rules, p));
         summaries.forEach((p) => this.bossRecords.record(p.profile, mask));
         this.run = null;
         return true;

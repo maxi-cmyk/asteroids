@@ -61,6 +61,32 @@ const scenarios = {
         }
         return out;
     },
+    // Campaign Act 1 (nextSteps.md C1): each level from its first wave, then a co-op level. The
+    // level fields (LEVEL_*) are part of what these hash.
+    async levels() {
+        const out = {};
+        for (let level = 1; level <= 6; level++) {
+            const g = await game(30 + level);
+            g.startLevel(level);
+            const sums = [];
+            for (let i = 1; i <= 500; i++) {
+                g.step(sweep(i));
+                if (i % 125 === 0) sums.push(hash(g.scene()));
+            }
+            out[level] = sums;
+        }
+        return out;
+    },
+    async levelCoop() {
+        const g = await game(47);
+        g.startLevel(2, { profiles: [0, 1], friendlyFire: false });
+        const out = [];
+        for (let i = 1; i <= 400; i++) {
+            g.step({ players: [sweep(i), sweep(i + 40)] });
+            if (i % 100 === 0) out.push(hash(g.scene()), hash(view(g, g.api.web_coop_player(1))));
+        }
+        return out;
+    },
     async practiceAll() {
         const out = {};
         for (let kind = 0; kind < 12; kind++) {

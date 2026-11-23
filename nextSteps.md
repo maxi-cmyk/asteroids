@@ -94,16 +94,26 @@ needs no server. S8 never touches the network code and can start any time after 
 
 ### v0.3 polish leftovers (H1–H4 built 2026-11-22; plans in the archive)
 
-- [ ] **Menu look:** measure menu text contrast (AA) on each region look; the veil is the
-  region's colour at the old opacity, but no look has been measured.
-- [ ] **Home:** highlight How to play once on a first run (no records yet).
-- [ ] **Practice:** the Waves drill has no mini-bosses or bosses (the tools panel's Fight boss
-  covers them); decide if it should.
+- [x] **Menu look:** contrast measured on every region (2026-11-23): all pass AA, lowest 4.70:1
+  on Home and 5.55:1 elsewhere; no veil changed (`docs/ACCEPTANCE.md`).
+- [x] **Home:** How to play is highlighted on a first run until it is opened (per visit, nothing
+  saved).
+- [x] **Practice:** the Waves drill stays rocks only; bosses are in the Boss drill (decided
+  2026-11-23; the drill card says so).
 
 ### R8. Tag v0.3.0
 
-- [ ] `npm run check`, `sh engine/tests/run_host.sh`, the PlatformIO build, the stress run; update
-  README, COMBAT, Help and `CHANGELOG.md`; tag `v0.3.0`.
+- [x] `npm run check` (293 tests), `sh engine/tests/run_host.sh` and `pio run` pass (2026-11-23);
+  README, COMBAT, Help and `CHANGELOG.md` are up to date.
+- [ ] **You:** the stress run. I could not get a valid one: the app throttles the built-in pane when
+  the Claude window is not in view. Run `cd web && npm run stress`, open
+  `stress.html?auto=1&boss=5&phase=2&seconds=60` with the window in front, and expect no frame
+  over 25 ms after the first.
+- [ ] **Before the tag:** R1 (playtest and tuning) and the R6 checks left (mid-laptop stress,
+  Firefox replay); change the CHANGELOG heading from "(unreleased)" to the date and drop its
+  "waiting on a playtest" line; commit on `dev`.
+- [ ] **You:** release it: pull request `dev` → `main`, merge with a merge commit, `git tag v0.3.0`
+  on `main`, push the tag.
 
 ### Later, not blocking
 
@@ -242,6 +252,11 @@ types, with new bosses you design then.
 
 ### C1. Act 1 (main focus)
 
+**Status 2026-11-23: built on `dev`, uncommitted.** Open: play it by hand with a keyboard and a
+controller and check par against real play times (R1); a co-op level on two real input devices
+(`docs/ACCEPTANCE.md`). Small known gap: on Records → Campaign the "Reset this profile's personal
+bests" button still resets only the Endless bests (Clear this browser's records does clear the campaign).
+
 | Level | Region | Waves | Mini (wave 3) | Boss (wave 5) |
 | --- | --- | --- | --- | --- |
 | 1 | Celestial frontier | 1–5 | Picket | Sentinel |
@@ -257,44 +272,44 @@ Add the levels to the baseline tool (`tests/boss-baseline.mjs`) and check them i
 playtest; trim or pad waves only if a level runs far off 3 minutes.
 
 **Engine** (most of it exists: boss practice already starts at any wave):
-- [ ] `web_start_level(act, level, players)`: start at the level's first wave in its region,
+- [x] `web_start_level(act, level, players)`: start at the level's first wave in its region,
   3 lives, ×1 multiplier, the wave difficulty of those wave numbers, bosses at tier I.
-  Recorded in replays (a level is one short replay, which W3 can re-run cheaply).
-- [ ] The level ends when the wave-5 boss falls: a new `level-clear` state with time, score,
+  Recorded in replays (a level is one short replay, which W3 can re-run cheaply). **Done 2026-11-23:** `web_start_level(level, players, friendly)`; the `act` argument arrives with Act 2 (C3). Recorded in replays (`COMBAT.md`, Campaign levels).
+- [x] The level ends when the wave-5 boss falls: a new `level-clear` state with time, score,
   lives lost and hits taken in the scene (named in `scene-layout.mjs`; golden updated).
-  Losing the last life ends the level (retry), never the act.
-- [ ] Practice and the demo stay as they are.
+  Losing the last life ends the level (retry), never the act. **Done:** state 8 `level-clear` after the boss's 3.2 s death; the `LEVEL_*` scene fields are in `scene-layout.mjs` and covered by new scene-golden scenarios (`levels`, `levelCoop`); older goldens did not move.
+- [x] Practice and the demo stay as they are.
 
 **Stars** (3 per level, 18 in Act 1):
-- [ ] Clear the level · clear it without losing a life · clear it under par time. Par is set
-  from the bot's level time × 1.5, rounded, and tuned after the playtest.
+- [x] Clear the level · finish with 3+ lives remaining (earned lives offset losses) · finish under the time target. Campaign bosses and mini-bosses drop no hearts. Par is set
+  from the bot's level time × 1.5, rounded, and tuned after the playtest. **Done:** par is 75, 90, 115, 110, 95 and 115 s for levels 1–6 (`PAR_SECONDS`); tune after the playtest.
 
 **Progress and saves:**
-- [ ] Level 1 is open; each clear opens the next; clearing level 6 finishes Act 1 and opens
+- [x] Level 1 is open; each clear opens the next; clearing level 6 finishes Act 1 and opens
   Endless.
-- [ ] Per profile and level: best stars, best time, best score. A new part of the R4 save;
-  merging keeps the best of each.
-- [ ] **Returning players:** a save whose highest wave is already past a level's boss opens
+- [x] Per profile and level: best stars, best time, best score. A new part of the R4 save;
+  merging keeps the best of each. **Done:** `asteriods.web.campaign-v1`, in the save (export, import, merge).
+- [x] **Returning players:** a save whose highest wave is already past a level's boss opens
   the levels up to there (no stars given); one that reached wave 30 also opens Endless.
-- [ ] Hull unlocks come from mini-boss defeats in levels and in Endless (never practice).
+- [x] Hull unlocks come from mini-boss defeats in levels and in Endless (never practice). **Done:** the existing unlock toast reads the scene's defeated mask in non-practice runs, so levels earn hulls with no new code. **To be replaced:** Ship customisations below moves unlocks to first level clears and adds independent primary and secondary weapon unlocks.
 
 **Screens:**
-- [ ] **Play** (with H1): **Campaign**, **Endless** (locked until Act 1, with the reason), and
-  **Practice**; one or two pilots chosen as today.
-- [ ] **Level select:** the six levels as cards on a path, each with its region's backdrop,
+- [x] **Play** (with H1): **Campaign**, **Endless** (locked until Act 1, with the reason), and
+  **Practice**; one or two pilots chosen as today. **Done:** three cards plus a One pilot / Two pilots switch; Endless shows "Finish Act 1 to unlock" until it opens.
+- [x] **Level select:** the six levels as cards on a path, each with its region's backdrop,
   mini and boss silhouettes, stars, best time and score; locked ones dimmed. Mouse, keyboard
-  and controller.
-- [ ] **Level clear:** stars earned one by one, time against par, score; **Next level**,
-  **Retry**, **Level select**. A failed level offers **Retry** and **Level select**.
-- [ ] **Pause:** gains **Restart level**.
-- [ ] Records: a Campaign tab (per level bests and stars) beside the Endless tables (today's
-  top-five tables become Endless's).
-- [ ] Help: campaign, stars and Endless in a few sentences each.
+  and controller. **Done:** six cards (region sky, mini and boss silhouettes that turn to colour once beaten, stars, best time and score, locked ones dimmed); mouse, keyboard and the d-pad use the same menu navigation as the other screens (a controller was not tried).
+- [x] **Level clear:** stars earned one by one, time against par, score; **Next level**,
+  **Retry**, **Level select**. A failed level offers **Retry** and **Level select**. **Done** as the results overlay in a level layout (stars light one by one, time against par, score, what it unlocked).
+- [x] **Pause:** gains **Restart level**.
+- [x] Records: a Campaign tab (per level bests and stars) beside the Endless tables (today's
+  top-five tables become Endless's). **Done:** the Solo chip is now Endless.
+- [x] Help: campaign, stars and Endless in a few sentences each.
 
 **Co-op:** both modes for two players; a level cleared together counts for both profiles, each
 with its own stars.
 
-**Tests:** each level starts at the right wave, region, mini and boss; clear and fail
+**Tests (done: `tests/campaign.test.mjs`, `tests/campaign-ui.test.mjs`, `tests/level-baseline.mjs`):** each level starts at the right wave, region, mini and boss; clear and fail
 detection; each star rule; progress unlocking; the returning-player migration; save merge; a
 level replay round-trips; co-op credit.
 
@@ -433,7 +448,28 @@ with nothing cleared.
 - [ ] Endless adds the Act 2 bosses to its rotation once they exist.
 - [ ] Stars, progress, saves and screens as in Act 1.
 
-### C4. Achievements (planned 2026-11-22, was H6)
+### Ship customisations (planned 2026-11-23)
+
+Each of the six campaign levels unlocks one new ship, one primary fire option, and one
+secondary fire option on its first clear. These are three independent loadout slots:
+**6 ships × 6 primary weapons × 6 secondary weapons = 216 combinations** once all are unlocked.
+The six-by-six-by-six pool is the complete customisation set; any starter loadout must use
+options from that pool rather than adding a seventh option.
+
+- [ ] Define six ships with distinct movement speeds and handling tradeoffs. Primary and
+  secondary fire are selected independently, rather than fixed to a ship.
+- [ ] Define six primary weapons with distinct projectile behaviour and six secondary
+  weapons with distinct abilities; balance all 216 loadouts.
+- [ ] Award each level's three unlocks per profile on first clear, and show them on Results.
+  Replace the current mini-boss-based hull unlock rule with this level-clear progression.
+- [ ] Add independent ship, primary fire and secondary fire selectors to the Hangar,
+  with previews, stats, unlock requirements and a summary of the assembled loadout.
+- [ ] Apply the assembled loadout in solo and independently per pilot in co-op; carry
+  unlocks and selections through campaign, Endless, practice, saves and replays.
+- [ ] Decide which options from the six-item pools are available before the first clear,
+  and how existing hull unlocks migrate into the new progression.
+
+### C4. Achievements (planned 2026-11-22, was H6) 
 
 **Toast:** when an achievement is earned, a trophy icon with its name appears **top
 centre** of the playfield and is gone **0.5 s** after its first pixel (in about 80 ms, hold,
@@ -478,7 +514,7 @@ silver, gold) are one achievement with steps, each step with its own toast.
 | Campaign | Star pilot | 6 / 12 / all 18 Act 1 stars | 3 |
 | Progress | Full circuit | clear wave 30 in Endless | |
 | Progress | Prestige | reach prestige 1 / 3 / 5 / 10 | 4 |
-| Progress | Iron hull | clear a level without losing a life (also its star) | |
+| Progress | Iron hull | clear a level without losing a life (separate from the net-lives star) | |
 | Skill | Sharpshooter | a run with 90 % accuracy and at least 200 shots | |
 | Skill | No wasted shots | 50 kills in a row without a miss | |
 | Skill | Saved by the shield | a stored shield blocks a hit that would have killed you | |

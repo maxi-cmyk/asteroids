@@ -1,0 +1,352 @@
+/* ---- Campaign (nextSteps.md C1) ---------------------------------------------
+   The Play screen's pilot switch, the level select, the level result's stars, and the
+   Records campaign table. Cards and tones follow the Play and Practice screens. */
+.mode-pilots {
+    display: inline-flex;
+    border: 1px solid #3a2a64;
+}
+.mode-pilots button {
+    min-height: 0;
+    padding: 6px 16px 4px;
+    border: 0;
+    background: #0e0624d9;
+    color: #aa8cd2;
+    font-family: var(--font-display);
+    font-size: var(--size-label);
+    letter-spacing: 0.08em;
+    cursor: pointer;
+}
+.mode-pilots button[aria-pressed='true'] {
+    background: #ffbe6e26;
+    color: #ffd68c;
+    box-shadow: inset 0 -2px 0 #ffbe6e;
+}
+.mode-card[aria-disabled='true'] {
+    cursor: not-allowed;
+}
+.mode-card[aria-disabled='true'] canvas {
+    filter: saturate(0.2) brightness(0.55);
+}
+.mode-card[aria-disabled='true']:hover canvas,
+.mode-card[aria-disabled='true']:focus canvas {
+    filter: saturate(0.3) brightness(0.65);
+}
+.mode-card[aria-disabled='true'] strong {
+    color: #8a76b0;
+}
+
+.campaign-levels {
+    padding: clamp(16px, 3.4vh, 36px) clamp(18px, 5vw, 64px);
+    border: 0;
+    background: var(--menu-veil, linear-gradient(#0a0518d9, #0a0518f0)),
+        var(--menu-backdrop, url('../../assets/home-scene.png') center / cover);
+    image-rendering: pixelated;
+}
+.campaign-levels:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 2vh, 20px);
+    overflow: auto;
+}
+.campaign-levels > h1 {
+    margin: 0;
+    font-size: clamp(28px, 3.6vw, 46px);
+    color: #ffd68c;
+}
+.levels-lede,
+.levels-note {
+    margin: 0;
+    color: #cdb6f0;
+}
+.levels-note {
+    color: #8a76b0;
+    font-size: var(--size-small);
+}
+.level-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(10px, 1.6vw, 22px);
+}
+.level-card {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    min-height: 0;
+    padding: 0 0 12px;
+    text-align: left;
+    background: #0e0624d9;
+    border: 1px solid #3a2a64;
+    box-shadow: none;
+    overflow: hidden;
+    color: #aa8cd2;
+    font-family: var(--font-body);
+    font-size: var(--size-body);
+    transition:
+        border-color 0.12s,
+        box-shadow 0.12s;
+}
+.level-card .level-sky {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 21 / 9;
+    object-fit: cover;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #3a2a64;
+    image-rendering: pixelated;
+    filter: saturate(0.85) brightness(0.8);
+}
+.level-card em,
+.level-card strong,
+.level-card .level-foes,
+.level-card .level-stars,
+.level-card .level-best {
+    padding: 0 14px;
+}
+.level-card em {
+    font-style: normal;
+    font-family: var(--font-display);
+    font-size: var(--size-label);
+    letter-spacing: 0.12em;
+    color: #be96e6;
+}
+.level-card strong {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(22px, 2.2vw, 30px);
+    line-height: 1.3;
+    color: #ffe9c4;
+}
+.level-foes {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.level-foes canvas {
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    image-rendering: pixelated;
+}
+.level-foes b {
+    font-weight: 400;
+    font-size: var(--size-small);
+    color: #aa8cd2;
+}
+/* Bosses not yet beaten are silhouettes, as in the Records boss log. */
+.level-foes canvas[data-state='unseen'] {
+    filter: brightness(0.22) saturate(0.3);
+}
+.level-stars {
+    display: flex;
+    gap: 6px;
+}
+.star {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background: #3a2a64;
+    clip-path: polygon(
+        50% 0,
+        62% 36%,
+        100% 38%,
+        70% 60%,
+        81% 100%,
+        50% 76%,
+        19% 100%,
+        30% 60%,
+        0 38%,
+        38% 36%
+    );
+}
+.star[data-on='true'] {
+    background: #ffd68c;
+}
+.level-best {
+    color: #8a76b0;
+    font-size: var(--size-small);
+}
+.level-card:hover:not([aria-disabled='true']),
+.level-card:focus {
+    background: #160a34e6;
+    border-color: #ffbe6e;
+    box-shadow:
+        0 0 0 1px #ffbe6e,
+        0 0 30px #ff785a40;
+    outline: 1px solid transparent;
+}
+.level-card:hover:not([aria-disabled='true']) .level-sky,
+.level-card:focus .level-sky {
+    filter: none;
+}
+.level-card[data-state='locked'] {
+    cursor: not-allowed;
+}
+.level-card[data-state='locked'] .level-sky {
+    filter: saturate(0.15) brightness(0.45);
+}
+.level-card[data-state='locked'] strong {
+    color: #8a76b0;
+}
+.level-card[data-state='cleared'] {
+    border-color: #6a5a9a;
+}
+
+/* Campaign results: the three goals are the focal point. */
+.screen .run-summary[data-campaign='true'] .run-summary-content {
+    width: min(100%, 720px);
+}
+.screen .run-summary[data-campaign='true'] #personalBest {
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+    color: #cdb6f0;
+}
+.screen .run-summary[data-campaign='true'] .result-hero[hidden] {
+    display: none;
+}
+.level-result {
+    margin: 0 0 clamp(10px, 2cqw, 24px);
+}
+#levelOutcome {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(26px, 5.5cqw, 64px);
+    line-height: 1.05;
+    color: #fff4d6;
+    text-shadow: 2px 3px 6px #070312;
+}
+.level-result p {
+    margin: 2px 0;
+    max-width: none;
+    color: #cdb6f0;
+}
+#levelTime {
+    font-family: var(--font-display);
+    font-size: clamp(20px, 3cqw, 34px);
+    color: #ffe9c4;
+    font-variant-numeric: tabular-nums;
+}
+#levelDamage {
+    font-size: clamp(13px, 1.8cqw, 18px);
+}
+.level-pilots {
+    display: grid;
+    gap: 10px;
+    margin: clamp(10px, 2.5cqw, 28px) 0;
+}
+.level-pilot > b {
+    display: block;
+    margin-bottom: 6px;
+    font-family: var(--font-display);
+    font-weight: 400;
+    color: #cdb6f0;
+}
+.level-pilot > b[hidden] {
+    display: none;
+}
+.star-chips {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(8px, 2cqw, 24px);
+    width: min(100%, 480px);
+    margin: auto;
+}
+.star-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(6px, 1cqw, 12px);
+    color: #b5a0d6;
+    font-size: clamp(13px, 1.9cqw, 20px);
+    line-height: 1.15;
+}
+.star-chip .star {
+    width: clamp(44px, 9cqw, 104px);
+    height: clamp(44px, 9cqw, 104px);
+    background: #594178;
+}
+.star-chip[data-on='true'] {
+    color: #ffe9c4;
+}
+.star-chip[data-on='true'] .star {
+    background: linear-gradient(135deg, #fff4c2 10%, #ffd65c 48%, #ffb638 75%, #ffe49a);
+    animation: star-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(0.22s * var(--i, 0));
+}
+@keyframes star-pop {
+    from {
+        transform: scale(0.72) rotate(-12deg);
+        filter: brightness(1.5);
+    }
+    to {
+        transform: none;
+        filter: brightness(1);
+    }
+}
+.level-result .level-unlock {
+    margin-top: clamp(6px, 1.2cqw, 14px);
+    color: #ffd68c;
+    font-family: var(--font-display);
+    font-size: clamp(14px, 2cqw, 22px);
+}
+.screen .run-summary[data-campaign='true'] .result-actions button {
+    min-height: 36px;
+    padding: 7px clamp(10px, 2cqw, 24px);
+}
+.screen .run-summary[data-campaign='true'] .result-actions .primary {
+    color: #2a0e3a;
+    background: #ffcf7e;
+    border-color: #ffcf7e;
+}
+.screen .run-summary[data-campaign='true'] .result-actions .primary:hover,
+.screen .run-summary[data-campaign='true'] .result-actions .primary:focus-visible {
+    background: #ffe9c4;
+    color: #2a0e3a;
+}
+.screen .run-summary[data-campaign='true'] .result-actions button:focus-visible {
+    outline: 2px solid #fff4d6;
+    outline-offset: 3px;
+}
+.screen .run-summary[data-campaign='true']:has(.level-pilot:nth-child(2)) .star {
+    width: clamp(32px, 5cqw, 58px);
+    height: clamp(32px, 5cqw, 58px);
+}
+@media (prefers-reduced-motion: reduce) {
+    .star-chip[data-on='true'] .star,
+    .screen .run-summary[data-campaign='true'] .run-summary-content {
+        animation: none;
+    }
+}
+
+/* Records → Campaign */
+.records-campaign:not([hidden]) {
+    display: block;
+}
+.campaign-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--size-body);
+}
+.campaign-table th,
+.campaign-table td {
+    padding: 6px 10px;
+    text-align: left;
+    border-bottom: 1px solid #3a2a64;
+}
+.campaign-table th {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    color: #be96e6;
+}
+.campaign-table td:nth-child(2) {
+    color: #ffd68c;
+    letter-spacing: 0.2em;
+}
+@media (max-width: 760px) {
+    .level-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

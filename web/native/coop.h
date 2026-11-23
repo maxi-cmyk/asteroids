@@ -56,8 +56,10 @@ static void coop_hit(unsigned owner) {
     if (player.hull.effects.shield) {
         player.hull.effects.shield = false;
         player.hull.invincible_left = SHIELD_PROTECTION_MS;
+        level_hit(owner, false);
         return;
     }
+    level_hit(owner, true);
     ship_die(player.hull);
     player.respawn_at = game_ms + DEATH_ANIMATION_MS;
     player.weapons.charging = false;
@@ -504,6 +506,7 @@ static void coop_update() {
     }
     particles_update();
     display_shake_update();
+    level_tick();
     if (!coop_players[0].hull.lives && !coop_players[1].hull.lives) {
         sound_stop();
         sound_play(SFX_GAMEOVER);

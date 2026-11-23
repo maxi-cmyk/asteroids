@@ -9,6 +9,7 @@ import { CoopLeaderboard, COOP_SCORE_KEYS } from './coop-records.mjs';
 import { HANGAR_KEY, loadHangar, isHull, DEFAULT_HULL } from './hangar.mjs';
 import { SETTINGS_KEY, loadProfiles } from './settings.mjs';
 import { UNLOCKS_KEY } from '../boss/unlocks.mjs';
+import { CAMPAIGN_KEY, normalizeProfile, mergeProfiles } from './campaign-data.mjs';
 
 export const SAVE_FORMAT = 1;
 export const SAVE_GAME = 'asteroids-oled-web';
@@ -96,6 +97,9 @@ export function readSave(storage) {
         coopScores: COOP_SCORE_KEYS.map((_, ff) => new CoopLeaderboard(storage, !!ff).entries),
         records: new PersonalBests(storage).profiles,
         bossDefeats: new BossRecords(storage).profiles,
+        campaign: [0, 1].map((i) =>
+            normalizeProfile(readJson(storage, CAMPAIGN_KEY)?.profiles?.[i]),
+        ),
         unlocks: {
             all: unlocks?.all === true,
             profiles: [0, 1].map((i) =>
@@ -132,6 +136,8 @@ export function parseSave(text) {
     );
     put(RECORDS_KEY, { version: 1, profiles: pair(data.records) });
     put(BOSS_RECORDS_KEY, { version: 1, profiles: pair(data.bossDefeats) });
+    // A save from before the campaign has no such part: it reads back as no progress.
+    put(CAMPAIGN_KEY, { version: 1, profiles: pair(data.campaign) });
     put(UNLOCKS_KEY, {
         version: 1,
         all: data.unlocks?.all === true,
@@ -168,6 +174,7 @@ export function writeSave(storage, save) {
         ...COOP_SCORE_KEYS.map((key, ff) => [key, { version: 1, entries: save.coopScores[ff] }]),
         [RECORDS_KEY, { version: 1, profiles: save.records }],
         [BOSS_RECORDS_KEY, { version: 1, profiles: save.bossDefeats }],
+        [CAMPAIGN_KEY, { version: 1, profiles: save.campaign }],
         [UNLOCKS_KEY, { version: 1, ...save.unlocks }],
         [HANGAR_KEY, { version: 1, profiles: save.hangar }],
         [
@@ -222,6 +229,7 @@ export function mergeSaves(a, b, { settingsFrom = 'a' } = {}) {
                 out[id] = Math.max(out[id] || 0, n);
             return out;
         }),
+        campaign: [0, 1].map((i) => mergeProfiles(a.campaign[i], b.campaign[i])),
         unlocks: {
             all: a.unlocks.all || b.unlocks.all,
             profiles: [0, 1].map((i) => [

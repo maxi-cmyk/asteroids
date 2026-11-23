@@ -1,7 +1,8 @@
-import { element } from '../app/dom.mjs';
+import { element, setHidden } from '../app/dom.mjs';
 import { accuracyText } from '../state/records.mjs';
 import { KINDS, REGION_SHEETS } from '../boss/scene.mjs';
 import { renderLeaderboard } from './leaderboard.mjs';
+import { LEVELS, STAR_BITS, STAR_NAMES, clock } from '../state/campaign-data.mjs';
 
 // The three filters are chip groups that drive hidden selects, so the stored
 // filter state and the reset logic keep working on plain values.
@@ -87,10 +88,15 @@ export function renderRecordsScreen({
     const recordProfile = Number(element('recordsProfile').value);
     if (resetRecordsArmed && resetProfile !== recordProfile) disarmRecordsReset();
     const mode = element('recordsMode').value;
-    const coOp = mode !== 'solo';
-    element('recordsType').disabled = coOp;
-    if (coOp && element('recordsType').value !== 'normal') element('recordsType').value = 'normal';
+    const campaign = mode === 'campaign';
+    const coOp = mode.startsWith('coop');
+    element('recordsType').disabled = coOp || campaign;
+    if ((coOp || campaign) && element('recordsType').value !== 'normal')
+        element('recordsType').value = 'normal';
     syncChips();
+    setHidden(element('recordsCampaign'), !campaign);
+    setHidden(element('recordsGrid'), campaign);
+    if (campaign) renderCampaign(runtime, recordProfile, update);
     const recordRules = {
         mode: coOp ? 'co-op' : 'solo',
         friendlyFire: mode === 'coop-on',
@@ -98,7 +104,7 @@ export function renderRecordsScreen({
     };
     update(
         element('leaderboardContext'),
-        coOp ? 'Team initials board' : 'Initials board · solo, normal runs',
+        coOp ? 'Team initials board' : 'Initials board · Endless solo, normal runs',
     );
     if (coOp) {
         const board = runtime.teamLeaderboard(recordRules.friendlyFire);
@@ -151,4 +157,48 @@ export function renderRecordsScreen({
     renderBossLog(runtime, recordProfile, bossArt);
     update(element('recordsBosses'), runtime.bossRecords.text(recordProfile));
     if (!resetRecordsArmed) update(element('recordsStatus'), runtime.records.status);
+}
+
+// The Campaign tab: one row per level for the chosen profile, with the stars as three marks.
+function renderCampaign(runtime, profile, update) {
+    const progress = runtime.campaign;
+    const stars = progress.totalStars(profile);
+    update(
+        element('campaignSummary'),
+        `Player ${profile + 1} · ${stars} of ${LEVELS.length * 3} stars · ${STAR_NAMES.join(', ')}.${
+            progress.endlessOpen(profile) ? ' Endless is open.' : ''
+        }`,
+    );
+    const rows = element('campaignRows');
+    const signature = JSON.stringify([profile, progress.profiles[profile === 1 ? 1 : 0]]);
+    if (rows.dataset.signature === signature) return;
+    rows.dataset.signature = signature;
+    rows.replaceChildren();
+    for (const info of LEVELS) {
+        const best = progress.best(profile, info.level),
+            open = progress.isOpen(profile, info.level);
+        const tr = document.createElement('tr');
+        const cell = (text) => {
+            const td = document.createElement('td');
+            td.textContent = text;
+            tr.append(td);
+            return td;
+        };
+        cell(`${info.level} · ${info.region.name}`);
+        const marks = cell(
+            best
+                ? STAR_BITS.map((bit) => (best.stars & bit ? '★' : '☆')).join('')
+                : open
+                  ? '—'
+                  : 'Locked',
+        );
+        marks.setAttribute(
+            'aria-label',
+            `${STAR_BITS.filter((bit) => best?.stars & bit).length} of 3 stars`,
+        );
+        cell(best?.bestMs ? clock(best.bestMs) : '—');
+        cell(clock(info.parMs));
+        cell(best ? best.bestScore.toLocaleString('en-US') : '—');
+        rows.append(tr);
+    }
 }

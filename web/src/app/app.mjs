@@ -6,6 +6,7 @@ import { PixelRenderer, loadArt } from '../render/renderer.mjs';
 import { createCoopScreen } from '../screens/coop.mjs';
 import { createHangarScreen } from '../screens/hangar.mjs';
 import { createHelpScreen } from '../screens/help.mjs';
+import { createLevelsScreen } from '../screens/levels.mjs';
 import { createModeScreen } from '../screens/mode.mjs';
 import { createRecordsActions } from '../screens/records-actions.mjs';
 import { createSettingsScreen } from '../screens/settings.mjs';
@@ -45,6 +46,8 @@ export class App {
         this.settingsUi = { category: 'controls', rebinding: null };
 
         // Set once the engine has loaded.
+        // The campaign level the co-op lobby is starting (0 for an Endless run).
+        this.pendingLevel = 0;
         this.runtime = null;
         this.navigation = null;
         this.demo = null;
@@ -107,12 +110,21 @@ export class App {
             store: this.hangarStore,
             activeProfile,
             reduced: prefersReducedMotion,
+            getCampaign: () => this.runtime?.campaign,
+        });
+        this.levelsScreen = createLevelsScreen({
+            getArt: () => this.gameArt,
+            getBossArt: () => this.renderer?.bossArt,
+            getRuntime: () => this.runtime,
+            activeProfile,
+            pick: (level) => this.chooseLevel(level),
         });
         this.coopScreen = createCoopScreen({
             input: this.coopInput,
             getPads: () => this.input.connectedPads(),
             getRuntime: () => this.runtime,
             getNavigation: () => this.navigation,
+            getLevel: () => this.pendingLevel,
             launch: (go) => this.launch.begin(go),
             profiles: () => this.profileStore.profiles,
             hangar: {
@@ -146,6 +158,31 @@ export class App {
             (this.runtime?.coop && this.runtime.state === 'game-over') ||
             this.navigation.pending
         );
+    }
+    // A level card was chosen: fly it now with one pilot, or set up two pilots in the lobby.
+    chooseLevel(level) {
+        if (this.modeScreen.pilots === 2) {
+            this.pendingLevel = level;
+            this.navigation.lobbyFrom = 'levels';
+            this.coopScreen.reset();
+            this.navigation.request('lobby');
+            return;
+        }
+        this.pendingLevel = 0;
+        this.coopInput.live = false;
+        this.launch.begin(() => this.navigation.startLevel(level));
+    }
+    // Retry, Next level and Restart level: straight back in with the same pilots, no warp.
+    runLevel(level) {
+        const { profiles, friendlyFire } = this.runtime.level ?? {};
+        this.controls.clear();
+        this.coopInput.clear();
+        this.menu.reset();
+        this.input.gameplayReady = false;
+        this.input.pointerPosition = null;
+        this.navigation.startLevel(level, { profiles, friendlyFire });
+        this.draw();
+        this.layout.fit();
     }
     // Any key or tap while the demo plays ends it (and reports that it did).
     consumeDemo() {

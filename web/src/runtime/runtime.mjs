@@ -2,6 +2,8 @@ import { S, BLOCKS, SCENE_FLOATS, recordAt } from './scene-layout.mjs';
 import { CoopLeaderboard } from '../state/coop-records.mjs';
 import { decodeCoopPlayer } from './coop-scene.mjs';
 import { PersonalBests, clearBrowserRecords } from '../state/records.mjs';
+import { CampaignProgress } from '../state/campaign.mjs';
+import { levelInfo } from '../state/campaign-data.mjs';
 import { BossRecords } from '../boss/records.mjs';
 import { CoopRun } from './coop-run.mjs';
 import { RunRecorder } from './run-recorder.mjs';
@@ -21,6 +23,7 @@ export const STATES = [
     'initials',
     'game-over',
     'demo',
+    'level-clear',
 ];
 export const SCORE_KEY = 'asteroids.web.scores-v3';
 const STAT_KEYS = [
@@ -50,6 +53,10 @@ class Runtime {
         this.scoreKey = scoreKey;
         this.records = new PersonalBests(storage);
         this.bossRecords = new BossRecords(storage);
+        this.campaign = new CampaignProgress(storage, this.records);
+        // The campaign level being flown (or just flown, until the player moves on): what
+        // Retry, Next level and Restart need. null outside Act 1.
+        this.level = null;
         this.recorder = new RunRecorder({
             records: this.records,
             bossRecords: this.bossRecords,
@@ -107,11 +114,80 @@ class Runtime {
     }
     // `seed` fixes the run's randomness (tests and the replay check); normally it is fresh.
     startCoop({ profiles = [0, 1], friendlyFire = false, seed } = {}) {
+        this.level = null;
         this.coop = new CoopRun({ profiles, friendlyFire, storage: this.storage });
         this.resultsVisible = false;
         this.recorder.beginCoop(friendlyFire);
         this.replays.begin({ mode: 'co-op', friendlyFire: !!friendlyFire }, seed);
         this.api.web_coop_start(+!!friendlyFire);
+    }
+    // Starts Act 1 level 1-6 (nextSteps.md C1): one pilot, or two when `profiles` is given.
+    // Recorded in the replay like any run, so a level is one short tape.
+    startLevel(level, { profiles = null, friendlyFire = false, seed } = {}) {
+        if (!levelInfo(level)) throw new RangeError(`No level ${level}`);
+        const coop = Array.isArray(profiles);
+        this.level = { level, profiles: coop ? [...profiles] : null, friendlyFire: !!friendlyFire };
+        this.replays.begin(
+            coop
+                ? { mode: 'co-op', friendlyFire: !!friendlyFire, level }
+                : { mode: 'solo', practice: false, level },
+            seed,
+        );
+        if (coop) {
+            this.coop = new CoopRun({ profiles, friendlyFire, storage: this.storage });
+            this.resultsVisible = false;
+            this.recorder.beginCoop(friendlyFire, level);
+        } else {
+            this.coop = null;
+            this.recorder.beginSolo(false, level);
+            this.resultsVisible = false;
+            this.resultsReady = false;
+            this.awaitResultsRelease = false;
+        }
+        this.api.web_start_level(level, coop ? 2 : 1, +!!friendlyFire);
+        this.#clearHold();
+    }
+    // Start the same level again (Retry, and Restart level in the pause menu).
+    restartLevel() {
+        if (!this.level) return;
+        const { level, profiles, friendlyFire } = this.level;
+        this.#endFight();
+        this.recorder.discardRun();
+        this.recorder.discardResult();
+        this.startLevel(level, { profiles, friendlyFire });
+    }
+    // The level after the one just flown, or null after level 6.
+    nextLevel() {
+        return this.level && levelInfo(this.level.level + 1) ? this.level.level + 1 : null;
+    }
+    // When a level run ends: work out each pilot's stars, write them to the campaign progress
+    // and keep what was earned on the result for the level screen.
+    #creditLevel() {
+        const result = this.result;
+        const facts = result?.levelRun;
+        if (!facts || result.credited) return;
+        result.credited = true;
+        const pilots = result.players
+            ? result.players.map((p, i) => ({
+                  profile: p.profile,
+                  lost: facts.livesLost[i],
+                  score: p.score,
+              }))
+            : [{ profile: result.profile, lost: facts.livesLost[0], score: result.score }];
+        facts.pilots = pilots.map((pilot, i) => ({
+            profile: pilot.profile,
+            livesLost: pilot.lost,
+            livesRemaining: facts.livesRemaining[i],
+            score: pilot.score,
+            ...this.campaign.record(pilot.profile, facts.level, {
+                cleared: facts.cleared,
+                timeMs: facts.timeMs,
+                score: pilot.score,
+                livesRemaining: facts.livesRemaining[i],
+            }),
+        }));
+        facts.parMs = levelInfo(facts.level).parMs;
+        facts.act1Done = facts.cleared && facts.level === 6;
     }
     releaseCoopLasers(players) {
         if (!this.coop || this.api.web_state() !== 3) return;
@@ -119,7 +195,10 @@ class Runtime {
     }
     #finishCoop() {
         this.replays.finish();
-        if (this.recorder.finishCoop(this.coop.profiles, this.coopPlayers())) this.coop.finish();
+        if (this.recorder.finishCoop(this.coop.profiles, this.coopPlayers())) {
+            this.#creditLevel();
+            this.coop.finish();
+        }
     }
     #stepCoop(inputs) {
         const { api, coop } = this;
@@ -145,7 +224,7 @@ class Runtime {
         if (inputs.pause || players.some((p) => p.pause))
             api.web_coop_pause(+(api.web_state() !== 3));
         else api.web_step(2048, 2048, 0, 0, 0);
-        if (api.web_state() === 6) this.#finishCoop();
+        if (api.web_state() === 6 || api.web_state() === 8) this.#finishCoop();
     }
 
     // ---------------------------------------------------------------- run flow
@@ -191,10 +270,15 @@ class Runtime {
             this.recorder.run &&
             (this.state === 'initials' ||
                 this.state === 'game-over' ||
+                this.state === 'level-clear' ||
                 (this.state === 'death' && this.snapshot()[3] === 0))
         )
             this.#finishRun();
-        if (this.result && previous === 'death' && ['initials', 'game-over'].includes(this.state)) {
+        if (
+            this.result &&
+            ((previous === 'death' && ['initials', 'game-over'].includes(this.state)) ||
+                this.state === 'level-clear')
+        ) {
             this.resultsVisible = true;
             this.resultsReady = false;
         }
@@ -212,9 +296,11 @@ class Runtime {
         this.replays.finish();
         this.#endFight();
         this.recorder.finishSolo(this.stats(), this.scene());
+        this.#creditLevel();
     }
     start(practice = false, { seed } = {}) {
         this.coop = null;
+        this.level = null;
         this.replays.begin({ mode: 'solo', practice: !!practice }, seed);
         if (practice) this.#sendPractice();
         this.api.web_start(+practice);
@@ -223,6 +309,7 @@ class Runtime {
     }
     menu() {
         this.coop = null;
+        this.level = null;
         const practiceEnded = !!this.recorder.run?.rules.practice;
         if (practiceEnded) this.#finishRun();
         else {
@@ -237,6 +324,7 @@ class Runtime {
     }
     abandon() {
         this.coop = null;
+        this.level = null;
         this.replays.discard();
         this.#endFight();
         this.recorder.discardRun();
@@ -248,6 +336,8 @@ class Runtime {
         this.#clearHold();
     }
     continueResults() {
+        // A level's result has its own buttons (Next level, Retry, Level select).
+        if (this.result?.levelRun) return;
         if (this.coop) {
             this.coop.advance(this.result.score);
             return;
@@ -269,6 +359,7 @@ class Runtime {
                 this.coop.board = new CoopLeaderboard(this.storage, this.coop.friendlyFire);
             this.records.profiles = [{}, {}];
             this.bossRecords.reset();
+            this.campaign.reset();
             this.api.web_reload_scores();
         }
         return reset.ok;

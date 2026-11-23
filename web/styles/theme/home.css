@@ -110,6 +110,22 @@ body[data-look]:not([data-look='classic']) .home-view {
 .home-menu .home-help::before {
     display: none;
 }
+/* On a first run, until it has been opened, the link is as bright as Play and its underline breathes. */
+.home-menu .home-help[data-new='true'] {
+    color: #ffd68c;
+    text-decoration-color: #ffbe6e;
+    animation: help-new-pulse 1.8s ease-in-out infinite;
+}
+@keyframes help-new-pulse {
+    50% {
+        text-decoration-color: #ffbe6e40;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .home-menu .home-help[data-new='true'] {
+        animation: none;
+    }
+}
 #homeHint {
     background: transparent;
     color: #8a76b0;

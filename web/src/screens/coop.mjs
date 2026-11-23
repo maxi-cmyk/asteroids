@@ -10,8 +10,18 @@ const PILOT_COLOURS = ['#70d9ed', '#efb963'];
 // Local co-op: the lobby where two pilots pick an input and a profile and ready up, the
 // in-flight team HUD, the reassignment panel after a lost controller, and the team results.
 class CoopScreen {
-    constructor({ input, getPads, getRuntime, getNavigation, launch, profiles, hangar = null }) {
+    constructor({
+        input,
+        getPads,
+        getRuntime,
+        getNavigation,
+        getLevel = () => 0,
+        launch,
+        profiles,
+        hangar = null,
+    }) {
         this.input = input;
+        this.getLevel = getLevel; // the campaign level the lobby is starting, or 0 for Endless
         // { store, storage, unlocks, getArt }: the hull step after both pilots ready up.
         this.hangar = hangar;
         this.hullChoice = [null, null];
@@ -72,6 +82,7 @@ class CoopScreen {
             const options = {
                 profiles: [...input.profileIds],
                 friendlyFire: element('coopFriendly').checked,
+                level: this.getLevel(),
             };
             this.launch(() => this.getNavigation().startCoop(options));
         });

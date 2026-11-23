@@ -29,7 +29,10 @@ export async function runSmoke() {
     click('play');
     await wait(300);
     note('mode', screen());
-    click('soloPlay');
+    click('campaignPlay');
+    await wait(300);
+    note('levels', screen());
+    document.querySelector('.level-card[data-level="1"]').click();
     await wait(300);
     note('launch shown', !el('launch').hidden);
     click('skipLaunch');

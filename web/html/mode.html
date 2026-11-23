@@ -1,17 +1,17 @@
             <section data-view="mode" class="utility-view flight-mode" hidden inert>
                 <h1 tabindex="-1">Choose your flight</h1>
                 <div class="mode-options">
-                    <button id="soloPlay" class="mode-card primary">
-                        <canvas id="modeArtSolo" width="192" height="108" aria-hidden="true"></canvas>
-                        <em>1 PLAYER</em>
-                        <strong>Solo flight</strong>
-                        <span>One pilot</span>
+                    <button id="campaignPlay" class="mode-card primary">
+                        <canvas id="modeArtCampaign" width="192" height="108" aria-hidden="true"></canvas>
+                        <em>ACT 1 · SIX LEVELS</em>
+                        <strong>Campaign</strong>
+                        <span id="campaignNote">Fly the six regions</span>
                     </button>
-                    <button id="localPlay" class="mode-card">
-                        <canvas id="modeArtCoop" width="192" height="108" aria-hidden="true"></canvas>
-                        <em>2 PLAYERS</em>
-                        <strong>Local co-op</strong>
-                        <span>Two pilots, one field</span>
+                    <button id="endlessPlay" class="mode-card" aria-disabled="true">
+                        <canvas id="modeArtEndless" width="192" height="108" aria-hidden="true"></canvas>
+                        <em>NO END</em>
+                        <strong>Endless</strong>
+                        <span id="endlessNote">Finish Act 1 to unlock</span>
                     </button>
                     <button id="practice" class="mode-card" disabled>
                         <canvas id="modeArtPractice" width="192" height="108" aria-hidden="true"></canvas>
@@ -21,6 +21,10 @@
                     </button>
                 </div>
                 <div class="mode-foot">
+                    <div class="mode-pilots" role="group" aria-label="Pilots">
+                        <button id="pilotsOne" type="button" aria-pressed="true">One pilot</button>
+                        <button id="pilotsTwo" type="button" aria-pressed="false">Two pilots · local co-op</button>
+                    </div>
                     <button id="modeHangar" data-go="hangar">
                         <canvas id="modeHull" width="24" height="16" aria-hidden="true"></canvas>
                         <b id="modeHullName">Vanguard</b>

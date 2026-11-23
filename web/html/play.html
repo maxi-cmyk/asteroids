@@ -98,6 +98,7 @@
                     <div id="pauseMenu" class="pause-menu" hidden>
                         <h2>Paused</h2>
                         <button id="resume" class="primary">Resume</button>
+                        <button id="restartLevel" hidden>Restart level</button>
                         <div id="practiceTools" class="practice-tools" hidden>
                             <button id="openPracticeTools">Practice tools (T)</button>
                             <button id="endPractice" class="primary">End practice</button>
@@ -130,6 +131,13 @@
                                 <p id="resultBosses" hidden></p>
                             </div>
                             <div id="coopResults" hidden></div>
+                            <div id="levelResult" class="level-result" hidden>
+                                <h3 id="levelOutcome"></h3>
+                                <div id="levelPilots" class="level-pilots"></div>
+                                <p id="levelTime"></p>
+                                <p id="levelDamage"></p>
+                                <p id="levelUnlock" class="level-unlock" hidden></p>
+                            </div>
                             <dl>
                                 <div>
                                     <dt>Accuracy</dt>
@@ -164,6 +172,9 @@
                                 <button id="continueResults" class="primary">
                                     Continue
                                 </button>
+                                <button id="levelSelect" hidden>Level select</button>
+                                <button id="levelRetry" hidden>Retry</button>
+                                <button id="levelNext" class="primary" hidden>Next level</button>
                             </div>
                         </div>
                     </div>

@@ -406,6 +406,8 @@ void game_update() {
     case STATE_GAME_OVER:
         update_game_over(input);
         break;
+    case STATE_LEVEL_CLEAR:
+        break;
     }
 
     display_shake_update();

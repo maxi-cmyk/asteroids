@@ -79,6 +79,15 @@ static void scene_core(float *scene) {
     scene[SCENE_SHIELD_STORED] = combat.shield_stored;
     scene[SCENE_PRECISION] = combat_input.precision && state == STATE_PLAYING;
     scene[SCENE_PRACTICE] = practice_mode;
+    scene[SCENE_LEVEL_INDEX] = level_run.active ? level_run.index : 0;
+    scene[SCENE_LEVEL_ACT] = level_run.active ? 1 : 0;
+    scene[SCENE_LEVEL_FIRST_WAVE] = level_run.first_wave;
+    scene[SCENE_LEVEL_LAST_WAVE] = level_run.last_wave;
+    scene[SCENE_LEVEL_TIME_MS] = level_run.final_fell ? level_run.time_ms : 0;
+    scene[SCENE_LEVEL_LIVES_LOST] = level_run.lives_lost[0];
+    scene[SCENE_LEVEL_LIVES_LOST_2] = level_run.lives_lost[1];
+    scene[SCENE_LEVEL_HITS_TAKEN] = level_run.hits;
+    scene[SCENE_LEVEL_CLEARED] = level_run.final_fell;
     scene[SCENE_PRACTICE_GOALS] = practice_goals;
     scene[SCENE_PRACTICE_ROCKS] = practice_mode ? practice_rocks : 0;
     scene[SCENE_PRACTICE_HITS] = practice_mode ? practice_hits : 0;

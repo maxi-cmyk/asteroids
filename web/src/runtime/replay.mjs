@@ -37,6 +37,7 @@ export const RECORDED_CALLS = [
     'web_practice_respawn',
     'web_practice_next_wave',
     'web_practice_reset_stats',
+    'web_start_level',
 ];
 // Settings that persist across runs: their latest values open every replay.
 const SETTINGS = ['web_boss_assist', 'web_ascendant', 'web_practice_config'];
