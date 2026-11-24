@@ -1,3 +1,4 @@
+import { LoadoutShotsLayer } from './layers/loadout-shots.mjs';
 import { WIDTH, HEIGHT } from './constants.mjs';
 import { S, BOSS, BOSS_AT } from '../runtime/scene-layout.mjs';
 import { Backgrounds } from './backgrounds.mjs';
@@ -44,6 +45,7 @@ export class PixelRenderer {
         this.bossArt = art.bossArt || new BossArt();
         this.bosses = new BossLayer(this.bossArt, { reduced: this.reduced });
         this.hulls = [DEFAULT_HULL, DEFAULT_HULL];
+        this.paints = ['cobalt', 'cobalt'];
         this.context = canvas.getContext('2d', { alpha: false });
         this.context.imageSmoothingEnabled = false;
         this.art = art;
@@ -62,6 +64,7 @@ export class PixelRenderer {
             new SpawnWarningLayer(),
             new PickupLayer(),
             new BulletLayer(),
+            new LoadoutShotsLayer(),
             new ParticleLayer(),
             new PlayersLayer(),
             new EffectsLayer(),
@@ -91,6 +94,7 @@ export class PixelRenderer {
             time: scene[S.VISUAL_MS],
             players,
             hulls: this.hulls,
+            paints: this.paints,
             aimMarker: this.aimMarker,
             observer: this.observer,
             reduced: this.reduced,
@@ -118,7 +122,7 @@ export class PixelRenderer {
     // Everything besides the scene that changes what render() paints.
     #settingsKey() {
         const { backgrounds } = this;
-        return `${this.shake}|${this.aimMarker}|${backgrounds.motion}|${backgrounds.brightness}|${this.reduced}|${this.hulls.join()}|${this.bossArt.version}`;
+        return `${this.shake}|${this.aimMarker}|${backgrounds.motion}|${backgrounds.brightness}|${this.reduced}|${this.hulls.join()}|${this.paints.join()}|${this.bossArt.version}`;
     }
     // render() for the live loop: the same pixels, but only when the scene or a setting moved
     // since the last call. Repeat calls between engine ticks cost a comparison, not a repaint.

@@ -1,323 +1,103 @@
 # Next steps
 
-Rewritten 2026-11-22 to hold only what is left to do. The plan before this rewrite, with
-everything built for v0.3 (R2 to R7 and their notes), is in `docs/nextSteps-2026-11-22.archive.md`;
-older plans are in the other `docs/nextSteps-*.archive.md` files. The rules as built live in
-`web/COMBAT.md`, art in `web/assets/ART.md`, code layout in `web/ARCHITECTURE.md`, design
-reasons in `DESIGN-DECISIONS.md`, network and security in `docs/NETWORK-AND-SECURITY.md`,
-evidence in `docs/ACCEPTANCE.md`, and what changed per version in `CHANGELOG.md`.
+Updated 2026-11-23. This file contains remaining work in priority order. Completed work and the
+previous full plan are in [the 2026-11-23 archive](docs/nextSteps-2026-11-23.archive.md);
+earlier snapshots remain in `docs/nextSteps-*.archive.md`.
 
-**Where things stand:** v0.3 (every boss upgraded, deterministic replays, one save format,
-version and build id, release checks, a calmer Home, menu looks, the practice range and a
-fixed demo pilot) is built and waiting on a second playtest, tuning and a
-few checks only you can do. Then tag it, then **v0.4 Campaign** (Act 1 first, then Endless), **v0.5 LAN** and **v0.6 web**.
+**Priority: finish the game features first, then playtest and tune, then LAN, then website
+features and deployment.** No early public-site launch or v0.3 release blocks feature work.
+Version numbers and release tags will be chosen at release time rather than determining this order.
+Existing local co-op is the base for new multiplayer gameplay; build local versus before adding LAN.
+Optional items remain optional and need an explicit build-or-defer decision before the feature phase ends.
 
-**Contents:** Roadmap · v0.3 release (R1, R6, polish leftovers, R8, later) · B1 Branches and folders · v0.4 Campaign (C1 Act 1,
-C2 Endless, C3 Act 2, C4 Achievements) · S2 Combo bonuses · The three ways to play together ·
-v0.5 LAN (S3, S4) · v0.6 Web (W1 static site, W2 online
-rooms, W3 accounts) · S6 Versus · S7 Modifiers · S8 ESP32 handheld · Standing rules ·
-Open decisions · Tools
+The implemented rules live in `web/COMBAT.md`; art in `web/assets/ART.md`; architecture in
+`web/ARCHITECTURE.md`; design rationale in `DESIGN-DECISIONS.md`; networking in
+`docs/NETWORK-AND-SECURITY.md`; verification evidence in `docs/ACCEPTANCE.md`.
 
----
+## Priority order
 
-## Roadmap
-
-| Version | Stage | Goal | Depends on | Size |
-| --- | --- | --- | --- | --- |
-| **v0.3** | R1 | Second playtest, tune from the logs, answer the design questions | people | M |
-| v0.3 | R6 | Release checks left: music rights, licence, mid-laptop stress, Firefox replay | you | S |
-| v0.3 | B1 | Branches `main` (deployed) and `dev` (staging); shared code in `engine/`, ESP32 in `firmware/` | none | S |
-| v0.3 | R8 | Tag `v0.3.0` | R1, R6, B1 | S |
-| **v0.4** | C1 | **Campaign Act 1** (main focus): 6 levels, stars, level select | R8 | L |
-| v0.4 | C2 | Endless with prestige and the new rock types; opens after Act 1 | C1 | L |
-| v0.4 | C4 | Achievements, with a 0.5 s trophy toast and a Records tab | C1 | M |
-| v0.4 | S2 | Maximum-combo bonuses (in the engine before the protocol is frozen) | none | M |
-| **v0.5** | S3 | Network foundation: headless engine, snapshot codec, protocol | none | L |
-| v0.5 | S4 | LAN co-op on two machines | S3 | XL |
-| **v0.6** | W1 | Public site on Vercel: solo and local co-op, no server | R8 | S |
-| v0.6 | W2 | Online rooms on Railway (the LAN server in a container, Redis beside it) | S4 | L |
-| v0.6 | W3 | Accounts, cloud saves and verified leaderboards (optional, decide first) | W2 | L |
-| later | C3 | Act 2: the new rock types and new bosses you design | C2 | XL |
-| later | S6 | Versus | S4 (W2 for online) | M |
-| later | S7 | Run modifiers | S2 | M |
-| later | S8 | Barebones single-player ESP32 build | S2 | L |
-
-W1 can ship as soon as v0.3 (or v0.4) is tagged: the game runs entirely in the browser, so a public page
-needs no server. S8 never touches the network code and can start any time after S2.
-
----
-
-## v0.3 release: what is left
-
-### R1. Playtest and tune
-
-- [ ] **Second playtest** (2–4 people; `docs/PLAYTEST-PROTOCOL.md`; the fight log exports
-  JSON). Targets: the Sentinel cleared first try by a new player with 3 lives; the Zodiarch
-  takes most players several attempts; fight lengths inside the COMBAT.md table, with people
-  taking about 1.5× the bot.
-- [ ] **Questions to answer in play:**
-  - **Tidecaller:** does the new bubble shield make it clear the bubbles go first? Should the
-    bell take damage only while it contracts (now: any time)?
-  - **Bastion:** the ramming run was reworked on 2026-11-22 (lanes near your row, some
-    sloping, a second pass from phase 2; it banks both ways). Does it feel threatening and
-    fair? The bot is touched under once a fight.
-    Its outriggers (±98 px) reach past the lane (±70 px) without hurting: widen the lane or
-    let the engines hurt.
-  - **Cinderforge:** do people land enough shots in a vent (the bot needs two vents; people
-    are expected to need three or four)?
-  - **Ringwarden:** most bot hits come from the repel ring and the prism beam. Are they
-    readable?
-  - **Zodiarch:** does its body curling into a loose ring after some attacks read as natural?
-  - **Ninefold:** does it need the fox run for variety?
-- [ ] **Tune from the logs:** `BOSS_K`, rest lengths, window lengths, per-attack frequency,
-  pickup drops at phases 2 and 3. One change per commit, with the evidence in the message.
-- [ ] **Re-verify after tuning:** every boss beatable without pickups or laser at 1×
-  multiplier, each with a faster mechanic route. Re-run `node tests/boss-baseline.mjs 5 0,1,2`
-  (the 2026-11-20 pre-tuning baseline: all 36 fights beaten, no faults) and update `COMBAT.md`.
-- [ ] **Design questions:**
-  - Event pull: keep or cut (calm forces already removes it).
-  - Mini-boss on first runs: strictly on wave 3 (proposed), or an earlier one too?
-  - Boss practice picker: bosses and mini-bosses together, tagged (proposed)?
-- [ ] **Only if the playtest asks for them:**
-  - **The fox run** for Ninefold, if the fight needs more variety.
-  - **A boss backstop barrier**, if someone finds a safe spot behind a boss.
-
-### R6. Release checks left (before anything is public)
-
-- [x] **Music rights** (open decision 8): confirm or replace every supplied track before W1.
-- [x] **Licence** (open decision 27): choose one for the code (or "all rights reserved") before
-  the repo or site is public; list third-party fonts and sounds with their licences.
-- [ ] **Stress on a mid laptop:** so far only an M4 MacBook Pro.
-  `stress.html?auto=1&boss=5&phase=2&seconds=60` reports to the dev server's output.
-- [ ] **Firefox replay check:** open `replay.html?check=1` in Firefox once; it should give the
-  same hash as Safari, Chromium and Node (`docs/ACCEPTANCE.md`).
-
-### v0.3 polish leftovers (H1–H4 built 2026-11-22; plans in the archive)
-
-- [x] **Menu look:** contrast measured on every region (2026-11-23): all pass AA, lowest 4.70:1
-  on Home and 5.55:1 elsewhere; no veil changed (`docs/ACCEPTANCE.md`).
-- [x] **Home:** How to play is highlighted on a first run until it is opened (per visit, nothing
-  saved).
-- [x] **Practice:** the Waves drill stays rocks only; bosses are in the Boss drill (decided
-  2026-11-23; the drill card says so).
-
-### R8. Tag v0.3.0
-
-- [x] `npm run check` (293 tests), `sh engine/tests/run_host.sh` and `pio run` pass (2026-11-23);
-  README, COMBAT, Help and `CHANGELOG.md` are up to date.
-- [ ] **You:** the stress run. I could not get a valid one: the app throttles the built-in pane when
-  the Claude window is not in view. Run `cd web && npm run stress`, open
-  `stress.html?auto=1&boss=5&phase=2&seconds=60` with the window in front, and expect no frame
-  over 25 ms after the first.
-- [ ] **Before the tag:** R1 (playtest and tuning) and the R6 checks left (mid-laptop stress,
-  Firefox replay); change the CHANGELOG heading from "(unreleased)" to the date and drop its
-  "waiting on a playtest" line; commit on `dev`.
-- [ ] **You:** release it: pull request `dev` → `main`, merge with a merge commit, `git tag v0.3.0`
-  on `main`, push the tag.
-
-### Later, not blocking
-
-- [ ] **M5 art tools** and **M8 shared C++** (`engine/src/asteroid.cpp`, `engine/src/game.cpp`; carefully,
-  the ESP32 shares them). The plan for both is in `docs/nextSteps-2026-11-19.archive.md`.
-
----
-
-## B1. Branches and folders: main, dev, engine/, firmware/ (planned 2026-11-22)
-
-**Goal:**
-- **`main`:** what is deployed: the site on Vercel and, from v0.6, the room server on Railway.
-  Nothing lands on it except a release from `dev` or a hotfix, and every merge is tagged.
-- **`dev`:** the staging version, and where daily work goes. Its own Vercel staging URL, and later
-  a Railway staging environment.
-- **The ESP32 handheld** stays in the same branches, in its own `firmware/` folder.
-
-Decided 2026-11-22: folders, not a `hardware` branch.
-- **Little to move.** The web build compiles the firmware's game code (`web/native/bridge.cpp`
-  includes `src/game.cpp`, `asteroid.cpp`, `ship.cpp` and the rest; `build.mjs` adds
-  `src/display.cpp`, `src/sound.cpp`, `src/core/*.c` and `include/config.h`). That code is in
-  `game.wasm`, so it is deployed anyway. Only `platformio.ini`, `src/main.cpp`,
-  `src/rock_random.cpp` and the ESP32 docs are handheld-only.
-- **No drift.** In one branch, CI builds both targets on every push, so a shared-code change
-  that breaks either one fails at once.
-- **Deploys go by path, not by branch.** Vercel builds and serves only `web/dist/site`.
-  Railway restarts only when its watch paths change. Files in `firmware/` never reach players.
-
-Today everything is on `main`, nothing is deployed, and nothing has been committed since `v0.3`,
-so this costs nothing yet. Do it before R8, so `v0.3.0` is the first tag released from `dev` to
-`main`.
-
-**Layout after B1:**
-
-| Folder | Holds | Built by |
+| Order | Stage | Remaining outcome |
 | --- | --- | --- |
-| `engine/src/`, `engine/include/`, `engine/core/` | The shared game: today's `src/*.cpp` (less the two below), `include/`, `src/core/` | the web build and PlatformIO |
-| `engine/tests/` | Today's `tests/host/` and `run_host.sh`: the shared code tested on a PC | CI |
-| `firmware/` | `main.cpp`, `rock_random.cpp`, and `HARDWARE.md` (wiring, parts, flashing: the ESP32 parts of SETUP and README) | PlatformIO |
-| `platformio.ini` (repo root, where `pio` looks) | `[platformio] src_dir = firmware`; `build_flags = -I engine/include`; `build_src_filter = +<*> +<../engine/src/> +<../engine/core/>` | PlatformIO |
-| `web/` | The site, and later `web/server/` (decision 2) | Vercel, Railway |
+| 1 | HG1 | Complete controller/input acceptance of the showroom, ship drafts and colour controls; before S2 |
+| 2 | S2 | Maximum-combo bonuses and co-op assists |
+| 3 | C2 | Endless prestige, new rock types, starting prestige and presentation |
+| 4 | C3 | Act 2, new bosses and minis using the new rock types |
+| 5 | S6 local | Versus and sabotage on one machine |
+| 6 | S7 | Run modifiers using the shared effect system |
+| 7 | C4 | Achievements across the completed gameplay features |
+| 8 | S8 | Barebones handheld features; decide on optional portability |
+| 9 | Maintenance / B1 | Remaining refactors and reliable local/CI checks |
+| 10 | R1 | **Still pending:** final feature-complete playtest and tuning, before LAN |
+| 11 | S3 → S4 | Network foundation, LAN co-op/versus, diagnostics and two-machine acceptance |
+| 12 | W1 → W2/S5 → optional W3 | Website, online rooms, optional accounts/saves/leaderboards |
+| 13 | R6 → R8 | Final browser/hardware checks, release tag and production deployment |
 
-**Steps** (one sitting):
-- [ ] **Baseline:** commit the work in progress (the v0.3 polish) on `main`. **You:** not committed
-  yet, so commit the polish first and the move as a second commit (the renames are staged by
-  `git mv`; `git reset` them first if you want the polish alone). Before the move, `sh tests/run_host.sh`
-  and `pio run` passed; `npm run check` was not run before it (see the prettier note below).
-- [x] **Move to the layout above** in one commit, with `git mv` so the history follows. Done
-  2026-11-22, staged and not committed. `sh engine/tests/run_host.sh` passes, `pio run` builds with
-  the same flash size (789,169 bytes) as before, and `npm test` passes (291 tests, goldens
-  unchanged), `eslint` has 0 errors. `build_src_filter` reaches outside `src_dir`, so the
-  library fallback below was not needed. `docs/SETUP.md` was split: the ESP32 wiring and flashing
-  are in `firmware/HARDWARE.md`, and `docs/SETUP.md` now covers folders, commands and branches.
-  - Update the paths in `web/build.mjs`, `web/native/bridge.cpp`, `web/native/config.h`,
-    `run_host.sh`, `tools/format-core.sh` and `platformio.ini`, and in the docs: README, SETUP,
-    `web/ARCHITECTURE.md`, `DESIGN-DECISIONS.md`, and the ACCEPTANCE commands.
-  - It is a move, not a change: every check passes, `pio run` builds, and no golden file moves.
-    If `build_src_filter` will not reach outside `src_dir`, fall back to `engine/` as a
-    PlatformIO library (a `library.json` in `engine/`, plus `lib_extra_dirs`).
-- [x] **Branch `dev`** from `main`, pushed (2026-11-23).
-- [ ] **On GitHub:** **You** (needs your account).
-  - **`main` stays the default branch** (decided 2026-11-23). Vercel's Production Branch is its own
-    setting, so it does not depend on this; keeping `main` as the default just means the repo page
-    and clones show what is released. The cost: a pull request opens against `main` unless you pick
-    `dev` (`gh pr create --base dev`), so say "base `dev`" when asking Claude for one.
-  - Protect `main`: changes only by pull request, checks must pass, no force-push, no
-    deletion.
-  - Protect `dev` from force-push and deletion only; you can still push to it directly.
-- [x] **CI** (GitHub Actions, `.github/workflows/check.yml`), written 2026-11-22 and **not yet run
-  on GitHub** (LLVM on Linux is `apt install clang lld`; confirm `wasm-ld` is found). On every push and
-  pull request to `dev` and `main`, it runs:
-  - `npm ci && npm run check` in `web/`, on Linux with LLVM installed (this also answers the W1
-    build question);
-  - `sh engine/tests/run_host.sh`;
-  - `pio run` (cache `~/.platformio`). It runs only when `engine/`, `firmware/` or
-    `platformio.ini` changed, but it is always required on `main`.
-- [x] Note the branches and folders in README and `docs/SETUP.md`, and save the workflow below
-  as a memory, so Claude sessions start from `dev`. Done.
-- [ ] **Fix before CI can be green: `npm run check` fails at `prettier --check` on 12 files,
-  already at the committed `v0.3`** (for example `styles/theme/base.css` wants a long
-  `--font-body` value on one line; also `region-painters.mjs`, `tests/audio.test.mjs`, six more theme
-  CSS files). Run `npx prettier --write "**/*.{mjs,css}"` in `web/` and commit it on its own,
-  or CI will fail on its first run. Not done here because it rewrites files that hold your
-  uncommitted work.
+Stage IDs are retained for existing references. Within each stage, implement its remaining
+checklist in order. Routine automated verification continues throughout; R1 is the deferred
+human playtest, not a reason to skip checks while building features.
 
-**Day-to-day workflow:**
-- **Work:** on `dev`, either directly or on a short branch (`feat/act-1`, `feat/handheld`)
-  merged back by pull request.
-- **Release:**
-  1. Open a pull request `dev` → `main`.
-  2. CI passes; you check the staging URL.
-  3. Merge with a merge commit, not a squash, so `dev` and `main` never drift apart.
-  4. Tag the merge on `main` (`v0.4.0`) and add the `CHANGELOG.md` entry.
-- **Hotfix:**
-  1. Branch from `main` (`fix/…`) and open a pull request to `main`.
-  2. Tag the patch release.
-  3. Merge `main` back into `dev` straight away.
-- **Handheld (S8):** an ordinary feature branch off `dev`. The firmware gets no deploy, so its
-  "release" is a tag and a flashed board, noted in ACCEPTANCE.
+## HG1. Hangar redesign (before S2)
 
-**Deploys (wired up in W1 and W2, not now):**
+The showroom reference layout was selected and implemented with six showroom ship drafts in
+`web/assets/ships/drafts/`, separate browsing/equipping, a draggable six-stop rail, three
+independent loadout slots, a test range, profile paint controls and retained legacy appearances.
+Completed implementation is archived; final acceptance remains before S2.
 
-| Branch | Vercel (the page) | Railway (rooms, from W2) |
-| --- | --- | --- |
-| `main` | Production branch, the public domain | `production` environment, its own Redis |
-| `dev` | Preview with a fixed alias, e.g. `staging.<domain>`, behind deployment protection | `staging` environment, its own Redis |
-| `feat/*`, `fix/*` | Preview URLs, protected (or turned off) | none |
+- [ ] Complete desktop acceptance of profile switching, save failures and short-window fit;
+  the reference composition and draft-art scale have been visually checked. Recheck
+  contrast, readable comparisons, locked/equipped states and save-failure feedback.
+- [ ] Exercise dragging, horizontal scrolling, touch swipes, keyboard and controller focus;
+  verify profile switching, all three slots and six colour choices. Check reduced motion.
+- [ ] Review the individual aiming-state drafts in `web/assets/ships/<id>/states.png` for
+  final art approval. The six ship designs are approved; the old shared atlas is removed.
 
-- **Vercel:** builds only `web/` (W1), so a commit that only touches `firmware/` changes nothing
-  served. Add an ignored-build step (`git diff --quiet HEAD^ HEAD -- web engine`) so such a
-  commit does not even build.
-- **Railway:** set each service's watch paths to `web/server/**`, `engine/**` and the
-  `web/native` files the headless engine uses. A CSS-only or firmware-only release then does
-  not restart rooms.
-- **Data:** staging and production never share Redis or, with W3, Postgres.
-
-**Done when:**
-- `main` and `dev` exist, with `main` protected (and still the default);
-- the `engine/` and `firmware/` layout builds on both targets, with no golden file moved;
-- CI is green on both branches;
-- `v0.3.0` went from `dev` to `main` by pull request and is tagged on `main`.
+Ship customisation implementation details and tuning are in
+[the loadout specification](docs/SHIP-CUSTOMISATION-PLAN.md); completed implementation work is
+in [the archive](docs/nextSteps-2026-11-23.archive.md).
 
 ---
 
-## v0.4 Campaign (planned 2026-11-22)
+   ## S2. Maximum-combo bonuses (task 7)
 
-The game becomes a **campaign of levels** plus an **Endless** mode. **Act 1 is the main
-focus**; Endless opens once Act 1 is finished; Act 2 comes after Endless, reusing its new rock
-types, with new bosses you design then.
+Combo progression is per player; the configured maximum is currently ×5. The bonus rewards
+*staying* at the cap, not reaching it.
 
-| Mode | What it is |
-| --- | --- |
-| **Act 1** | 6 levels, one per region, each the current 5-wave layout: rocks, rocks, mini-boss on wave 3, rocks, boss on wave 5 |
-| **Endless** (C2) | today's run with prestige; opens after Act 1 |
-| **Act 2** (C3) | 6 more levels, same layout, the new rock types, new bosses |
+**S2.1 Decide the numbers (blocks the rest).**
+- [ ] Ordinary assist split: who gets what when two players damage the same rock? (The old
+  plan required this to be defined before any bonus.) Proposed: killer 100% of the normal
+  award, assister 0% in the ordinary case; the team bonus below is the only assist payout.
+- [ ] Confirm starting tuning: two-second assist window; extra 25% of each eligible
+  player's normal kill award; bonus only when the scorer was already at the cap *before*
+  the event; each rock pays out once.
+- [ ] Decide whether boss defeat and mini-boss defeat can earn it (proposed: no, they
+  already have the flawless bonus).
 
-### C1. Act 1 (main focus)
+**S2.2 Engine (`web/native/combat.h`, `coop.h`, `engine/core/scoring.c`).** Keep ESP32 and host
+builds compiling. Put the single-player combo rule in the platform-free C17 core
+(`engine/core/scoring.c`), not in `web/native/`, so the handheld gets it in S8 for free. Only
+the co-op assist logic belongs in `web/native/coop.h`.
+- [ ] Solo: add the capped-bonus award keyed to `max_multiplier`, not a literal 5.
+- [ ] Co-op: per-rock assist record (player, tick of last hit); a split fragment starts a
+  fresh record; expiry and the owner's death clear eligibility immediately; friendly-fire
+  hits never qualify.
+- [ ] Single award per rock, credited to the right player and counted once in the team
+  total.
+- [ ] Expose a `bonus` event to the scene (new field in `scene-layout.mjs`, written in
+  `scene.h`, read by name; update the scene golden).
 
-**Status 2026-11-23: built on `dev`, uncommitted.** Open: play it by hand with a keyboard and a
-controller and check par against real play times (R1); a co-op level on two real input devices
-(`docs/ACCEPTANCE.md`). Small known gap: on Records → Campaign the "Reset this profile's personal
-bests" button still resets only the Endless bests (Clear this browser's records does clear the campaign).
+**S2.3 Tests.**
+- [ ] Cap boundary (reaching vs. holding), one / both players capped, window expiry,
+  simultaneous hits, death mid-window, pause mid-window, exactly-once, friendly fire,
+  split fragments. Host tests for the C module; `coop.test.mjs` for the integration.
+- [ ] Record the stored-format impact (none expected) and run `npm run check`,
+  `sh engine/tests/run_host.sh`, and the ESP32 build.
 
-| Level | Region | Waves | Mini (wave 3) | Boss (wave 5) |
-| --- | --- | --- | --- | --- |
-| 1 | Celestial frontier | 1–5 | Picket | Sentinel |
-| 2 | Violet orbit | 6–10 | Shardling | Ringwarden |
-| 3 | Ember orbit | 11–15 | Cinderling | Cinderforge |
-| 4 | Ruined moon | 16–20 | Gunnery | Bastion |
-| 5 | Lunar passage | 21–25 | Moonjelly | Tidecaller |
-| 6 | Outer rift | 26–30 | Ninefold | Zodiarch |
+---
 
-**Length:** a level should take a person about **3 minutes**. The demo pilot clears a region
-in about 45–60 s, and people are expected to take 1.5–2.5× the bot, so today's waves are close.
-Add the levels to the baseline tool (`tests/boss-baseline.mjs`) and check them in the R1
-playtest; trim or pad waves only if a level runs far off 3 minutes.
-
-**Engine** (most of it exists: boss practice already starts at any wave):
-- [x] `web_start_level(act, level, players)`: start at the level's first wave in its region,
-  3 lives, ×1 multiplier, the wave difficulty of those wave numbers, bosses at tier I.
-  Recorded in replays (a level is one short replay, which W3 can re-run cheaply). **Done 2026-11-23:** `web_start_level(level, players, friendly)`; the `act` argument arrives with Act 2 (C3). Recorded in replays (`COMBAT.md`, Campaign levels).
-- [x] The level ends when the wave-5 boss falls: a new `level-clear` state with time, score,
-  lives lost and hits taken in the scene (named in `scene-layout.mjs`; golden updated).
-  Losing the last life ends the level (retry), never the act. **Done:** state 8 `level-clear` after the boss's 3.2 s death; the `LEVEL_*` scene fields are in `scene-layout.mjs` and covered by new scene-golden scenarios (`levels`, `levelCoop`); older goldens did not move.
-- [x] Practice and the demo stay as they are.
-
-**Stars** (3 per level, 18 in Act 1):
-- [x] Clear the level · finish with 3+ lives remaining (earned lives offset losses) · finish under the time target. Campaign bosses and mini-bosses drop no hearts. Par is set
-  from the bot's level time × 1.5, rounded, and tuned after the playtest. **Done:** par is 75, 90, 115, 110, 95 and 115 s for levels 1–6 (`PAR_SECONDS`); tune after the playtest.
-
-**Progress and saves:**
-- [x] Level 1 is open; each clear opens the next; clearing level 6 finishes Act 1 and opens
-  Endless.
-- [x] Per profile and level: best stars, best time, best score. A new part of the R4 save;
-  merging keeps the best of each. **Done:** `asteriods.web.campaign-v1`, in the save (export, import, merge).
-- [x] **Returning players:** a save whose highest wave is already past a level's boss opens
-  the levels up to there (no stars given); one that reached wave 30 also opens Endless.
-- [x] Hull unlocks come from mini-boss defeats in levels and in Endless (never practice). **Done:** the existing unlock toast reads the scene's defeated mask in non-practice runs, so levels earn hulls with no new code. **To be replaced:** Ship customisations below moves unlocks to first level clears and adds independent primary and secondary weapon unlocks.
-
-**Screens:**
-- [x] **Play** (with H1): **Campaign**, **Endless** (locked until Act 1, with the reason), and
-  **Practice**; one or two pilots chosen as today. **Done:** three cards plus a One pilot / Two pilots switch; Endless shows "Finish Act 1 to unlock" until it opens.
-- [x] **Level select:** the six levels as cards on a path, each with its region's backdrop,
-  mini and boss silhouettes, stars, best time and score; locked ones dimmed. Mouse, keyboard
-  and controller. **Done:** six cards (region sky, mini and boss silhouettes that turn to colour once beaten, stars, best time and score, locked ones dimmed); mouse, keyboard and the d-pad use the same menu navigation as the other screens (a controller was not tried).
-- [x] **Level clear:** stars earned one by one, time against par, score; **Next level**,
-  **Retry**, **Level select**. A failed level offers **Retry** and **Level select**. **Done** as the results overlay in a level layout (stars light one by one, time against par, score, what it unlocked).
-- [x] **Pause:** gains **Restart level**.
-- [x] Records: a Campaign tab (per level bests and stars) beside the Endless tables (today's
-  top-five tables become Endless's). **Done:** the Solo chip is now Endless.
-- [x] Help: campaign, stars and Endless in a few sentences each.
-
-**Co-op:** both modes for two players; a level cleared together counts for both profiles, each
-with its own stars.
-
-**Tests (done: `tests/campaign.test.mjs`, `tests/campaign-ui.test.mjs`, `tests/level-baseline.mjs`):** each level starts at the right wave, region, mini and boss; clear and fail
-detection; each star rule; progress unlocking; the returning-player migration; save merge; a
-level replay round-trips; co-op credit.
-
-### C2. Endless mode with prestige (planned 2026-11-22, was H5)
+## C2. Endless mode with prestige (planned 2026-11-22, was H5)
 
 **Endless opens once Act 1 is finished.** It is today's 30-wave run that never ends, with the
 prestige rules below. The new rock types are built here first; Act 2 (C3) reuses them.
-
 
 **Today:** after wave 30 the run stays in the Outer rift forever. Bosses come back one tier
 harder every 30 waves (`bs_tier_for` in `native/boss/lifecycle.h` already works out tier
@@ -351,14 +131,14 @@ painter and a sound):
 
 | Prestige | New type | What it does | Counterplay |
 | --- | --- | --- | --- |
-| 1 | **Comet** | small, fast, straight; a glowing streak warns of its line 0.8 s ahead | step off the line; one hit |
-| 2 | **Missile** | launched from the right edge, turns toward the ship at a limited rate, burns out after 4 s | outturn it or shoot it (one hit) |
-| 3 | **Cluster rock** | a big rock that bursts into a ring of 6 fast shards when it breaks | break it far away, or dodge the ring |
-| 4 | **Iron rock** | takes 3 hits (cracks show each one); the laser breaks it at once | focus fire or spend the laser |
-| 5 | **Mine** | drifts slowly, pulses, then bursts into a short ring of shots unless shot first | shoot it early, or keep away from the ring |
-| 6 | **Magnet rock** | pulls the ship gently toward it (none under calm forces) | fly against the pull; shoot it first |
-| 7 | **Swarm** | 5–8 tiny drones flying in formation (line, V, wave) | sweep them; multishot shines |
-| 8 | **Phase rock** | blinks between solid and ghost on a visible rhythm; only solid ones hurt or can be hit | time the shots |
+| 14 | **Comet** | small, fast, straight; a glowing streak warns of its line 0.8 s ahead | step off the line; one hit |
+| 15 | **Missile** | launched from the right edge, turns toward the ship at a limited rate, burns out after 4 s | outturn it or shoot it (one hit) |
+| 16 | **Cluster rock** | a big rock that bursts into a ring of 6 fast shards when it breaks | break it far away, or dodge the ring |
+| 17 | **Iron rock** | takes 3 hits (cracks show each one); the laser breaks it at once | focus fire or spend the laser |
+| 18 | **Mine** | drifts slowly, pulses, then bursts into a short ring of shots unless shot first | shoot it early, or keep away from the ring |
+| 19 | **Magnet rock** | pulls the ship gently toward it (none under calm forces) | fly against the pull; shoot it first |
+| 20 | **Swarm** | 5–8 tiny drones flying in formation (line, V, wave) | sweep them; multishot shines |
+| 21 | **Phase rock** | blinks between solid and ghost on a visible rhythm; only solid ones hurt or can be hit | time the shots |
 | 9+ | **Remix** | no new type: every type so far, in new mixes and heavier waves | |
 
 - [ ] **Patterns never repeat a lap:** each wave's spawn list comes from `(lap_wave, prestige)`
@@ -380,7 +160,7 @@ painter and a sound):
 - [ ] A level counts as **cleared** when its wave 30 falls in a real run (not practice, not the
   demo). Each profile stores its highest cleared prestige (records, a new part of the R4 save;
   merge keeps the larger).
-- [ ] Play → Solo flight shows **Start at** only once a level is cleared: *Prestige 0* and
+- [ ] Play → Endless shows **Start at** only once a level is cleared: *Prestige 0* and
   every cleared level (cleared prestige 1 → you may start at prestige 1). It remembers the last
   choice. Local co-op offers the lower of the two profiles' levels.
 - [ ] Starting at prestige *n* begins at wave 1 of that lap (absolute wave 30n + 1) with the
@@ -422,7 +202,6 @@ painter and a sound):
   and "highest prestige cleared". The stored wave stays absolute, so old saves need no change.
 - [ ] Practice (H3): the Waves drill takes a prestige level, and a "Rocks" drill shows each
   type on its own.
-- [ ] Endless is locked on the Play screen until Act 1 is finished ("Finish Act 1 to unlock").
 - [ ] Help: prestige, the base multiplier, starting levels and the rock types.
 
 **Interactions:** co-op shares the lap and both chains use the same base; S2's maximum-combo
@@ -436,7 +215,9 @@ multiplier base, cap and reset at n = 0, 1, 4, 98, 99; score saturation; start-a
 unlocking (practice and demo never clear a level), its replay, and the save merge; old saves load
 with nothing cleared.
 
-### C3. Act 2 (after Endless)
+---
+
+## C3. Act 2 (after Endless)
 
 - [ ] 6 levels with the Act 1 layout (5 waves, mini on wave 3, boss on wave 5), in remixed
   versions of the six regions.
@@ -448,28 +229,99 @@ with nothing cleared.
 - [ ] Endless adds the Act 2 bosses to its rotation once they exist.
 - [ ] Stars, progress, saves and screens as in Act 1.
 
-### Ship customisations (planned 2026-11-23)
+---
 
-Each of the six campaign levels unlocks one new ship, one primary fire option, and one
-secondary fire option on its first clear. These are three independent loadout slots:
-**6 ships × 6 primary weapons × 6 secondary weapons = 216 combinations** once all are unlocked.
-The six-by-six-by-six pool is the complete customisation set; any starter loadout must use
-options from that pool rather than adding a seventh option.
+## S6. Versus mode (task 10)
 
-- [ ] Define six ships with distinct movement speeds and handling tradeoffs. Primary and
-  secondary fire are selected independently, rather than fixed to a ship.
-- [ ] Define six primary weapons with distinct projectile behaviour and six secondary
-  weapons with distinct abilities; balance all 216 loadouts.
-- [ ] Award each level's three unlocks per profile on first clear, and show them on Results.
-  Replace the current mini-boss-based hull unlock rule with this level-clear progression.
-- [ ] Add independent ship, primary fire and secondary fire selectors to the Hangar,
-  with previews, stats, unlock requirements and a summary of the assembled loadout.
-- [ ] Apply the assembled loadout in solo and independently per pilot in co-op; carry
-  unlocks and selections through campaign, Endless, practice, saves and replays.
-- [ ] Decide which options from the six-item pools are available before the first clear,
-  and how existing hull unlocks migrate into the new progression.
+Build and verify local versus now using the existing local lobby. Reuse its rules and UI for
+LAN and online later; those transports are not prerequisites for local versus.
 
-### C4. Achievements (planned 2026-11-22, was H6) 
+- [ ] **S6.1 Rules in the engine.** Two players in the same asteroid field, timed round with
+  a visible timer, equal starting resources, unlimited protected respawns, highest score
+  wins, equal scores draw; co-op team bonuses and boss waves disabled.
+- [ ] **S6.2 Interaction rules.** Friendly fire configurable and visible before ready;
+  shots that hit the other player award nothing in this version; explicit rules for who
+  gets the points for a rock both players hit, and for pickup contention.
+- [ ] **S6.3 Sabotage pickups.** A second pickup family, versus only. Collecting one fires
+  a harmful effect at the **opponent**, never the collector. They are the comeback and
+  chaos layer, so they must be readable, brief and counterable. Subtasks:
+  - [ ] **Effect list (first release).**
+
+    | Effect | What the victim gets | Length | Counterplay |
+    | --- | --- | --- | --- |
+    | **Rock rush** (faster asteroids) | The next 6 rocks spawn faster and aimed at the victim's height | until used up | Move off the lane; entrance warning stays at least 700 ms |
+    | **Summon mini-boss** | A small mini-boss (Picket, Shardling or Gunnery family) appears on the victim's side and attacks only the victim | 15–25 s or until killed | Kill it or outlast it; it reuses the mini-boss engine |
+    | **Jam** (disable weapon) | Primary fire stops; the laser still works | 4 s | Dodge; the laser pickup is the counter |
+    | **Slow** | Ship speed ×0.7 | 5 s | A shield absorbs the next sabotage |
+
+    Later candidates, only after the first four test well: **Fog** (HUD and far rocks dim),
+    **Swap lanes**, **Decoy pickup**, **Reverse controls** (opt-in only, see accessibility).
+  - [ ] **Shared-field problem.** Both players see one field, so "faster asteroids" cannot
+    be a global speed change. Implement effects as **targeted**: rocks and summoned bosses
+    carry a `target_player`, and only they are boosted or hostile to that player; other
+    pilots still collide with them as normal rocks. Define collision, kill credit and
+    scoring for targeted objects (proposed: the first to kill a targeted rock scores it;
+    a summoned mini-boss scores nothing for either side).
+  - [ ] **Fairness rules.** A telegraph on the victim's screen at least 700 ms before the
+    effect starts (icon, border flash and a distinct sound), the sender shown
+    ("P1 sabotage"); at most one sabotage active per victim; 8 s immunity afterwards;
+    a shield pickup also blocks one sabotage; no effect can be lethal by itself; death
+    clears all active effects like every other threat.
+  - [ ] **Spawning and balance.** Sabotage pickups share the existing "none visible"
+    pickup rule and drop at a lower rate than helpful ones; looks unmistakable by shape
+    (skull or spike outline, red-orange, white rim) not colour alone; weighted toward
+    the trailing player to keep rounds close. Tune rate and weights from play logs.
+  - [ ] **Engine.** Effects are data (id, length, apply, expire) in one table. S6 builds it
+    first; S7 run modifiers reuse it, so "faster asteroids" is one implementation.
+    The server owns them in network play; clients only see the effect in the scene
+    (add a per-player effect field to `scene-layout.mjs`, scene golden updated) and an
+    event for the cue.
+  - [ ] **Interactions to define.** Boss waves are off in versus, so a summoned mini-boss
+    is the only boss; friendly fire on or off must not change who a mini-boss targets;
+    pause freezes timers; a disconnect clears effects on the leaver and keeps theirs
+    on the opponent until they expire.
+  - [ ] **Options.** A lobby toggle, **Sabotage: on / off** (default on), plus
+    per-effect switches if tuning needs them, shown before ready and locked for the round.
+    Versus records note whether sabotage was on, so the two ranking contexts stay apart.
+  - [ ] **Accessibility.** Calm-forces style assist: sabotage can be set to *warn only* for
+    a player (shows the cue, applies nothing), and any control-reversing effect stays
+    out of the default list. Reduced motion respected for the cue.
+- [ ] **S6.4 UI.** Mode choice in the Play flow, round-length option, sabotage option,
+  countdown, effect icons and timers beside each player's HUD strip, results and rematch
+  screen listing sabotage landed and suffered, versus records separate from solo and co-op.
+- [ ] **S6.5 Settings lock.** Options fixed once players ready; identical for both local pilots; verify both machines later in S4.
+- [ ] **S6.6 Tests.** Ties, simultaneous kills, time expiry with projectiles in flight, late
+  hits, disconnects, both local input combinations, locally. Repeat over LAN in S4 and online in W2. Sabotage: each effect applies
+  only to the victim, never the collector; telegraph minimum holds; immunity and shield
+  block; one active at a time; clears on death and pause; targeted rocks and summoned
+  mini-bosses score as defined; simultaneous pickup of two sabotages; effects expire exactly
+  once and the scene golden covers the new fields.
+
+---
+
+## S7. Run modifiers (after local versus)
+
+Build local behaviour first. Network consistency is a later acceptance task in S4/W2.
+
+- [ ] **S7.1 Definitions in data.** One table: id, name, exact effect text, engine flag.
+  Start with **faster asteroids**, **one life**, **power-ups only**.
+- [ ] **S7.2 Engine.** Faster asteroids scales speeds without breaking entrance warnings
+  (700 ms minimum). One life ends the run on the first loss. Power-ups only means the
+  player starts with an offensive effect and pickups replenish it; ordinary primary
+  fire works only while it is active, and shield or laser pickups must never strand
+  play (guarantee at least one offensive pickup is always obtainable).
+- [ ] **S7.3 UI.** Choice before starting, with the exact effect shown; locked once players
+  are ready; active modifiers shown in Pause and Results.
+- [ ] **S7.4 Records.** Separate personal bests per preset; standard records unchanged.
+- [ ] **S7.5 Compatibility.** One preset at a time at first. Decide per pairing with boss
+  waves (does one-life make bosses unfair?), co-op and versus, and verify identical
+  application on every network client.
+- [ ] **S7.6 Tests.** Spawn fairness, pickup availability, life rules, boss behaviour and
+  network consistency for each supported preset and mode pair.
+
+---
+
+## C4. Achievements (planned 2026-11-22, was H6)
 
 **Toast:** when an achievement is earned, a trophy icon with its name appears **top
 centre** of the playfield and is gone **0.5 s** after its first pixel (in about 80 ms, hold,
@@ -491,7 +343,7 @@ this run, and Records → **Achievements** shows them all.
   new part of the R4 save; merging keeps the union and the earliest date.
 
 **The list** (accepted 2026-11-22: your basics, marked ★, and all the suggestions). Numbers
-are proposals to tune after the R1 playtest; names are placeholders. Tiered ones (bronze,
+are provisional until the final R1 playtest; names are placeholders. Tiered ones (bronze,
 silver, gold) are one achievement with steps, each step with its own toast.
 
 | Category | Achievement | How to earn it | Tiers |
@@ -555,47 +407,156 @@ playtest.
 
 ---
 
-## S2. Maximum-combo bonuses (task 7)
+## S8. ESP32 handheld: barebones single-player release
 
-Combo progression is per player; the configured maximum is currently ×5. The bonus rewards
-*staying* at the cap, not reaching it.
+S8 work happens on a feature branch off `dev`; the handheld-only code is in `firmware/` (B1). The firmware (`engine/` and `firmware/`) is the original game: rocks, waves,
+multishot and shield pickups, chain scoring, a persistent top-five table with initials, a
+demo, buzzer sound, on a 128×64 monochrome OLED with a joystick and one fire button. It
+has **no bosses, no aim, no laser and no hulls**. The web engine already compiles the
+shared `engine/src/*.cpp` files (see `web/native/bridge.cpp`) and layers co-op, bosses and
+combat on top in `web/native/`, so the two share a base. The goal of this stage is a
+polished, small handheld build that is also a good hardware and C++ learning project, not
+parity with the browser.
 
-**S2.1 Decide the numbers (blocks the rest).**
-- [ ] Ordinary assist split: who gets what when two players damage the same rock? (The old
-  plan required this to be defined before any bonus.) Proposed: killer 100% of the normal
-  award, assister 0% in the ordinary case; the team bonus below is the only assist payout.
-- [ ] Confirm starting tuning: two-second assist window; extra 25% of each eligible
-  player's normal kill award; bonus only when the scorer was already at the cap *before*
-  the event; each rock pays out once.
-- [ ] Decide whether boss defeat and mini-boss defeat can earn it (proposed: no, they
-  already have the flawless bonus).
+**Hardware limits to design around:** 128×64 one-bit display, one fire button and one
+stick that only moves the ship in 2D. There is **no aiming**: shots always go right, so the
+player lines up a shot by moving to the target's height. Also: a passive buzzer (one tone at
+a time, no music files), about
+520 kB RAM and a few MB of flash shared with the radio stack (Wi-Fi stays on for entropy),
+I²C refresh time that caps frame rate.
 
-**S2.2 Engine (`web/native/combat.h`, `coop.h`, `engine/core/scoring.c`).** Keep ESP32 and host
-builds compiling. Put the single-player combo rule in the platform-free C17 core
-(`engine/core/scoring.c`), not in `web/native/`, so the handheld gets it in S8 for free. Only
-the co-op assist logic belongs in `web/native/coop.h`.
-- [ ] Solo: add the capped-bonus award keyed to `max_multiplier`, not a literal 5.
-- [ ] Co-op: per-rock assist record (player, tick of last hit); a split fragment starts a
-  fresh record; expiry and the owner's death clear eligibility immediately; friendly-fire
-  hits never qualify.
-- [ ] Single award per rock, credited to the right player and counted once in the team
-  total.
-- [ ] Expose a `bonus` event to the scene (new field in `scene-layout.mjs`, written in
-  `scene.h`, read by name; update the scene golden).
+**S8.0 Scope (settled 2026-10-26).** The "barebones" set:
+- **In:** everything the firmware already does, the single-player combo rule from S2,
+  region pacing as a simple wave counter shown on the HUD, one boss (see S8.3), the
+  highscore table with initials, pause, demo.
+- **Out:** co-op, versus, any network, hulls and unlocks, settings screens beyond a
+  volume/mute toggle, music, tiers, modifiers (one-life could be a boot-time option later).
+Scope confirmed: the existing firmware game, the combo rule and the Sentinel-lite boss. Anything you want from the web game that is not here
+needs a one-line justification, since each feature costs flash, RAM and frame time.
 
-**S2.3 Presentation.**
-- [ ] A short bonus cue near the destroyed rock that does not cover incoming rocks;
-  distinct from the normal score pop; reduced-motion safe.
-- [ ] Results and Records: show bonus points as a separate line; keep personal-best
-  categories comparable (bonus points are part of score, so note the rule in Help).
-- [ ] Help text for the rule.
+**S8.1 Baseline and budget.** Tools: PlatformIO, serial monitor.
+- [ ] Build the current firmware and record flash and RAM use (`pio run -t size`), frame
+  time per loop, I²C refresh time, and worst-case entity counts. Add the numbers to
+  `docs/SETUP.md` so every later change is compared against them.
+- [ ] Set budgets: for example under 60% of flash, under 50% of free heap at the worst
+  moment, 30 fps minimum with a full bullet pool and particles.
 
-**S2.4 Tests.**
-- [ ] Cap boundary (reaching vs. holding), one / both players capped, window expiry,
-  simultaneous hits, death mid-window, pause mid-window, exactly-once, friendly fire,
-  split fragments. Host tests for the C module; `coop.test.mjs` for the integration.
-- [ ] Record the stored-format impact (none expected) and run `npm run check`,
-  `sh engine/tests/run_host.sh`, and the ESP32 build.
+**S8.2 Pull shared logic into the platform-free core.** Tools: strict C17 flags, host tests.
+- [ ] Move rules that both builds need out of `web/native/` and `engine/src/*.cpp` into
+  `engine/core/` (the C17 scoring, difficulty and score-table modules already show the style):
+  chain/combo rule from S2, any boss state machine from S8.3, wave and region pacing.
+- [ ] Each new core module gets C-compatible headers, the existing `.clang-format`
+  (`tools/format-core.sh`), and host tests in `engine/tests/host/`. The web build must keep passing
+  its goldens after each move; moves are separate commits from behaviour changes.
+
+**S8.3 One boss, simplified for a right-shooting ship.** The web bosses assume mouse or
+stick aim, a laser and a 480×270 field, so none transfers directly. With no aiming, every
+hit the player lands comes from matching the boss's height, so the boss must hold still
+or move slowly enough to be lined up, and its weak point must be on that firing line.
+- [ ] Proposed: a **Sentinel-lite** every fifth wave. A plate-rhythm fight with shots only
+  while the plate is open, a lance lane with a 900 ms dashed warning, and a three-needle
+  fan; no phases beyond "Alert" below 50% health. About 12–18 hits to kill.
+- [ ] Keep the fairness rules that survive the port: harmless entrance, every lethal
+  hazard warned, a safe corridor at least three ship widths (ship is 7 px on a 64 px
+  screen, so use roughly 24 px), projectile cap, dying never resets the boss.
+- [ ] Draw it in 1-bit with a pre-made bitmap in flash (`PROGMEM`-style constants), not
+  generated at runtime. Tool: a small script in `web/tools/` that converts a PNG to a C array.
+- [ ] Warning cues on a monochrome screen: a dashed line, a blinking line, and a
+  buzzer rising tone, since colour is unavailable.
+- [ ] Host-test the boss logic through the same C17 core; fight-length target 30–45 s.
+
+**S8.4 Input and feel.**
+- [ ] Re-check joystick calibration at boot, deadzone, diagonal speed cap, double-click
+  pause and debounce with the final game; adjust constants in `config.h` only.
+- [ ] Decide what the single fire button does for pickups: shots only, no laser (the
+  web's 1.5 s charge needs a second input). Optional: hold-to-charge laser if you want it.
+
+**S8.5 Display and sound.**
+- [ ] HUD fits 128×64: lives, score, chain multiplier and timer underline, wave, boss
+  health bar. Check legibility at arm's length; keep the 3-letter initials flow.
+- [ ] Buzzer: effects only, plus a short boss sting and the tell tone before a lance. Keep
+  notes within the passive buzzer's clear range; make sure sounds never block the loop.
+
+**S8.6 Verification.** Tools: ESP32, PlatformIO, serial monitor, host harness.
+- [ ] `sh engine/tests/run_host.sh` (strict C17 + UBSan) and the PlatformIO build are green.
+- [ ] Flash and play: a full run past wave 5 and the boss, pause, game over, initials,
+  power cycle and confirm the table persists, a corrupted table loads empty, 10-minute
+  soak with no heap growth or watchdog reset.
+- [ ] Update `README.md` (controls, rules) and `docs/SETUP.md` (wiring, flashing, budget).
+
+**S8.7 Make it portable (optional).** Tools: battery, charger board, enclosure.
+- [ ] Power from a LiPo through a charger board; measure runtime. With Wi-Fi left on for
+  entropy the draw is higher: evaluate whether the hardware RNG alone is enough once the
+  radio is off, and keep the "never use a software PRNG" rule if so.
+- [ ] Enclosure, button placement, a power switch, and a photo for the README.
+
+**S8 done when:** the handheld plays a full run including one boss on real hardware,
+host and strict-C17 checks pass, the budgets hold, and the README describes the build.
+
+---
+
+## Maintenance and B1 follow-up (before R1)
+
+Architecture review and staged changes: [Modularisation plan](docs/MODULARISATION-PLAN.md).
+The current file split improves navigation; narrower runtime dependencies and explicit C++
+contexts/translation units still need M1–M5 before the LAN protocol is frozen.
+
+- [ ] M5 art tools and M8 shared C++ clean-up: use the retained plans in
+  `docs/nextSteps-2026-11-19.archive.md`. Keep structural moves separate from behaviour changes;
+  shared `engine/src/asteroid.cpp` and `engine/src/game.cpp` affect both browser and ESP32.
+- [ ] Save the feature work in reviewable commits on `dev`, keeping structural moves and
+  behaviour changes separate where still possible. The old pre-move baseline instructions
+  are historical; do not reset or undo the current folder layout.
+- [ ] Verify `.github/workflows/check.yml` on GitHub: Linux LLVM/`wasm-ld`, web checks,
+  engine host tests and conditional PlatformIO build. Workflow authoring is complete;
+  a verified hosted run is not recorded. Fix failures found there.
+
+The folder split, `dev` branch, branch/folder docs and formatting clean-up are complete and
+archived. Work on `dev`; keep the release workflow in the standing rules below. Branch
+protection and deployment wiring are final-release tasks, not gameplay prerequisites.
+
+---
+
+## R1. Final feature playtest and tuning — still open, deferred
+
+**Do this after the gameplay feature phase, immediately before starting S3/S4 LAN work.**
+It is not a prerequisite for building the remaining local features. Release tagging waits until R8.
+R1 must pass before LAN development and public website publishing; repeat targeted checks
+if later networking or website changes affect gameplay.
+
+- [ ] **Final feature-complete playtest** (2–4 people; `docs/PLAYTEST-PROTOCOL.md`; the fight log exports
+  JSON). Targets: the Sentinel cleared first try by a new player with 3 lives; the Zodiarch
+  takes most players several attempts; fight lengths inside the COMBAT.md table, with people
+  taking about 1.5× the bot.
+- [ ] **Questions to answer in play:**
+  - **Tidecaller:** does the new bubble shield make it clear the bubbles go first? Should the
+    bell take damage only while it contracts (now: any time)?
+  - **Bastion:** the ramming run was reworked on 2026-11-22 (lanes near your row, some
+    sloping, a second pass from phase 2; it banks both ways). Does it feel threatening and
+    fair? The bot is touched under once a fight.
+    Its outriggers (±98 px) reach past the lane (±70 px) without hurting: widen the lane or
+    let the engines hurt.
+  - **Cinderforge:** do people land enough shots in a vent (the bot needs two vents; people
+    are expected to need three or four)?
+  - **Ringwarden:** most bot hits come from the repel ring and the prism beam. Are they
+    readable?
+  - **Zodiarch:** does its body curling into a loose ring after some attacks read as natural?
+  - **Ninefold:** does it need the fox run for variety?
+- [ ] **Tune from the logs:** `BOSS_K`, rest lengths, window lengths, per-attack frequency,
+  pickup drops at phases 2 and 3. One change per commit, with the evidence in the message.
+- [ ] **Re-verify after tuning:** every boss beatable without pickups or laser at 1×
+  multiplier, each with a faster mechanic route. Re-run `node tests/boss-baseline.mjs 5 0,1,2`
+  (the 2026-11-20 pre-tuning baseline: all 36 fights beaten, no faults) and update `COMBAT.md`.
+- [ ] **Full feature acceptance:** play all campaign levels with keyboard and controller;
+  verify a co-op level on two physical input devices. Check the final results layout at
+  shipped sizes, clear/failure/final-level states, new unlocks, save migration, all weapon
+  families, prestige, Act 2, achievements, versus and modifier combinations. Tune the
+  level time targets and loadout tradeoffs from real play, including the 3+ lives star.
+- [ ] **Design questions:**
+  - Event pull: keep or cut (calm forces already removes it).
+- [ ] **Only if the playtest asks for them:**
+  - **The fox run** for Ninefold, if the fight needs more variety.
+  - **A boss backstop barrier**, if someone finds a safe spot behind a boss.
 
 ---
 
@@ -618,7 +579,7 @@ the page comes from Vercel and connects to the room server at `wss://rooms.<doma
 
 ---
 
-## v0.5 LAN: vetting notes (2026-11-19)
+### LAN vetting notes (recheck when S3 starts)
 
 Risks found when the S3 and S4 plan was checked against the code.
 
@@ -646,7 +607,7 @@ Risks found when the S3 and S4 plan was checked against the code.
 
 ---
 
-## S3. Network foundation (prerequisite for LAN, hosted, versus)
+## S3. Network foundation (after R1; for LAN and hosted play)
 
 The engine is deterministic since v0.3 (own `sinf`/`cosf`, seeded runs, replays), but online
 play still uses a **single authoritative server whose snapshots clients only render**: a late
@@ -672,8 +633,8 @@ The renderer, boss painters and boss sound observer already read only the **scen
   (record tables, unlock state, run statistics).
 
 **S3.3 Snapshot format.** Tools: Node, a small codec test.
-- [ ] Measure the raw cost: 1408 floats × 4 bytes at 50 ticks/s is about 280 kB/s per
-  client, too heavy for hosted play. Design a compact binary snapshot: quantised int16
+- [ ] Measure the current scene length and raw bytes per client at 50 ticks/s; the old
+  1408-float estimate is obsolete. Design a compact binary snapshot: quantised int16
   positions, only live entities, delta against the last acknowledged snapshot, snapshots
   at 25 Hz with client interpolation. Target under 20 kB/s per client in busy boss fights.
 - [ ] Write the codec as a pure module shared by server and client with round-trip and
@@ -695,9 +656,9 @@ the codec round-trips, and the protocol document is agreed.
 
 ---
 
-## S4. LAN multiplayer and diagnostics (task 8)
+## S4. LAN co-op and versus (after S3)
 
-First network release: the existing two-player co-op rules on two machines, one hosting.
+First network release: the completed co-op and versus rules on two machines, one hosting.
 
 **S4.1 Server package** (`web/server/`, Node, depends on `ws`).
 - [ ] Room object: owns one headless engine, two player slots, the latched roster,
@@ -756,7 +717,8 @@ First network release: the existing two-player co-op rules on two machines, one 
 - [ ] Optional Playwright test that opens two contexts through host → join → ready → play.
 
 **S4.9 Real-network acceptance.** Tools: second computer, net-conditioner proxy, gamepads.
-- [ ] Two machines over LAN, solo and co-op, with a gamepad on each.
+- [ ] Two machines over LAN: co-op and versus, with a gamepad on each; also verify the
+  completed loadouts, campaign progression, modifiers, achievements and scoring rules.
 - [ ] Inject latency (50, 100, 200 ms), jitter, 2–5% loss, duplicate and late inputs, and a
   reconnect; scores and attribution agree on both machines.
 - [ ] Host departure and late join handled cleanly.
@@ -764,22 +726,19 @@ First network release: the existing two-player co-op rules on two machines, one 
 
 ---
 
-## v0.6 Web deployment (plan and vetting, 2026-11-19)
+## Website features — after LAN acceptance
 
-"Web deployment" is three separate things with very different costs. Ship them in this order;
-each is useful on its own.
+Build W1, then W2/S5, then W3 only if selected. Prepare and test privately; public production
+deployment is the final R8 step after R6. A static-only early launch is no longer a priority.
+Use the existing planned stack (Vercel page/API, Railway rooms, Redis, optional Postgres/Clerk),
+rechecking platform behaviour and pricing when work starts. Online co-op and versus reuse the
+completed LAN server and local rules. Deployment must not become a prerequisite for gameplay work.
 
-| Step | What players get | Needs a server | Needs accounts | Running cost (late 2026, check before buying) |
-| --- | --- | --- | --- | --- |
-| **W1 Static site** | solo, practice, local co-op in any browser, records on that browser | no | no | free on Vercel Hobby (non-commercial use only; Pro is $20 a month); a domain is about $10–15 a year |
-| **W2 Online rooms** | co-op (later versus) with a friend anywhere, by room code | yes, always on | no | Railway Hobby: about $5 a month minimum, which counts toward usage (room service, Redis); more if rooms need more CPU |
-| **W3 Accounts** | progress on every device, global leaderboards | yes (W2's server) | yes | auth and database free tiers cover a hobby game; $0 to start |
+---
 
-The game already runs entirely in the browser, so **W1 is a release, not a project**: build,
-upload `dist/site/`, add headers. Accounts are the only step that changes the privacy and security
-picture, so they come last and only if you want what they give.
+### W1. Static site (the completed local game)
 
-### W1. Static site (solo and local co-op)
+Include the completed campaign, Endless, loadouts, local co-op/versus, modifiers and achievements.
 
 - [ ] **Host: Vercel** (chosen 2026-11-19). A `vercel.json` at the repo root with
   `buildCommand` (`cd web && npm ci && npm run build`), `outputDirectory` `web/dist/site`, and the
@@ -790,8 +749,7 @@ picture, so they come last and only if you want what they give.
 - [ ] **Previews:** production deploys from `main` (every merge there is a tagged release);
   `dev` is staging on a fixed preview alias; feature-branch previews are protected or off; a
   `firmware/`-only commit skips the build (B1 has the table).
-- [ ] **Plan:** Hobby is free but limited to non-commercial use; move to Pro if the game ever
-  takes money (ads, donations with perks, sales).
+- [ ] Recheck hosting plan terms, limits and costs before provisioning.
 - [ ] **Headers** (in `vercel.json`): `Content-Type: application/wasm` for `.wasm`; a strict
   `Content-Security-Policy` (`default-src 'self'`; no inline scripts, which also keeps the
   page dependency-free); `X-Content-Type-Options`, `Referrer-Policy`. Long cache lifetimes on
@@ -805,6 +763,8 @@ picture, so they come last and only if you want what they give.
   server that receives stack traces only, never records or settings.
 - [ ] Acceptance: Chrome, Safari, Firefox, a mid laptop, the stress budget; records survive a
   refresh and a new deploy.
+
+---
 
 ### W2. Online rooms (was S5; the full checklist follows)
 
@@ -842,73 +802,6 @@ these notes:
   on a public site (anyone can read it from the page); use per-IP limits and `MAX_ROOMS`, or
   require a signed-in account to *create* rooms once W3 exists.
 
-### W3. Accounts, cloud saves and leaderboards (optional; decide before building)
-
-**First decide what accounts are for.** The current design deliberately has none (decision N6
-in `docs/NETWORK-AND-SECURITY.md`: nothing to leak or breach). Accounts are worth it for:
-1. **Progress on every device** (cloud saves of the save file, `src/state/save.mjs`).
-2. **Global leaderboards** that mean something.
-3. **Friends and invites** instead of room codes (later).
-
-Guests must keep the whole game: an account adds sync and leaderboards and is never required
-to play. If none of the three matters yet, skip W3; W1 and W2 work without it.
-
-**Choosing the parts.**
-
-| Option | What it is | For | Against |
-| --- | --- | --- | --- |
-| **Clerk + Railway Postgres** (recommended) | Hosted sign-in (email codes, Google, Apple, passkeys) with ready UI; Postgres in the same Railway project as the rooms and Redis | Least auth code to write and secure; vanilla JS SDK, no framework needed; the servers verify Clerk's session token without a network call; the database sits on the room server's private network | One more vendor (Clerk); a Railway database is billed by use and never sleeps; Clerk's script loads from Clerk's domain (CSP must allow it, the page is no longer dependency-free); a production Clerk instance needs your own domain |
-| **Supabase** | Auth and Postgres in one | One vendor, one dashboard; row-level security | Free projects pause after about a week without activity (a hobby game will be idle); the client library talks to the database from the browser, so every table needs correct row rules |
-| **Self-hosted** (Better Auth or similar, plus SQLite or Postgres on the W2 machine) | Your own auth library in the game server | No vendors, no per-user pricing | You own password resets, email sending, account recovery and their security; the most work and the most risk |
-
-Free-tier figures checked 2026-11-19 (third-party summaries; confirm on the vendors' own
-pricing pages before signing up): Clerk free to about 50,000 monthly retained users; Railway
-Hobby about $5 a month minimum, counted toward usage; Supabase free 500 MB, 50,000 monthly
-users, pauses when idle.
-
-**Design (with Clerk + Railway Postgres):**
-- [ ] **Only servers touch the database.** The browser signs in with Clerk and sends its
-  session token to the **API** (Vercel Functions under `/api`, beside the page: saves,
-  boards, replay checks) and, for online play, to the room server on the WebSocket handshake.
-  Both verify it and read or write Postgres. The room server's database role may only insert
-  finished runs. No database keys in the page.
-- [ ] **Tables:** `players` (Clerk user id, initials, created), `saves` (player, save JSON,
-  format version, updated), `runs` (player, mode, rules key, score, seed, replay blob,
-  verified, created), leaderboard views over `runs`. No email or name stored by the game:
-  Clerk holds them.
-- [ ] **Cloud save sync:** on sign-in, merge the local save and the cloud save with the save merge
-  rule (bests take the larger, unlocks the union, settings the newer) and write the result to
-  both. Never overwrite either side blindly.
-- [ ] **Leaderboards only from runs the server saw or re-ran.** A score typed into the page
-  is worthless, so a board entry must be either an online run (W2, the server simulated it) or
-  a solo run whose replay the server re-simulates to the same score. Replays are capped
-  in size and length; re-simulation runs in an API function (WASM under Node), so it never
-  touches the room server, with a per-player rate limit so it cannot run up the bill.
-  Separate boards per rules key (mode, friendly fire, modifiers), as records are today.
-- [ ] **Developer role:** once accounts exist, developer tools on the live site (dev pages,
-  replay viewer, the fight log) are served only to accounts with a `developer` role (Clerk
-  public metadata, checked on the server for every dev request, never by hiding a button
-  alone). Until then they exist only on the local dev server.
-- [ ] **Names on public boards:** keep the three-letter initials (no free text, nothing to
-  moderate; decision S6). If free names are ever wanted, they need a filter and a report
-  button.
-- [ ] **Account deletion:** a button in Settings, plus Clerk's user-deleted webhook removing the
-  player's rows. Export of their data (their save plus their runs) on request.
-- [ ] **Legal pages:** privacy policy (what is stored, where, for how long, which vendors), terms,
-  and a minimum age (children's data rules such as COPPA in the US, GDPR in the EU and the
-  PDPA in Singapore make under-13 sign-ups the riskiest case; say "13 or older to create an
-  account" and keep guest play open to everyone). Clerk's cookies are essential, so no cookie
-  banner is needed if nothing else sets cookies; confirm for the regions you launch in.
-
-**Security changes W3 brings** (update `docs/NETWORK-AND-SECURITY.md` when building):
-- [ ] Decision N6 changes from "no accounts" to "optional accounts held by Clerk".
-- [ ] Account takeover is now in scope (Clerk handles passwords, codes and sessions; turn on
-  bot protection and email verification).
-- [ ] New secrets: the Clerk secret key and the database URL, as platform secrets only.
-- [ ] Database backups (check what Railway's Postgres backups cover on your plan; export
-  weekly to storage you own once there are real players).
-- [ ] Rate limits on `/api` and on replay submission; replay size and length caps.
-
 ---
 
 ## S5. Online rooms in detail (W2, task 9)
@@ -921,15 +814,8 @@ ticking 50 times a second, so it needs a host that keeps a process and WebSocket
 connections alive. Check current prices, regions and free-tier limits before choosing; they
 change often.
 
-**Chosen: Railway** (2026-11-19), with Redis and Postgres in the same project and Vercel for the
-page and API. Alternatives considered, kept for reference:
-
-| Service | Fit | Notes |
-| --- | --- | --- |
-| **Railway** (chosen) | Good, simplest | Deploy from GitHub or a Dockerfile; WebSockets work; Redis and Postgres one click away on a private network; usage-based billing; **no sticky sessions**, so one replica per room service |
-| **Fly.io** | Very good | Long-lived machines in a region you pick; no free tier; a fallback if Railway's regions are too far from players |
-| **A VPS** (Hetzner, DigitalOcean) | Best value, most work | Flat price and dedicated cores; you maintain the OS; a fallback if rooms need a lot of CPU |
-| **Vercel** (chosen for the page and the API) | **Not for rooms** | Its functions accept WebSockets now, but cannot hold a shared, ticking room (see W2) |
+**Planned host:** Railway, with Redis and optional W3 Postgres; Vercel serves the page/API.
+Revalidate capabilities, regions and pricing before provisioning; comparisons are in the archive.
 
 Recommended path: develop with `cloudflared` or `ngrok` tunnelling to your laptop, then
 deploy the container to Railway as one service with one replica, plus a Redis service. Add a
@@ -985,178 +871,99 @@ room directory.
 
 ---
 
-## S6. Versus mode (task 10)
+### W3. Accounts, cloud saves and leaderboards (optional; decide before building)
 
-Reuse the local and network lobbies; do not build a second stack.
+**First decide what accounts are for.** The current design deliberately has none (decision N6
+in `docs/NETWORK-AND-SECURITY.md`: nothing to leak or breach). Accounts are worth it for:
+1. **Progress on every device** (cloud saves of the save file, `src/state/save.mjs`).
+2. **Global leaderboards** that mean something.
+3. **Friends and invites** instead of room codes (later).
 
-- [ ] **S6.1 Rules in the engine.** Two players in the same asteroid field, timed round with
-  a visible timer, equal starting resources, unlimited protected respawns, highest score
-  wins, equal scores draw; co-op team bonuses and boss waves disabled.
-- [ ] **S6.2 Interaction rules.** Friendly fire configurable and visible before ready;
-  shots that hit the other player award nothing in this version; explicit rules for who
-  gets the points for a rock both players hit, and for pickup contention.
-- [ ] **S6.3 Sabotage pickups.** A second pickup family, versus only. Collecting one fires
-  a harmful effect at the **opponent**, never the collector. They are the comeback and
-  chaos layer, so they must be readable, brief and counterable. Subtasks:
-  - [ ] **Effect list (first release).**
+Guests must keep the whole game: an account adds sync and leaderboards and is never required
+to play. If none of the three matters yet, skip W3; W1 and W2 work without it.
 
-    | Effect | What the victim gets | Length | Counterplay |
-    | --- | --- | --- | --- |
-    | **Rock rush** (faster asteroids) | The next 6 rocks spawn faster and aimed at the victim's height | until used up | Move off the lane; entrance warning stays at least 700 ms |
-    | **Summon mini-boss** | A small mini-boss (Picket, Shardling or Gunnery family) appears on the victim's side and attacks only the victim | 15–25 s or until killed | Kill it or outlast it; it reuses the mini-boss engine |
-    | **Jam** (disable weapon) | Primary fire stops; the laser still works | 4 s | Dodge; the laser pickup is the counter |
-    | **Slow** | Ship speed ×0.7 | 5 s | A shield absorbs the next sabotage |
+**Planned stack:** Clerk with Postgres in the Railway project. Reconfirm provider capabilities,
+pricing, production-domain requirements and regional legal requirements before implementation.
+Historical provider comparisons and prices are in the archive.
 
-    Later candidates, only after the first four test well: **Fog** (HUD and far rocks dim),
-    **Swap lanes**, **Decoy pickup**, **Reverse controls** (opt-in only, see accessibility).
-  - [ ] **Shared-field problem.** Both players see one field, so "faster asteroids" cannot
-    be a global speed change. Implement effects as **targeted**: rocks and summoned bosses
-    carry a `target_player`, and only they are boosted or hostile to that player; other
-    pilots still collide with them as normal rocks. Define collision, kill credit and
-    scoring for targeted objects (proposed: the first to kill a targeted rock scores it;
-    a summoned mini-boss scores nothing for either side).
-  - [ ] **Fairness rules.** A telegraph on the victim's screen at least 700 ms before the
-    effect starts (icon, border flash and a distinct sound), the sender shown
-    ("P1 sabotage"); at most one sabotage active per victim; 8 s immunity afterwards;
-    a shield pickup also blocks one sabotage; no effect can be lethal by itself; death
-    clears all active effects like every other threat.
-  - [ ] **Spawning and balance.** Sabotage pickups share the existing "none visible"
-    pickup rule and drop at a lower rate than helpful ones; looks unmistakable by shape
-    (skull or spike outline, red-orange, white rim) not colour alone; weighted toward
-    the trailing player to keep rounds close. Tune rate and weights from play logs.
-  - [ ] **Engine.** Effects are data (id, length, apply, expire) in one table. S6 builds it
-    first; S7 run modifiers reuse it, so "faster asteroids" is one implementation.
-    The server owns them in network play; clients only see the effect in the scene
-    (add a per-player effect field to `scene-layout.mjs`, scene golden updated) and an
-    event for the cue.
-  - [ ] **Interactions to define.** Boss waves are off in versus, so a summoned mini-boss
-    is the only boss; friendly fire on or off must not change who a mini-boss targets;
-    pause freezes timers; a disconnect clears effects on the leaver and keeps theirs
-    on the opponent until they expire.
-  - [ ] **Options.** A lobby toggle, **Sabotage: on / off** (default on), plus
-    per-effect switches if tuning needs them, shown before ready and locked for the round.
-    Versus records note whether sabotage was on, so the two ranking contexts stay apart.
-  - [ ] **Accessibility.** Calm-forces style assist: sabotage can be set to *warn only* for
-    a player (shows the cue, applies nothing), and any control-reversing effect stays
-    out of the default list. Reduced motion respected for the cue.
-- [ ] **S6.4 UI.** Mode choice in the Play flow, round-length option, sabotage option,
-  countdown, effect icons and timers beside each player's HUD strip, results and rematch
-  screen listing sabotage landed and suffered, versus records separate from solo and co-op.
-- [ ] **S6.5 Settings lock.** Options fixed once players ready; identical on both machines.
-- [ ] **S6.6 Tests.** Ties, simultaneous kills, time expiry with projectiles in flight, late
-  hits, disconnects, both local input combinations, and LAN. Sabotage: each effect applies
-  only to the victim, never the collector; telegraph minimum holds; immunity and shield
-  block; one active at a time; clears on death and pause; targeted rocks and summoned
-  mini-bosses score as defined; simultaneous pickup of two sabotages; effects expire exactly
-  once and the scene golden covers the new fields.
+**Design (with Clerk + Railway Postgres):**
+- [ ] **Only servers touch the database.** The browser signs in with Clerk and sends its
+  session token to the **API** (Vercel Functions under `/api`, beside the page: saves,
+  boards, replay checks) and, for online play, to the room server on the WebSocket handshake.
+  Both verify it and read or write Postgres. The room server's database role may only insert
+  finished runs. No database keys in the page.
+- [ ] **Tables:** `players` (Clerk user id, initials, created), `saves` (player, save JSON,
+  format version, updated), `runs` (player, mode, rules key, score, seed, replay blob,
+  verified, created), leaderboard views over `runs`. No email or name stored by the game:
+  Clerk holds them.
+- [ ] **Cloud save sync:** on sign-in, merge the local save and the cloud save with the save merge
+  rule (bests take the larger, unlocks the union, settings the newer) and write the result to
+  both. Never overwrite either side blindly.
+- [ ] **Leaderboards only from runs the server saw or re-ran.** A score typed into the page
+  is worthless, so a board entry must be either an online run (W2, the server simulated it) or
+  a solo run whose replay the server re-simulates to the same score. Replays are capped
+  in size and length; re-simulation runs in an API function (WASM under Node), so it never
+  touches the room server, with a per-player rate limit so it cannot run up the bill.
+  Separate boards per rules key (mode, friendly fire, modifiers), as records are today.
+- [ ] **Developer role:** once accounts exist, developer tools on the live site (dev pages,
+  replay viewer, the fight log) are served only to accounts with a `developer` role (Clerk
+  public metadata, checked on the server for every dev request, never by hiding a button
+  alone). Until then they exist only on the local dev server.
+- [ ] **Names on public boards:** keep the three-letter initials (no free text, nothing to
+  moderate; decision S6). If free names are ever wanted, they need a filter and a report
+  button.
+- [ ] **Account deletion:** a button in Settings, plus Clerk's user-deleted webhook removing the
+  player's rows. Export of their data (their save plus their runs) on request.
+- [ ] **Legal pages:** privacy policy (what is stored, where, for how long, which vendors), terms,
+  and a minimum age (children's data rules such as COPPA in the US, GDPR in the EU and the
+  PDPA in Singapore make under-13 sign-ups the riskiest case; say "13 or older to create an
+  account" and keep guest play open to everyone). Clerk's cookies are essential, so no cookie
+  banner is needed if nothing else sets cookies; confirm for the regions you launch in.
+
+**Security changes W3 brings** (update `docs/NETWORK-AND-SECURITY.md` when building):
+- [ ] Decision N6 changes from "no accounts" to "optional accounts held by Clerk".
+- [ ] Account takeover is now in scope (Clerk handles passwords, codes and sessions; turn on
+  bot protection and email verification).
+- [ ] New secrets: the Clerk secret key and the database URL, as platform secrets only.
+- [ ] Database backups (check what Railway's Postgres backups cover on your plan; export
+  weekly to storage you own once there are real players).
+- [ ] Rate limits on `/api` and on replay submission; replay size and length caps.
 
 ---
 
-## S7. Run modifiers (task 11)
+## R6. Final release checks (after LAN and website implementation)
 
-- [ ] **S7.1 Definitions in data.** One table: id, name, exact effect text, engine flag.
-  Start with **faster asteroids**, **one life**, **power-ups only**.
-- [ ] **S7.2 Engine.** Faster asteroids scales speeds without breaking entrance warnings
-  (700 ms minimum). One life ends the run on the first loss. Power-ups only means the
-  player starts with an offensive effect and pickups replenish it; ordinary primary
-  fire works only while it is active, and shield or laser pickups must never strand
-  play (guarantee at least one offensive pickup is always obtainable).
-- [ ] **S7.3 UI.** Choice before starting, with the exact effect shown; locked once players
-  are ready; active modifiers shown in Pause and Results.
-- [ ] **S7.4 Records.** Separate personal bests per preset; standard records unchanged.
-- [ ] **S7.5 Compatibility.** One preset at a time at first. Decide per pairing with boss
-  waves (does one-life make bosses unfair?), co-op and versus, and verify identical
-  application on every network client.
-- [ ] **S7.6 Tests.** Spawn fairness, pickup availability, life rules, boss behaviour and
-  network consistency for each supported preset and mode pair.
+Music rights and code licence checks are complete and archived. Verify licences again only
+if new assets or dependencies were added.
 
----
+- [ ] Stress on a mid-range laptop; the recorded hardware coverage is an M4 MacBook Pro.
+  Run `cd web && npm run stress`, then open
+  `stress.html?auto=1&boss=5&phase=2&seconds=60` with the window in front. Expect no frame
+  over 25 ms after the first; record a valid run in `docs/ACCEPTANCE.md`.
+- [ ] Firefox replay: open `replay.html?check=1`; compare its hash with Safari, Chromium
+  and Node, and record the result.
+- [ ] Run final Chrome/Safari/Firefox checks against the staged build; verify records survive
+  refresh and a new deploy, input works on supported devices, and offline behaviour works
+  if the optional install feature was selected.
+- [ ] Re-run feature, LAN and online acceptance affected by changes made after R1. Record
+  actual evidence; R1 itself stays incomplete until its human playtest has happened.
 
-## S8. ESP32 handheld: barebones single-player release
+## R8. Release and deploy — last
 
-S8 work happens on a feature branch off `dev`; the handheld-only code is in `firmware/` (B1). The firmware (`src/`, `include/`, about 2,500 lines; `engine/` and `firmware/` after B1) is the original game: rocks, waves,
-multishot and shield pickups, chain scoring, a persistent top-five table with initials, a
-demo, buzzer sound, on a 128×64 monochrome OLED with a joystick and one fire button. It
-has **no bosses, no aim, no laser and no hulls**. The web engine already compiles the
-firmware's own `src/*.cpp` files (see `web/native/bridge.cpp`) and layers co-op, bosses and
-combat on top in `web/native/`, so the two share a base. The goal of this stage is a
-polished, small handheld build that is also a good hardware and C++ learning project, not
-parity with the browser.
-
-**Hardware limits to design around:** 128×64 one-bit display, one fire button and one
-stick that only moves the ship in 2D. There is **no aiming**: shots always go right, so the
-player lines up a shot by moving to the target's height. Also: a passive buzzer (one tone at
-a time, no music files), about
-520 kB RAM and a few MB of flash shared with the radio stack (Wi-Fi stays on for entropy),
-I²C refresh time that caps frame rate.
-
-**S8.0 Scope (settled 2026-10-26).** The "barebones" set:
-- **In:** everything the firmware already does, the single-player combo rule from S2,
-  region pacing as a simple wave counter shown on the HUD, one boss (see S8.3), the
-  highscore table with initials, pause, demo.
-- **Out:** co-op, versus, any network, hulls and unlocks, settings screens beyond a
-  volume/mute toggle, music, tiers, modifiers (one-life could be a boot-time option later).
-Scope confirmed: the existing firmware game, the combo rule and the Sentinel-lite boss. Anything you want from the web game that is not here
-needs a one-line justification, since each feature costs flash, RAM and frame time.
-
-**S8.1 Baseline and budget.** Tools: PlatformIO, serial monitor.
-- [ ] Build the current firmware and record flash and RAM use (`pio run -t size`), frame
-  time per loop, I²C refresh time, and worst-case entity counts. Add the numbers to
-  `docs/SETUP.md` so every later change is compared against them.
-- [ ] Set budgets: for example under 60% of flash, under 50% of free heap at the worst
-  moment, 30 fps minimum with a full bullet pool and particles.
-
-**S8.2 Pull shared logic into the platform-free core.** Tools: strict C17 flags, host tests.
-- [ ] Move rules that both builds need out of `web/native/` and `src/*.cpp` into
-  `engine/core/` (the C17 scoring, difficulty and score-table modules already show the style):
-  chain/combo rule from S2, any boss state machine from S8.3, wave and region pacing.
-- [ ] Each new core module gets C-compatible headers, the existing `.clang-format`
-  (`tools/format-core.sh`), and host tests in `tests/host/`. The web build must keep passing
-  its goldens after each move; moves are separate commits from behaviour changes.
-
-**S8.3 One boss, simplified for a right-shooting ship.** The web bosses assume mouse or
-stick aim, a laser and a 480×270 field, so none transfers directly. With no aiming, every
-hit the player lands comes from matching the boss's height, so the boss must hold still
-or move slowly enough to be lined up, and its weak point must be on that firing line.
-- [ ] Proposed: a **Sentinel-lite** every fifth wave. A plate-rhythm fight with shots only
-  while the plate is open, a lance lane with a 900 ms dashed warning, and a three-needle
-  fan; no phases beyond "Alert" below 50% health. About 12–18 hits to kill.
-- [ ] Keep the fairness rules that survive the port: harmless entrance, every lethal
-  hazard warned, a safe corridor at least three ship widths (ship is 7 px on a 64 px
-  screen, so use roughly 24 px), projectile cap, dying never resets the boss.
-- [ ] Draw it in 1-bit with a pre-made bitmap in flash (`PROGMEM`-style constants), not
-  generated at runtime. Tool: a small script in `web/tools/` that converts a PNG to a C array.
-- [ ] Warning cues on a monochrome screen: a dashed line, a blinking line, and a
-  buzzer rising tone, since colour is unavailable.
-- [ ] Host-test the boss logic through the same C17 core; fight-length target 30–45 s.
-
-**S8.4 Input and feel.**
-- [ ] Re-check joystick calibration at boot, deadzone, diagonal speed cap, double-click
-  pause and debounce with the final game; adjust constants in `config.h` only.
-- [ ] Decide what the single fire button does for pickups: shots only, no laser (the
-  web's 1.5 s charge needs a second input). Optional: hold-to-charge laser if you want it.
-
-**S8.5 Display and sound.**
-- [ ] HUD fits 128×64: lives, score, chain multiplier and timer underline, wave, boss
-  health bar. Check legibility at arm's length; keep the 3-letter initials flow.
-- [ ] Buzzer: effects only, plus a short boss sting and the tell tone before a lance. Keep
-  notes within the passive buzzer's clear range; make sure sounds never block the loop.
-
-**S8.6 Verification.** Tools: ESP32, PlatformIO, serial monitor, host harness.
-- [ ] `sh engine/tests/run_host.sh` (strict C17 + UBSan) and the PlatformIO build are green.
-- [ ] Flash and play: a full run past wave 5 and the boss, pause, game over, initials,
-  power cycle and confirm the table persists, a corrupted table loads empty, 10-minute
-  soak with no heap growth or watchdog reset.
-- [ ] Update `README.md` (controls, rules) and `docs/SETUP.md` (wiring, flashing, budget).
-
-**S8.7 Make it portable (optional).** Tools: battery, charger board, enclosure.
-- [ ] Power from a LiPo through a charger board; measure runtime. With Wi-Fi left on for
-  entropy the draw is higher: evaluate whether the hardware RNG alone is enough once the
-  radio is off, and keep the "never use a software PRNG" rule if so.
-- [ ] Enclosure, button placement, a power switch, and a photo for the README.
-
-**S8 done when:** the handheld plays a full run including one boss on real hardware,
-host and strict-C17 checks pass, the budgets hold, and the README describes the build.
+- [ ] Protect `main`: pull requests and passing checks required, no force-push or deletion.
+  Keep `main` the default branch. Protect `dev` from force-push and deletion; direct pushes
+  remain allowed. Confirm CI is green on both branches.
+- [ ] Wire staging and production only in W1/W2: `main` is production, `dev` has a fixed
+  protected staging alias, feature previews are protected or off. Separate staging and
+  production Redis/Postgres. Skip site builds for firmware-only changes; room-service
+  watch paths cover `web/server/**`, `engine/**` and the native code used by the host.
+- [ ] Run `cd web && npm run check`, `sh engine/tests/run_host.sh`, and `pio run` on the
+  release candidate. Update README, COMBAT, Help, SETUP, ACCEPTANCE and CHANGELOG.
+- [ ] Confirm R1, R6, S4 real-network acceptance and the selected website acceptance are
+  complete. Choose the release version, date the CHANGELOG and remove obsolete unreleased notes.
+- [ ] Open `dev` → `main`, review the staged result, merge with a merge commit, tag the merge
+  on `main` and push the tag. Deploy the tested site and selected room services, then smoke-test
+  the production build and record rollback instructions.
 
 ---
 
@@ -1166,7 +973,7 @@ host and strict-C17 checks pass, the budgets hold, and the README describes the 
 - Branches (B1): work on `dev`; `main` only by a release pull request from `dev` or a hotfix;
   every merge to `main` is tagged.
 - Before merging: `cd web && npm run check`, `sh engine/tests/run_host.sh` from the repo root,
-  and a PlatformIO build (CI runs it, after B1) whenever shared C/C++ changes (the web build compiles `src/*.cpp`
+  and a PlatformIO build whenever shared C/C++ changes (the web build compiles `engine/src/*.cpp`
   directly, so a firmware edit can move web goldens and the reverse). A new scene field means the
   scene golden and layout test change in the same commit.
 - Per-player shot ownership, 2× pending events, laser and shield state, CPS, accuracy,
@@ -1182,12 +989,13 @@ host and strict-C17 checks pass, the budgets hold, and the README describes the 
 
 ## Open decisions
 
-Settled ones (22 determinism, 25 page host, 4 and 4b room host) are in the archive.
+Settled decisions, including music rights, the code licence and the starter-kit availability,
+are in the archive. Resolve gameplay decisions during the feature phase; network and hosting
+decisions wait for their stages.
 
 | # | Question | Blocks | Proposed |
 | --- | --- | --- | --- |
-| 8 | Rights to the supplied music tracks | R6, W1 | Confirm or replace before any public release |
-| 27 | Code licence | R6 | Decide before anything is public |
+| Loadout | Six ship handling models, weapon identities and old cosmetic migration | SC1 | Review the detailed customisation proposal |
 | 26 | A domain name | W1 (and Clerk production) | Buy one before W1 |
 | 23 | Do we want accounts at all, and for what (cloud saves, global boards, friends)? | W3 | Optional accounts, guests keep the full game; build after W2 |
 | 24 | Auth and database provider | W3 | Clerk, with Postgres in the Railway project; only servers touch the database |
@@ -1217,7 +1025,7 @@ built-in browser pane, Safari, Chrome, `web/tests/boss-bot.mjs` and `web/tests/b
 | A mid-range laptop | R6 | Stress budget |
 | Firefox | R6, W1 | Replay check and browser acceptance |
 | A domain name | W1, W3 | Clerk production needs one |
-| Vercel account (and the Vercel CLI if deploying a prebuilt `dist/site/` from CI) | W1 | Hobby is free for non-commercial use |
+| Vercel account (and the Vercel CLI if deploying a prebuilt `dist/site/` from CI) | W1 | Recheck plan terms and limits before provisioning |
 | Two physical gamepads, ideally an identical pair plus a different brand | S4, S6 | Same model twice is an acceptance case |
 | A second computer on the same network, and a phone hotspot for a different network | S4, W2 | Two browser tabs are not acceptance |
 | `ws` npm package | S4 | The one new runtime dependency |
@@ -1228,5 +1036,5 @@ built-in browser pane, Safari, Chrome, `web/tests/boss-bot.mjs` and `web/tests/b
 | Railway account and CLI; a Redis service in the project | W2 | Set a usage limit before the first deploy |
 | A Redis client in the room server (e.g. `ioredis` or `redis`) | W2 | A second runtime dependency after `ws`; ask before installing |
 | Clerk account; Postgres in the Railway project; `@clerk/backend` and a Postgres client in the API and room server | W3 | Only if W3 goes ahead |
-| ESP32 DevKit, SSD1306 OLED, joystick, button, passive buzzer; PlatformIO monitor | S8 | Wiring is in `docs/SETUP.md` |
+| ESP32 DevKit, SSD1306 OLED, joystick, button, passive buzzer; PlatformIO monitor | S8 | Wiring is in `firmware/HARDWARE.md` |
 | Battery, charger board and an enclosure | S8.7 | Optional |

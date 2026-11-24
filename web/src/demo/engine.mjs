@@ -36,6 +36,7 @@ export async function createDemo(bytes, renderer, { random } = {}) {
         runtime.abandon();
         api.web_boss_assist(1, 0);
         api.web_start(0);
+        api.web_loadout?.(0, 0, 0, 0, 1);
         pilot = new Pilot(runtime);
         renderer?.gate.invalidate();
     };

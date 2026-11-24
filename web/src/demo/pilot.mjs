@@ -1,3 +1,4 @@
+import { PRIMARIES, SECONDARIES } from '../ship/catalogue.mjs';
 // The autopilot for the Home demo. It flies a real run: it reads the scene the renderer reads,
 // dodges rocks, shoots them, fights every boss with the same steering the boss tests use
 // (boss-pilot.mjs), picks up power-ups and spends the shield and laser, and feeds the engine the
@@ -53,11 +54,17 @@ export class Pilot {
     // one of these is wasted.
     #claimed(scene) {
         const claimed = new Set();
-        const { at, stride, count } = BLOCKS.BULLETS;
+        const custom = !!scene[S.LOADOUT_ENABLED];
+        const { at, stride, count } = custom ? BLOCKS.LOADOUT_SHOTS : BLOCKS.BULLETS;
         for (let i = 0; i < count; i++) {
             const b = at + i * stride;
             if (!scene[b]) continue;
-            const [bx, by, bvx, bvy] = [scene[b + 1], scene[b + 2], scene[b + 3], scene[b + 4]];
+            const [bx, by, bvx, bvy] = [
+                scene[b + 1],
+                scene[b + 2],
+                scene[b + (custom ? 8 : 3)],
+                scene[b + (custom ? 9 : 4)],
+            ];
             for (const rock of this.rocks) {
                 if (claimed.has(rock)) continue;
                 for (let k = 1; k <= CLAIM_TICKS; k++) {
@@ -98,12 +105,17 @@ export class Pilot {
         if (!best) return null;
         // Bullets are quick, but a rock still drifts a little while one is in flight (which
         // starts at the muzzle, not the ship's centre).
-        const flight = Math.max(0, Math.hypot(best.x - sx, best.y - sy) - MUZZLE) / BULLET_SPEED;
+        const flight =
+            Math.max(0, Math.hypot(best.x - sx, best.y - sy) - MUZZLE) /
+            (this.bulletSpeed || BULLET_SPEED);
         return { x: best.x + best.vx * flight, y: best.y + best.vy * flight };
     }
     // The inputs for this tick, as Runtime.step takes them.
     decide(scene) {
         this.tick++;
+        const primary = scene[S.LOADOUT_ENABLED] ? PRIMARIES[scene[S.PRIMARY_TYPE]] : null;
+        this.bulletSpeed = primary?.speed || BULLET_SPEED;
+        const fireEvery = primary ? Math.ceil(primary.interval / 20) : FIRE_EVERY;
         const sx = scene[S.SHIP_X],
             sy = scene[S.SHIP_Y];
         this.rocks = this.#readRocks(scene);
@@ -145,16 +157,24 @@ export class Pilot {
             aimY = ay / length;
             // A boss target is shot on rhythm; a rock target only while it is unclaimed, which
             // #rockTarget already guarantees.
-            fire = this.tick % FIRE_EVERY === 0 && length < WIDTH + 40;
+            fire = this.tick % fireEvery === 0 && length < WIDTH + 40;
         }
         // The laser: when it is ready and rocks are bunched up, hold the trigger through the
         // charge; let go if the way gets dangerous (charging blocks the gun).
         const charging = scene[S.CHARGING] > 0;
         if (!this.laserTicks && !charging) {
-            const ready = scene[S.LASER_COOLDOWN_MS] === 0 && !state.active;
+            const ability = scene[S.LOADOUT_ENABLED] ? SECONDARIES[scene[S.SECONDARY_TYPE]] : null;
+            const distance = target ? Math.hypot(target.x - sx, target.y - sy) : Infinity;
+            const shortRange = ability && ['nova-pulse', 'mine-rack'].includes(ability.id);
+            const bossOpportunity = !!ability && !!target && (!shortRange || distance < 85);
+            const ready = scene[S.LASER_COOLDOWN_MS] === 0 && (!state.active || bossOpportunity);
             const ahead = this.rocks.filter((rock) => rock.x > sx + 40 && rock.x < WIDTH).length;
-            if (ready && ahead >= LASER_MIN_ROCKS && move.cost < LASER_ABORT_DANGER)
-                this.laserTicks = LASER_HOLD_TICKS;
+            if (
+                ready &&
+                (state.active ? bossOpportunity : ahead >= LASER_MIN_ROCKS) &&
+                move.cost < LASER_ABORT_DANGER
+            )
+                this.laserTicks = ability ? Math.ceil(ability.windup / 20) + 5 : LASER_HOLD_TICKS;
         }
         if (this.laserTicks && move.cost >= LASER_ABORT_DANGER) this.laserTicks = 0;
         const laser = this.laserTicks > 0;

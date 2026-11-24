@@ -11,6 +11,7 @@ import {
     cpSync,
     rmSync,
 } from 'node:fs';
+import { shipHeader } from './tools/ship-header.mjs';
 import { assembleHtml } from './tools/assemble-html.mjs';
 import { buildInfo } from './tools/build-info.mjs';
 const root = dirname(fileURLToPath(import.meta.url));
@@ -35,6 +36,7 @@ mkdirSync(resolve(root, 'dist/gen'), { recursive: true });
 // The scene ABI lives in scene-layout.mjs; the engine gets the same offsets as a header.
 const { sceneHeader } = await import('./src/runtime/scene-layout.mjs');
 writeFileSync(resolve(root, 'dist/gen/scene_layout.h'), sceneHeader());
+writeFileSync(resolve(root, 'dist/gen/ship_data.h'), shipHeader());
 const exports = [
     '__wasm_call_ctors',
     'web_init',
@@ -54,6 +56,7 @@ const exports = [
     'web_actions',
     'web_start',
     'web_start_level',
+    'web_loadout',
     'web_demo',
     'web_demo_lives',
     'web_reload_scores',

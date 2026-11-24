@@ -7,6 +7,11 @@ import { assembleHtml } from './tools/assemble-html.mjs';
 import { buildInfo } from './tools/build-info.mjs';
 const root = dirname(fileURLToPath(import.meta.url));
 const directory = resolve(root, 'dist');
+// dist/ is disposable; a fresh checkout or cleanup must still be playable.
+if (!existsSync(resolve(directory, 'game.wasm'))) {
+    console.log('Game build is missing; rebuilding for local playtesting.');
+    await import('./build.mjs');
+}
 // Browser source is served straight from the working tree, so an edit shows on refresh. Only the
 // compiled WASM (and its generated files) still come from dist/, via `npm run build`.
 const LIVE_DIRS = ['src', 'styles', 'assets', 'dev'].map((name) => resolve(root, name) + sep);

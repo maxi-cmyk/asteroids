@@ -6,6 +6,8 @@
 // never lost; the fight is the whole room.
 void web_boss_practice(int kind, int tier, int phase) {
 #ifdef WEB_HD
+    loadout_owner = 0;
+    loadout_cancel(0);
     coop_active = false;
     boss_bind_solo();
     practice_mode = true;
@@ -88,9 +90,10 @@ void web_practice_multishot() {
 #endif
 }
 
-// The practice range (nextSteps.md H3). Every value is clamped, so a replay or a page can
-// never put the engine somewhere play could not. Changing the rock mode or the wave starts
-// the rocks again; speed, refill, drops and holding only change what comes next.
+// The practice range (nextSteps.md H3). Every value is clamped, so a replay or
+// a page can never put the engine somewhere play could not. Changing the rock
+// mode or the wave starts the rocks again; speed, refill, drops and holding
+// only change what comes next.
 void web_practice_config(int rocks_mode,
                          int wave,
                          int speed_pct,
@@ -121,8 +124,8 @@ void web_practice_config(int rocks_mode,
     (void)hold_wave;
 #endif
 }
-// Puts a pickup (0 multishot, 1 shield, 2 2x fire) just ahead of the ship, replacing any
-// pickup already out; 3 makes the laser ready at once.
+// Puts a pickup (0 multishot, 1 shield, 2 2x fire) just ahead of the ship,
+// replacing any pickup already out; 3 makes the laser ready at once.
 void web_practice_spawn(int kind) {
 #ifdef WEB_HD
     if (!practice_mode) {
@@ -133,7 +136,8 @@ void web_practice_spawn(int kind) {
         return;
     }
     pickup.kind = PickupKind(constrain(kind, 0, int(PICKUP_DOUBLE_FIRE)));
-    pickup.position_x = constrain(ship.position_x + 70, float(SHIP_MIN_X), float(SHIP_MAX_X));
+    pickup.position_x = constrain(
+            ship.position_x + 70, float(SHIP_MIN_X), float(SHIP_MAX_X));
     pickup.position_y = ship.position_y;
     pickup.active = true;
 #else
@@ -145,16 +149,19 @@ void web_practice_clear() {
 #ifdef WEB_HD
     if (practice_mode && !boss.practice) {
         memset(rocks, 0, sizeof(rocks));
-        if (practice_rocks == PRACTICE_STREAM || practice_rocks == PRACTICE_WAVES) {
+        if (practice_rocks == PRACTICE_STREAM
+            || practice_rocks == PRACTICE_WAVES) {
             pending_asteroids = 0;
         }
         practice_empty_since = 0;
     }
 #endif
 }
-// Respawn now: the current mode's rocks start again (targets reappear, a wave restarts).
+// Respawn now: the current mode's rocks start again (targets reappear, a wave
+// restarts).
 void web_practice_respawn() {
 #ifdef WEB_HD
+    loadout_cancel(0);
     if (practice_mode && !boss.practice) {
         practice_apply_rocks();
     }
@@ -164,7 +171,8 @@ void web_practice_respawn() {
 void web_practice_next_wave() {
 #ifdef WEB_HD
     if (practice_mode && !boss.practice
-        && (practice_rocks == PRACTICE_WAVES || practice_rocks == PRACTICE_STREAM)) {
+        && (practice_rocks == PRACTICE_WAVES
+            || practice_rocks == PRACTICE_STREAM)) {
         practice_wave = uint16_t(min(30, practice_wave + 1));
         practice_begin_wave();
     }

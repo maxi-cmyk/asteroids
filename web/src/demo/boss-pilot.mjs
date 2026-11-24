@@ -1,19 +1,10 @@
+import { predictMotion } from '../ship/motion-prediction.mjs';
+import { SHIPS } from '../ship/catalogue.mjs';
 import { S } from '../runtime/scene-layout.mjs';
 // The steering and target choice of a scripted boss pilot. It reads the same scene the renderer
 // reads, picks the sub-target a person would, and keeps clear of every shot, lethal hazard and
 // body. The boss tests use it to prove each fight is beatable, and the Home demo flies with it.
-import {
-    HAZARD,
-    PART,
-    SHOT,
-    SIGN_KEY,
-    NINEFOLD,
-    RAM_LANE,
-    bossHazards,
-    bossParts,
-    bossShots,
-    bossState,
-} from '../boss/scene.mjs';
+import { HAZARD, PART, SHOT, SIGN_KEY, NINEFOLD, RAM_LANE } from '../boss/scene.mjs';
 import { FOX_POSES } from '../boss/ninefold/poses.mjs';
 
 const SPEED = 3.65625,
@@ -201,6 +192,7 @@ export class BossPilot {
         const boss = scene[S.BOSS_ACTIVE] ? { x: scene[S.BOSS_X], y: scene[S.BOSS_Y] } : null;
         const sx = scene[S.SHIP_X],
             sy = scene[S.SHIP_Y];
+        const speed = SPEED * (scene[S.LOADOUT_ENABLED] ? SHIPS[scene[S.SHIP_TYPE]].speed : 1);
         const here = this.danger(sx, sy, scene, boss, shots, hazards, body, 0);
         // A sweeping wedge, or a lane wider than 22 ticks of flying (the Bastion's ramming
         // run), can take longer than that to leave: look further.
@@ -214,12 +206,15 @@ export class BossPilot {
         for (let dy = -1; dy <= 1; dy++)
             for (let dx = -1; dx <= 1; dx++) {
                 const len = Math.hypot(dx, dy) || 1,
-                    mx = (dx / len) * SPEED,
-                    my = (dy / len) * SPEED;
+                    mx = (dx / len) * speed,
+                    my = (dy / len) * speed;
+                const predicted = scene[S.LOADOUT_ENABLED]
+                    ? predictMotion(scene, dx, dy, horizon.at(-1))
+                    : null;
                 let cost = 0;
                 for (const ahead of horizon) {
-                    const px = sx + mx * ahead,
-                        py = sy + my * ahead;
+                    const px = predicted?.[ahead][0] ?? sx + mx * ahead,
+                        py = predicted?.[ahead][1] ?? sy + my * ahead;
                     cost += this.danger(
                         Math.max(16, Math.min(464, px)),
                         Math.max(16, Math.min(248, py)),
@@ -231,8 +226,8 @@ export class BossPilot {
                         ahead,
                     );
                 }
-                const nx = sx + mx,
-                    ny = sy + my;
+                const nx = predicted?.[1][0] ?? sx + mx,
+                    ny = predicted?.[1][1] ?? sy + my;
                 // Drift home only when nothing threatens; keep going the way we were going.
                 if (!here)
                     cost +=

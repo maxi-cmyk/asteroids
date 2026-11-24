@@ -1,145 +1,186 @@
 import { element } from '../app/dom.mjs';
-import { HULLS, hullById, hullIcon, saveHangar } from '../state/hangar.mjs';
-import { drawShowcase } from '../render/showcase.mjs';
-import { requirementText } from '../boss/unlocks.mjs';
+import { saveHangar } from '../state/hangar.mjs';
+import { HangarSelection } from '../state/hangar-selection.mjs';
+import { LoadoutPreview } from '../ship/preview.mjs';
+import { SLOTS, loadoutText } from '../ship/catalogue.mjs';
+import { PAINTS, paintById } from '../ship/paint.mjs';
+import { HangarStage } from './hangar-stage.mjs';
+import { buildAppearances } from './hangar-appearances.mjs';
+import { HangarCards } from './hangar-cards.mjs';
+import { renderHangarStats } from './hangar-stats.mjs';
 
-// The Hangar equips a cosmetic hull per local profile. Focus (or hover) previews
-// a hull on the stage; activating it equips it immediately and saves.
 class HangarScreen {
-    constructor({ getArt, store, storage, activeProfile, reduced, unlocks }) {
-        Object.assign(this, { getArt, store, storage, activeProfile, reduced, unlocks });
-        this.pilot = 0; // which local profile is being edited
-        this.preview = null; // hull id under focus or hover
+    constructor(options) {
+        Object.assign(this, options);
+        this.pilot = 0;
         this.status = '';
-        this.stage = element('hangarStage').getContext('2d');
-        this.bay = element('hangarBay');
+        this.selection = new HangarSelection(this.loadouts);
+        this.stage = new HangarStage(element('hangarStage'));
+        this.cards = new HangarCards(this);
+        this.tabs = [...document.querySelectorAll('[data-hangar-slot]')];
         this.pilotButtons = [...document.querySelectorAll('[data-pilot]')];
-        for (const button of this.pilotButtons)
+        for (const button of this.tabs)
             button.addEventListener('click', () => {
-                this.pilot = Number(button.dataset.pilot);
-                this.preview = null;
-                this.status = '';
+                this.selection.select(
+                    button.dataset.hangarSlot,
+                    this.indexFor(button.dataset.hangarSlot),
+                );
+                this.buildOptions();
                 this.render();
             });
-    }
-    get equipped() {
-        return this.store.profiles[this.pilot];
-    }
-    #locked(id) {
-        return this.unlocks ? !this.unlocks.isUnlocked(this.pilot, id) : false;
-    }
-    #drawIcon(canvas, hull) {
-        const art = this.getArt(),
-            cell = art?.sprites[hullIcon(hull)];
-        if (!cell) return;
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = false;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(art.atlas, cell.x, cell.y, cell.w, cell.h, 0, 0, 24, 16);
-    }
-    #build() {
-        this.bay.replaceChildren(
-            ...HULLS.map((hull) => {
+        for (const button of this.pilotButtons)
+            button.addEventListener('click', () => this.open(Number(button.dataset.pilot)));
+        element('hangarPrevious').addEventListener('click', () => this.browse(-1));
+        element('hangarNext').addEventListener('click', () => this.browse(1));
+        const stage = element('hangarCarousel');
+        let down = null,
+            wheel = 0;
+        stage.addEventListener('pointerdown', (event) => {
+            down = event.clientX;
+        });
+        stage.addEventListener('pointerup', (event) => {
+            if (down !== null && Math.abs(event.clientX - down) > 45)
+                this.browse(event.clientX < down ? 1 : -1);
+            down = null;
+        });
+        stage.addEventListener('pointercancel', () => {
+            down = null;
+        });
+        for (const surface of [stage, element('hangarOptions')])
+            surface.addEventListener(
+                'wheel',
+                (event) => {
+                    const delta = event.deltaX || (event.shiftKey ? event.deltaY : 0);
+                    if (!delta) return;
+                    event.preventDefault();
+                    wheel += delta;
+                    if (Math.abs(wheel) > 45) {
+                        this.browse(Math.sign(wheel));
+                        wheel = 0;
+                    }
+                },
+                { passive: false },
+            );
+        element('equipPreview').addEventListener('click', () => this.equip());
+        element('testLoadout').addEventListener('click', () => {
+            const test = element('hangarTest');
+            test.hidden = !test.hidden;
+            element('testLoadout').setAttribute('aria-expanded', String(!test.hidden));
+            element('testLoadout').textContent = test.hidden ? 'Test loadout' : 'Close test';
+            if (!test.hidden) test.scrollIntoView({ block: 'nearest' });
+        });
+        element('retryLoadout').addEventListener('click', () => {
+            this.loadouts.save();
+            this.render();
+        });
+        element('retryPaint').addEventListener('click', () => {
+            this.appearanceSaved(saveHangar(this.storage, this.store));
+            this.render();
+        });
+        element('hangarPaints').replaceChildren(
+            ...PAINTS.map((paint) => {
                 const button = document.createElement('button');
                 button.type = 'button';
-                button.dataset.hull = hull.id;
-                button.setAttribute('role', 'radio');
-                button.style.setProperty('--accent', hull.accent);
-                const canvas = document.createElement('canvas');
-                canvas.width = 24;
-                canvas.height = 16;
-                canvas.setAttribute('aria-hidden', 'true');
-                const label = document.createElement('span');
-                label.textContent = hull.name;
-                button.append(canvas, label);
-                const show = () => {
-                    this.preview = hull.id;
+                button.dataset.paint = paint.id;
+                button.textContent = paint.name;
+                button.title = paint.name;
+                button.setAttribute('aria-label', paint.name);
+                button.style.setProperty('--paint', paint.hex);
+                button.addEventListener('click', () => {
+                    this.store.paints[this.pilot] = paint.id;
+                    this.appearanceSaved(saveHangar(this.storage, this.store));
                     this.render();
-                };
-                button.addEventListener('focus', show);
-                button.addEventListener('pointerenter', show);
-                button.addEventListener('click', () => this.#equip(hull.id));
+                });
                 return button;
             }),
         );
     }
-    #equip(id) {
-        if (this.#locked(id)) {
-            this.status = requirementText(id);
-            this.preview = id;
-            this.render();
-            return;
-        }
-        this.store.profiles[this.pilot] = id;
-        const saved = saveHangar(this.storage, this.store);
+    indexFor(slot) {
+        return SLOTS[slot].findIndex((item) => item.id === this.selection.kit[slot]);
+    }
+    browse(delta) {
+        this.selection.select(this.selection.slot, this.selection.index + delta);
+        this.render();
+    }
+    setPreview(runtime, renderer) {
+        this.range = new LoadoutPreview(runtime, renderer);
+    }
+    appearanceSaved(saved) {
+        this.paintUnsaved = !saved;
         this.status = saved
             ? ''
-            : `${hullById(id).name} equipped for this visit only. Browser storage is unavailable.`;
-        this.preview = id;
+            : 'Appearance kept for this visit. Browser storage is unavailable; retry saving.';
+    }
+    buildOptions() {
+        this.cards.build();
+    }
+
+    equip() {
+        const { selection } = this;
+        if (selection.equip() && selection.slot === 'ship') {
+            this.store.profiles[this.pilot] = selection.item.id;
+            this.appearanceSaved(saveHangar(this.storage, this.store));
+        }
         this.render();
     }
     render() {
-        if (!this.bay.children.length) this.#build();
-        const equipped = this.equipped;
-        const shown = hullById(this.preview || equipped);
-        for (const button of this.bay.children) {
-            const id = button.dataset.hull;
-            button.setAttribute('aria-checked', String(id === equipped));
-            const isLocked = this.#locked(id);
-            button.dataset.locked = String(isLocked);
-            button.setAttribute('aria-disabled', String(isLocked));
-            button.querySelector('span').textContent = isLocked
-                ? `${hullById(id).name} · locked`
-                : hullById(id).name;
-            button.dataset.preview = String(id === shown.id);
-            this.#drawIcon(button.querySelector('canvas'), id);
-        }
+        const { selection } = this,
+            { item, slot, index } = selection;
+        const equipped = this.loadouts.get(this.pilot);
+        const same = equipped[slot] === item.id;
+        element('hangarName').textContent = item.name;
+        element('hangarTag').textContent = selection.locked
+            ? `LOCKED · Clear Act 1 Level ${index + 1}`
+            : same
+              ? 'EQUIPPED'
+              : 'PREVIEW';
+        element('hangarBlurb').textContent = item.detail;
+        renderHangarStats(slot, item, equipped);
+        element('hangarCount').textContent = `${String(index + 1).padStart(2, '0')} / 06`;
+        element('hangarPrevious').disabled = index === 0;
+        element('hangarNext').disabled = index === 5;
+        element('equipPreview').textContent = selection.locked
+            ? `Clear Level ${index + 1} to equip`
+            : same
+              ? `${item.name} equipped`
+              : `Equip ${item.name}`;
+        element('equipPreview').disabled = same || selection.locked;
+        element('loadoutSummary').textContent = `Equipped · ${loadoutText(equipped)}`;
+        element('loadoutStatus').textContent = this.loadouts.status;
+        element('retryLoadout').hidden = !this.loadouts.status;
+        element('hangarStatus').textContent = this.status;
+        element('retryPaint').hidden = !this.paintUnsaved;
+        for (const button of this.tabs)
+            button.setAttribute('aria-pressed', String(button.dataset.hangarSlot === slot));
         for (const button of this.pilotButtons)
             button.setAttribute(
                 'aria-pressed',
                 String(Number(button.dataset.pilot) === this.pilot),
             );
-        element('hangarName').textContent = shown.name;
-        element('hangarName').style.setProperty('--accent', shown.accent);
-        const shownLocked = this.#locked(shown.id);
-        element('hangarBlurb').textContent = shownLocked ? requirementText(shown.id) : shown.blurb;
-        element('hangarTag').textContent = shownLocked
-            ? 'LOCKED'
-            : shown.id === equipped
-              ? 'EQUIPPED'
-              : 'PREVIEW';
-        element('hangarStatus').textContent = this.status;
+        this.cards.render(equipped);
+        const paint = paintById(this.store.paints[this.pilot]);
+        element('paintLabel').textContent = `Accent colour · ${paint.name}`;
+        for (const button of element('hangarPaints').children)
+            button.setAttribute('aria-pressed', String(button.dataset.paint === paint.id));
+        this.range?.select(selection.kit);
+        if (this.range) this.range.renderer.paints = [paint.id];
+        this.stage.draw(selection.kit, paint.id, slot);
+        this.cards.draw(paint.id);
+        buildAppearances(this, element('hangarBay'));
     }
-    // Opening starts on the active profile with nothing previewed.
-    open() {
-        this.pilot = this.activeProfile();
-        this.preview = null;
+    open(profile = this.activeProfile()) {
+        this.pilot = profile;
+        this.selection.open(profile);
         this.status = '';
-        this.#build();
+        this.store.paints ||= ['cobalt', 'cobalt'];
+        this.buildOptions();
         this.render();
     }
-    // The animated stage: the shown hull turning slowly on the showcase backdrop.
     draw(time) {
-        const art = this.getArt();
-        if (!art) return;
-        const { stage } = this;
-        const shown = this.preview || this.equipped;
-        const direction = this.reduced() ? 0 : Math.floor(time / 900) % 16;
-        drawShowcase(stage, art, {
-            ships: [
-                {
-                    hull: shown,
-                    x: Math.round(stage.canvas.width * 0.4),
-                    y: Math.round(stage.canvas.height * 0.5),
-                    direction,
-                    scale: 3,
-                },
-            ],
-            time,
-            reduced: this.reduced(),
-            seed: 2,
-        });
+        if (!element('hangarTest').hidden) this.range?.draw(time, this.reduced());
+        const paint = this.store.paints[this.pilot];
+        this.stage.draw(this.selection.kit, paint, this.selection.slot);
+        this.cards.draw(paint);
     }
 }
-
 export const createHangarScreen = (options) => new HangarScreen(options);

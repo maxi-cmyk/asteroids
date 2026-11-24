@@ -94,17 +94,3 @@ body:not([data-demo='true']) #homeHint {
 .shell-header #screenBack {
     margin-right: auto;
 }
-
-/* ---- Home buttons: bigger -------------------------------------------------- */
-.home-menu button,
-.home-menu button.primary {
-    font-size: clamp(26px, 2.5vw, 36px);
-    min-height: 46px;
-    gap: 12px;
-    letter-spacing: 0.02em;
-}
-.home-menu button::before {
-    width: 18px;
-    height: 18px;
-    background-size: 18px 18px;
-}

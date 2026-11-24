@@ -1,4 +1,4 @@
-import { SCENE_FLOATS } from '../src/runtime/scene-layout.mjs';
+import { SCENE_FLOATS, S } from '../src/runtime/scene-layout.mjs';
 // Characterisation test: a refactor must not change a single float the engine exports.
 // Seeded scripted runs are hashed at fixed ticks; `UPDATE_GOLDEN=1 node --test` rewrites the file.
 import test from 'node:test';
@@ -19,7 +19,9 @@ async function game(seed = 11) {
 function hash(floats) {
     let h = 0x811c9dc5;
     const bits = new Uint32Array(new Float32Array(floats).buffer);
-    for (let i = 0; i < bits.length; i++) {
+    // Preserve the original ABI prefix for legacy fixtures; loadout fixtures hash the extension.
+    const count = floats[S.LOADOUT_ENABLED] ? bits.length : S.LOADOUT_ENABLED;
+    for (let i = 0; i < count; i++) {
         if (CLOCK.has(i)) continue;
         h = Math.imul(h ^ bits[i], 0x01000193) >>> 0;
     }

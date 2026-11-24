@@ -1,3 +1,4 @@
+import { loadoutText } from '../ship/catalogue.mjs';
 import { element, setAttr } from '../app/dom.mjs';
 import { hullById, hullIcon } from '../state/hangar.mjs';
 import { drawShowcase } from '../render/showcase.mjs';
@@ -6,7 +7,7 @@ import { LEVEL_COUNT } from '../state/campaign-data.mjs';
 // The Play screen (nextSteps.md C1): Campaign, Endless (locked until Act 1 is done) and Practice,
 // with one switch for one or two pilots. The cards preview the hulls you will actually fly: the
 // active profile's hull alone, or both profiles side by side.
-export function createModeScreen({ getArt, store, activeProfile, reduced, getCampaign }) {
+export function createModeScreen({ getArt, store, activeProfile, reduced, getCampaign, loadouts }) {
     const campaign = element('modeArtCampaign').getContext('2d'),
         endless = element('modeArtEndless').getContext('2d'),
         practice = element('modeArtPractice').getContext('2d');
@@ -56,6 +57,14 @@ export function createModeScreen({ getArt, store, activeProfile, reduced, getCam
                 art = getArt(),
                 cell = art?.sprites[hullIcon(hull)];
             element('modeHullName').textContent = hullById(hull).name;
+            const summary = document.getElementById('modeLoadout');
+            if (summary && loadouts)
+                summary.textContent =
+                    pilots === 2
+                        ? [0, 1]
+                              .map((i) => `P${i + 1}: ${loadoutText(loadouts.get(i))}`)
+                              .join(' | ')
+                        : loadoutText(loadouts.get(activeProfile()));
             if (cell) {
                 chip.imageSmoothingEnabled = false;
                 chip.clearRect(0, 0, 24, 16);

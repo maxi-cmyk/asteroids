@@ -42,7 +42,8 @@ It renders entity state directly; it does not enlarge the old OLED framebuffer.
 
 | Asset | Native size | Animation / variation |
 | --- | --- | --- |
-| Ship | 24×16 core, 32×32 aiming cells | Sixteen aiming directions; exhaust drawn in code. Six more hulls in `ships.png` |
+| Ship | 24×16 core, 32×32 aiming cells | Sixteen aiming directions; exhaust drawn in code. One aiming sheet per ship in `assets/ships/<id>/states.png` |
+| Weapon icon | 24×24 | Twelve icons (primaries, then secondaries) in `assets/weapons/icons.png`, drawn by `tools/make-weapon-icons.mjs` |
 | Large / medium / small rock | 32×32 / 20×20 / 12×12 | Three variants, eight rotation frames each |
 | Multishot / shield pickup | 12×12 | Different symbols and colours |
 | Explosion | 32×32 | Eight frames over 320 ms |
@@ -83,9 +84,12 @@ preserving crossing time as screen width grows. All simulation updates remain 20
 and smaller relative collision sizes change available dodge space; balance
 still needs hands-on playtesting.
 
-Primary fire has no heat, overheating, firing cooldown, or movement penalty.
-One event per press (two with the temporary 2× pickup) and the 12-bullet pool apply. Browser combat adds
-aimed weapons and manual shield activation. Its laser destroys every target
+Browser loadouts provide six ships, six primary weapons and six secondary weapons, independently
+selected in the Hangar (216 combinations). Primary fire accepts one activation per press at the
+selected weapon’s interval, without heat; 2× repeats an accepted activation once. The starter kit
+is available immediately; clearing Levels 2–6 grants their kits. Browser combat includes
+aimed weapons and manual shield activation. The original OLED / legacy path retains its
+12-bullet pool and no primary cooldown. Its laser destroys every target
 it hits without splitting, with a 1.5-second windup and 5-second cooldown.
 The HUD exposes laser charge/cooldown, shield state, and precision movement.
 See [COMBAT.md](COMBAT.md) for exact ability rules.
@@ -97,7 +101,7 @@ See [COMBAT.md](COMBAT.md) for exact ability rules.
 | Move / initials | Left stick or D-pad | Arrows or WASD |
 | Aim weapons | Right stick | Mouse movement or IJKL |
 | Primary fire / confirm | R2 or Cross | Space or Enter |
-| Charge laser | Hold L2 for 1.5 seconds | Hold F |
+| Charge secondary | Hold L2 (charge depends on ability) | Hold F / right mouse |
 | Precision movement | Hold R1 + L1 together | Hold Shift |
 | Arm stored shield | Tap L1 alone (activates on release) | Tap Q alone |
 | Pause / resume | Options | Escape or P |
@@ -302,7 +306,7 @@ production build passed. Physical trigger timing/feel remains player acceptance.
 Open `/?input-fix` to enable a temporary controller input check above the game.
 It displays raw Cross/X, R2 and L2 readings; controller press edges observed
 since the tab opened; gameplay presses and successful volleys in the current
-run; and rejected shots due to a full projectile pool or laser charging.
+run; and rejected shots due to a full projectile pool, the weapon interval or Beam charging.
 It reads the actual gameplay counters rather than inferring shots from pixels.
 No input readings are transmitted or written to storage. Ordinary URLs keep
 this panel hidden.
@@ -310,7 +314,7 @@ this panel hidden.
 Cross and the mapped primary-fire button now keep separate press-edge state.
 A held R2 cannot swallow fresh Cross presses, and a held Cross cannot swallow
 fresh R2 presses. Holding either still never repeats by itself. The existing
-pool and laser exclusions remain visible rejection reasons, not cooldowns.
+pool, weapon interval and Beam exclusions remain visible rejection reasons.
 
 Validation: 59 web tests passed, including 50 Cross presses while R2 remains
 held and diagnostic classification of full-pool versus laser rejection. The

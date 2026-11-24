@@ -92,7 +92,8 @@ static void scene_core(float *scene) {
     scene[SCENE_PRACTICE_ROCKS] = practice_mode ? practice_rocks : 0;
     scene[SCENE_PRACTICE_HITS] = practice_mode ? practice_hits : 0;
     scene[SCENE_PRACTICE_FLAGS]
-            = practice_mode ? practice_refill | practice_drops << 1 | practice_hold_wave << 2
+            = practice_mode ? practice_refill | practice_drops << 1
+                                      | practice_hold_wave << 2
                                       | practice_speed_pct << 8
                             : 0;
 #endif
@@ -252,6 +253,34 @@ static void scene_fill(float *scene) {
     scene_entities(scene);
 #ifdef WEB_HD
     scene_boss(scene);
+    const auto& kit = loadouts[loadout_owner];
+    if (kit.enabled) {
+        scene[SCENE_LOADOUT_ENABLED] = 1;
+        scene[SCENE_LOADOUT_VX] = kit.vx;
+        scene[SCENE_LOADOUT_VY] = kit.vy;
+        scene[SCENE_SHIP_TYPE] = kit.ship;
+        scene[SCENE_PRIMARY_TYPE] = kit.primary;
+        scene[SCENE_SECONDARY_TYPE] = kit.secondary;
+        scene[SCENE_PRIMARY_COOLDOWN] = kit.primary_left;
+        scene[SCENE_SECONDARY_COOLDOWN] = SECONDARY_COOLDOWN[kit.secondary];
+        scene[SCENE_SECONDARY_WINDUP] = SECONDARY_WINDUP[kit.secondary];
+        scene[SCENE_LOADOUT_VERSION] = LOADOUT_DATA_VERSION;
+        for (unsigned i = 0; i < loadout::CAPACITY; i++) {
+            const auto& p = kit.shots[i];
+            float *out = scene + SCENE_LOADOUT_SHOTS_AT
+                         + i * SCENE_LOADOUT_SHOTS_STRIDE;
+            out[0] = p.active && !p.wait;
+            out[1] = p.x;
+            out[2] = p.y;
+            out[3] = p.kind;
+            out[4] = p.secondary;
+            out[5] = p.age;
+            out[6] = p.life;
+            out[7] = p.damage;
+            out[8] = p.vx;
+            out[9] = p.vy;
+        }
+    }
 #endif
     scene_highscores(scene);
 }

@@ -15,7 +15,7 @@ export function renderDiagnostics({ inputDiagnostics, diagnosticPad, runtime, co
         );
         update(
             element('inputBlocks'),
-            `Rejected — full projectile pool: ${pool} · Laser charging: ${laser} · State: ${runtime.state}`,
+            `Rejected — pool / weapon interval: ${pool} · Beam charging: ${laser} · State: ${runtime.state}`,
         );
     }
 }

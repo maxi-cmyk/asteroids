@@ -1,9 +1,10 @@
-import { S, BLOCKS, SCENE_FLOATS, recordAt } from './scene-layout.mjs';
+import { indexOf, sanitizeLoadout, LOADOUT_VERSION } from '../ship/catalogue.mjs';
+import { EngineReader } from './engine-reader.mjs';
 import { CoopLeaderboard } from '../state/coop-records.mjs';
-import { decodeCoopPlayer } from './coop-scene.mjs';
-import { PersonalBests, clearBrowserRecords } from '../state/records.mjs';
+import { CoopDriver } from './coop-driver.mjs';
+import { PersonalBests } from '../state/records.mjs';
 import { CampaignProgress } from '../state/campaign.mjs';
-import { levelInfo } from '../state/campaign-data.mjs';
+import { CampaignRun } from './campaign-run.mjs';
 import { BossRecords } from '../boss/records.mjs';
 import { CoopRun } from './coop-run.mjs';
 import { RunRecorder } from './run-recorder.mjs';
@@ -12,7 +13,8 @@ import { WasmHost } from './wasm-host.mjs';
 import { SeededRandom } from './rng.mjs';
 import { ReplayRecorder, engineFingerprint } from './replay.mjs';
 
-import { PRACTICE_DEFAULTS, PRACTICE_ROCKS, sanitizePractice } from '../state/practice.mjs';
+import { RuntimeRecords } from './record-actions.mjs';
+import { PracticeTools } from './practice-tools.mjs';
 
 export const STATES = [
     'menu',
@@ -26,37 +28,29 @@ export const STATES = [
     'level-clear',
 ];
 export const SCORE_KEY = 'asteroids.web.scores-v3';
-const STAT_KEYS = [
-    'cps',
-    'peakCps',
-    'spawned',
-    'hits',
-    'longestChain',
-    'highestWave',
-    'doubleFireMs',
-    'laserShots',
-    'laserKills',
-    'presses',
-    'pending',
-];
-
 // The engine as the UI sees it: one object that steps the game, exposes the scene and
 // remembers how runs ended. Solo and co-op share it; a CoopRun exists only during co-op.
 class Runtime {
-    constructor(host, { storage, scoreKey, profile, rng, fingerprint }) {
+    constructor(host, { storage, scoreKey, profile, rng, fingerprint, loadouts }) {
         this.host = host;
+        this.loadouts = loadouts;
+        this.runLoadouts = null;
+        this.reader = new EngineReader(this);
         // Every state-changing engine call goes through the replay recorder (nextSteps.md R3).
         this.fingerprint = fingerprint;
         this.replays = new ReplayRecorder(host.api, { fingerprint, rng, storage, scoreKey });
         this.api = this.replays.api;
+        this.practice = new PracticeTools(this.api);
         this.storage = storage;
         this.scoreKey = scoreKey;
         this.records = new PersonalBests(storage);
         this.bossRecords = new BossRecords(storage);
         this.campaign = new CampaignProgress(storage, this.records);
+        this.recordActions = new RuntimeRecords(this);
         // The campaign level being flown (or just flown, until the player moves on): what
         // Retry, Next level and Restart need. null outside Act 1.
         this.level = null;
+        this.campaignRun = new CampaignRun(this);
         this.recorder = new RunRecorder({
             records: this.records,
             bossRecords: this.bossRecords,
@@ -65,6 +59,7 @@ class Runtime {
         this.fightLog = new FightLog(storage);
         this.profile = profile;
         this.coop = null; // CoopRun while a co-op run is current
+        this.coopDriver = new CoopDriver(this, () => this.#finishCoop());
         // Solo end-of-run screen: visible, then ready for Continue once fire is released.
         this.resultsVisible = false;
         this.resultsReady = false;
@@ -100,17 +95,7 @@ class Runtime {
     }
     // ---------------------------------------------------------------- co-op
     coopPlayers() {
-        return [0, 1].map((owner) =>
-            decodeCoopPlayer(
-                new Float32Array(
-                    new Float32Array(
-                        this.host.memory.buffer,
-                        this.api.web_coop_player(owner),
-                        SCENE_FLOATS,
-                    ),
-                ),
-            ),
-        );
+        return this.coopDriver.players();
     }
     // `seed` fixes the run's randomness (tests and the replay check); normally it is fresh.
     startCoop({ profiles = [0, 1], friendlyFire = false, seed } = {}) {
@@ -120,31 +105,11 @@ class Runtime {
         this.recorder.beginCoop(friendlyFire);
         this.replays.begin({ mode: 'co-op', friendlyFire: !!friendlyFire }, seed);
         this.api.web_coop_start(+!!friendlyFire);
+        this.equipRun(profiles);
     }
-    // Starts Act 1 level 1-6 (nextSteps.md C1): one pilot, or two when `profiles` is given.
-    // Recorded in the replay like any run, so a level is one short tape.
-    startLevel(level, { profiles = null, friendlyFire = false, seed } = {}) {
-        if (!levelInfo(level)) throw new RangeError(`No level ${level}`);
-        const coop = Array.isArray(profiles);
-        this.level = { level, profiles: coop ? [...profiles] : null, friendlyFire: !!friendlyFire };
-        this.replays.begin(
-            coop
-                ? { mode: 'co-op', friendlyFire: !!friendlyFire, level }
-                : { mode: 'solo', practice: false, level },
-            seed,
-        );
-        if (coop) {
-            this.coop = new CoopRun({ profiles, friendlyFire, storage: this.storage });
-            this.resultsVisible = false;
-            this.recorder.beginCoop(friendlyFire, level);
-        } else {
-            this.coop = null;
-            this.recorder.beginSolo(false, level);
-            this.resultsVisible = false;
-            this.resultsReady = false;
-            this.awaitResultsRelease = false;
-        }
-        this.api.web_start_level(level, coop ? 2 : 1, +!!friendlyFire);
+    startLevel(level, options = {}) {
+        this.campaignRun.start(level, options);
+        this.equipRun(this.level.profiles || [this.runProfile], options.loadoutSnapshot);
         this.#clearHold();
     }
     // Start the same level again (Retry, and Restart level in the pause menu).
@@ -154,83 +119,25 @@ class Runtime {
         this.#endFight();
         this.recorder.discardRun();
         this.recorder.discardResult();
-        this.startLevel(level, { profiles, friendlyFire });
+        this.startLevel(level, { profiles, friendlyFire, loadoutSnapshot: this.runLoadouts });
     }
-    // The level after the one just flown, or null after level 6.
     nextLevel() {
-        return this.level && levelInfo(this.level.level + 1) ? this.level.level + 1 : null;
-    }
-    // When a level run ends: work out each pilot's stars, write them to the campaign progress
-    // and keep what was earned on the result for the level screen.
-    #creditLevel() {
-        const result = this.result;
-        const facts = result?.levelRun;
-        if (!facts || result.credited) return;
-        result.credited = true;
-        const pilots = result.players
-            ? result.players.map((p, i) => ({
-                  profile: p.profile,
-                  lost: facts.livesLost[i],
-                  score: p.score,
-              }))
-            : [{ profile: result.profile, lost: facts.livesLost[0], score: result.score }];
-        facts.pilots = pilots.map((pilot, i) => ({
-            profile: pilot.profile,
-            livesLost: pilot.lost,
-            livesRemaining: facts.livesRemaining[i],
-            score: pilot.score,
-            ...this.campaign.record(pilot.profile, facts.level, {
-                cleared: facts.cleared,
-                timeMs: facts.timeMs,
-                score: pilot.score,
-                livesRemaining: facts.livesRemaining[i],
-            }),
-        }));
-        facts.parMs = levelInfo(facts.level).parMs;
-        facts.act1Done = facts.cleared && facts.level === 6;
+        return this.campaignRun.nextLevel();
     }
     releaseCoopLasers(players) {
-        if (!this.coop || this.api.web_state() !== 3) return;
-        players.forEach((p, i) => this.api.web_coop_input(i, 0, 0, 0, 0, 0, +!!p.laser, 0, 0));
+        this.coopDriver.releaseLasers(players);
     }
     #finishCoop() {
         this.replays.finish();
         if (this.recorder.finishCoop(this.coop.profiles, this.coopPlayers())) {
-            this.#creditLevel();
+            this.campaignRun.credit();
             this.coop.finish();
         }
     }
-    #stepCoop(inputs) {
-        const { api, coop } = this;
-        if (coop.phase) {
-            api.web_audio_step();
-            coop.stepEnd(inputs.players?.[inputs.menuOwner ?? 0] ?? inputs, this.result);
-            return;
-        }
-        const players = inputs.players || [{}, {}];
-        players.forEach((p, i) =>
-            api.web_coop_input(
-                i,
-                ((p.x ?? 2048) - 2048) / 2048,
-                ((p.y ?? 2048) - 2048) / 2048,
-                +!!p.firePressed,
-                p.aimX || 0,
-                p.aimY || 0,
-                +!!p.laser,
-                +!!p.precision,
-                +!!p.shield,
-            ),
-        );
-        if (inputs.pause || players.some((p) => p.pause))
-            api.web_coop_pause(+(api.web_state() !== 3));
-        else api.web_step(2048, 2048, 0, 0, 0);
-        if (api.web_state() === 6 || api.web_state() === 8) this.#finishCoop();
-    }
-
     // ---------------------------------------------------------------- run flow
     step(input = {}) {
         if (this.coop) {
-            this.#stepCoop(input);
+            this.coopDriver.step(input);
             return;
         }
         const { api } = this;
@@ -296,16 +203,41 @@ class Runtime {
         this.replays.finish();
         this.#endFight();
         this.recorder.finishSolo(this.stats(), this.scene());
-        this.#creditLevel();
+        this.campaignRun.credit();
     }
     start(practice = false, { seed } = {}) {
         this.coop = null;
         this.level = null;
         this.replays.begin({ mode: 'solo', practice: !!practice }, seed);
-        if (practice) this.#sendPractice();
+        if (practice) this.practice.sendConfig();
         this.api.web_start(+practice);
         this.#clearHold();
         this.#beginRun(practice);
+        this.equipRun([this.runProfile]);
+    }
+    // Low-level callers without a store retain legacy rules for existing replay/test clients.
+    // The application supplies the profile store for every real run.
+    equipRun(profiles, snapshot = null) {
+        this.runLoadouts = this.loadouts
+            ? profiles.map((profile, i) =>
+                  sanitizeLoadout(snapshot?.[i] || this.loadouts.get(profile)),
+              )
+            : null;
+        this.runLoadouts?.forEach((kit, owner) =>
+            this.api.web_loadout(
+                owner,
+                indexOf('ship', kit.ship),
+                indexOf('primary', kit.primary),
+                indexOf('secondary', kit.secondary),
+                LOADOUT_VERSION,
+            ),
+        );
+        if (this.recorder.run) {
+            this.recorder.run.loadouts = this.runLoadouts;
+            if (this.runLoadouts) this.recorder.run.loadoutVersion = LOADOUT_VERSION;
+        }
+        if (this.runLoadouts)
+            this.replays.describe({ loadouts: this.runLoadouts, loadoutVersion: LOADOUT_VERSION });
     }
     menu() {
         this.coop = null;
@@ -350,138 +282,96 @@ class Runtime {
         if (this.coop && ['playing', 'countdown'].includes(this.state)) this.api.web_coop_pause(1);
         else if (this.state === 'playing') this.step({ pause: true });
     }
-    clearRecords() {
-        const reset = clearBrowserRecords(this.storage, this.scoreKey);
-        this.host.scoreStatus = reset.message;
-        this.records.status = reset.message;
-        if (reset.ok) {
-            if (this.coop)
-                this.coop.board = new CoopLeaderboard(this.storage, this.coop.friendlyFire);
-            this.records.profiles = [{}, {}];
-            this.bossRecords.reset();
-            this.campaign.reset();
-            this.api.web_reload_scores();
-        }
-        return reset.ok;
+    resetPersonalBests(...args) {
+        return this.recordActions.resetPersonalBests(...args);
+    }
+    savePersonalBests(...args) {
+        return this.recordActions.savePersonalBests(...args);
+    }
+    clearRecords(...args) {
+        return this.recordActions.clearRecords(...args);
     }
 
-    // ---------------------------------------------------------------- practice tools
+    // Practice keeps its own config/hold state; keep the public Runtime API stable.
     resetTargets() {
-        this.api.web_practice_targets();
+        return this.practice.resetTargets();
     }
-    // The practice range (nextSteps.md H3). `practiceConfig` is kept between runs, so the next
-    // practice starts the same way; each change reaches a running practice at once.
-    practiceConfig = { ...PRACTICE_DEFAULTS };
-    setPractice(config) {
-        this.practiceConfig = sanitizePractice({ ...this.practiceConfig, ...config });
-        this.#sendPractice();
+    setPractice(...args) {
+        return this.practice.setPractice(...args);
     }
-    #sendPractice() {
-        const c = this.practiceConfig;
-        this.api.web_practice_config(
-            PRACTICE_ROCKS.indexOf(c.rocks),
-            c.wave,
-            c.speed,
-            +c.refill,
-            +c.drops,
-            +c.hold,
-        );
+    practiceSpawn(...args) {
+        return this.practice.practiceSpawn(...args);
     }
-    practiceSpawn(kind) {
-        this.api.web_practice_spawn(kind);
+    practiceClear(...args) {
+        return this.practice.practiceClear(...args);
     }
-    practiceClear() {
-        this.api.web_practice_clear();
+    practiceRespawn(...args) {
+        return this.practice.practiceRespawn(...args);
     }
-    practiceRespawn() {
-        this.api.web_practice_respawn();
+    practiceNextWave(...args) {
+        return this.practice.practiceNextWave(...args);
     }
-    practiceNextWave() {
-        this.api.web_practice_next_wave();
+    practiceResetStats(...args) {
+        return this.practice.practiceResetStats(...args);
     }
-    practiceResetStats() {
-        this.api.web_practice_reset_stats();
+    doubleFire(...args) {
+        return this.practice.doubleFire(...args);
     }
-    doubleFire() {
-        this.api.web_practice_double_fire();
+    multishot(...args) {
+        return this.practice.multishot(...args);
     }
-    multishot() {
-        this.api.web_practice_multishot();
+    togglePractice(...args) {
+        return this.practice.togglePractice(...args);
     }
-    // Practice pickups that stay on until switched off; both can be on together.
-    practiceHold = { multishot: false, doubleFire: false };
-    togglePractice(kind) {
-        this.practiceHold[kind] = !this.practiceHold[kind];
-        this.#applyHold();
+    bossPractice(...args) {
+        return this.practice.bossPractice(...args);
     }
-    #applyHold() {
-        const { multishot, doubleFire } = this.practiceHold;
-        this.api.web_practice_hold(+multishot, +doubleFire);
+    ascendant(...args) {
+        return this.practice.ascendant(...args);
+    }
+    bossAssist(...args) {
+        return this.practice.bossAssist(...args);
+    }
+    get practiceConfig() {
+        return this.practice.practiceConfig;
+    }
+    set practiceConfig(config) {
+        this.practice.practiceConfig = config;
+    }
+    get practiceHold() {
+        return this.practice.practiceHold;
     }
     #clearHold() {
-        this.practiceHold = { multishot: false, doubleFire: false };
-    }
-    // Boss practice: a practice run whose room holds one chosen fight (0-5 bosses, 6-11 minis).
-    bossPractice(kind, tier = 0, phase = 1) {
-        this.api.web_boss_practice(kind, tier, phase);
-    }
-    // Assists change telegraph length and forces only; scoring is unaffected.
-    // The Zodiarch throws this sign first, a little stronger (-1: none). The page passes the
-    // date's sign (src/boss/zodiarch/ascendant.mjs); tests leave it off.
-    ascendant(sign = -1) {
-        this.api.web_ascendant?.(sign);
-    }
-    bossAssist({ longWarnings = false, calm = false } = {}) {
-        this.api.web_boss_assist(+longWarnings, +calm);
+        this.practice.clearHold();
     }
 
-    // ---------------------------------------------------------------- reading the engine
     stats() {
-        if (this.coop) return this.coopPlayers()[0].stats;
-        const values = new Float32Array(this.host.memory.buffer, this.api.web_stats(), 16);
-        return Object.fromEntries(STAT_KEYS.map((key, i) => [key, values[i]]));
+        return this.reader.stats();
     }
     fireDiagnostics() {
-        return [...new Uint32Array(this.host.memory.buffer, this.api.web_fire_diagnostics(), 4)];
+        return this.reader.fireDiagnostics();
     }
-    // The scene as a float view. In co-op it is player one's scene with the team's totals
-    // and, on the end screens, the co-op results and initials entry written over it.
     scene() {
-        if (!this.coop)
-            return new Float32Array(this.host.memory.buffer, this.api.web_scene(), SCENE_FLOATS);
-        const scene = this.coopPlayers()[0].scene;
-        scene[S.SCORE] = scene[S.COOP_TEAM_SCORE];
-        scene[S.FINAL_SCORE] = scene[S.COOP_TEAM_SCORE];
-        const { coop, result } = this;
-        if (coop.phase) {
-            scene[S.RUN_DESTROYED] = result.players.reduce((sum, p) => sum + p.destroyed, 0);
-            scene[S.RUN_BEST_MULTIPLIER] = Math.max(...result.players.map((p) => p.bestMultiplier));
-            scene[S.STATE] = coop.phase === 'initials' ? 5 : 6;
-            scene[S.SELECTED_INITIAL] = coop.editor.slot;
-            scene[S.SAVE_FAILED] = +coop.saveFailed;
-            scene[S.SCORE_COUNT] = coop.board.entries.length;
-            coop.editor.letters.forEach(
-                (c, i) => (scene[BLOCKS.INITIALS.at + i] = c.charCodeAt(0)),
-            );
-            coop.board.entries.forEach((e, i) => {
-                const at = recordAt(BLOCKS.HIGHSCORES, i);
-                scene[at] = e.score;
-                [...e.initials].forEach((c, j) => (scene[at + 1 + j] = c.charCodeAt(0)));
-            });
-        }
-        return scene;
+        return this.reader.scene();
     }
     pixels() {
-        return new Uint8Array(this.host.memory.buffer, this.api.web_pixels(), 128 * 64);
+        return this.reader.pixels();
     }
     snapshot() {
-        return [...new Float32Array(this.host.memory.buffer, this.api.web_snapshot(), 16)];
+        return this.reader.snapshot();
     }
 }
 
 export async function createRuntime(
     bytes,
-    { storage, random, tone = () => {}, scoreKey = SCORE_KEY, profile = () => 0 } = {},
+    {
+        storage,
+        random,
+        tone = () => {},
+        scoreKey = SCORE_KEY,
+        profile = () => 0,
+        loadouts = null,
+    } = {},
 ) {
     // Without injected randomness the engine draws from a seeded generator that every run
     // reseeds, so runs can be replayed.
@@ -493,7 +383,7 @@ export async function createRuntime(
         scoreKey,
     });
     const fingerprint = engineFingerprint(bytes);
-    const runtime = new Runtime(host, { storage, scoreKey, profile, rng, fingerprint });
+    const runtime = new Runtime(host, { storage, scoreKey, profile, rng, fingerprint, loadouts });
     host.api.web_init();
     return runtime;
 }

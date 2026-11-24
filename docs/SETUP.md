@@ -25,6 +25,14 @@ pio run                             # the ESP32 build (~/.platformio/penv/bin/pi
 sh tools/format-core.sh             # format the portable core
 ```
 
+Editor caches and machine-specific outputs are ignored: `.cache/clangd/` holds the C/C++
+symbol index; `compile_commands.json` is regenerated with `pio run -t compiledb`. Deleting
+these does not change game source; clangd can recreate its cache while the editor is open.
+`web/dist/` and `.pio/build/` are generated builds. Keep the current web build available
+while playtesting. `npm start` (or `node web/serve.mjs`) rebuilds a missing `game.wasm`
+automatically before starting the local server. Keep dependencies, tests, asset sources
+and build tools.
+
 Wiring and flashing the handheld: [firmware/HARDWARE.md](../firmware/HARDWARE.md).
 
 ## Branches

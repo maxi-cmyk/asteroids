@@ -13,14 +13,14 @@ export const KEY_ACTIONS = {
     aimLeft: ['Aim left', 'KeyJ'],
     aimRight: ['Aim right', 'KeyL'],
     fire: ['Primary fire', 'Space'],
-    laser: ['Charge laser', 'KeyF'],
+    laser: ['Charge secondary', 'KeyF'],
     shield: ['Shield', 'KeyQ'],
     precision: ['Precision', 'ShiftLeft'],
     pause: ['Pause', 'KeyP'],
 };
 export const PAD_ACTIONS = {
     fire: ['Primary fire', 7],
-    laser: ['Charge laser', 6],
+    laser: ['Charge secondary', 6],
     shield: ['Shield', 4],
     precision: ['Precision', 5],
     pause: ['Pause', 9],

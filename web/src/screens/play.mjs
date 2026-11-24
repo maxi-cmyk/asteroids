@@ -1,3 +1,4 @@
+import { SECONDARIES } from '../ship/catalogue.mjs';
 import { S } from '../runtime/scene-layout.mjs';
 import { setAttr, setData, setStyle, setVar } from '../app/dom.mjs';
 
@@ -37,6 +38,9 @@ export function renderPlayHud({ hud, scene, update }) {
     update(hud.score, String(scene[S.SCORE]).padStart(6, '0'));
     update(hud.multiplier, `x${scene[S.MULTIPLIER] || 1}`);
     setStyle(hud.chainFill, 'width', `${(scene[S.CHAIN_MS] / 3000) * 100}%`);
+    const ability = SECONDARIES[scene[S.SECONDARY_TYPE] || 0];
+    const abilityLabel = document.getElementById('secondaryLabel');
+    if (abilityLabel) update(abilityLabel, ability.name.toUpperCase());
     const laserText = scene[S.CHARGING]
         ? `CHARGING ${(scene[S.CHARGE_MS] / 1000).toFixed(1)}s`
         : scene[S.LASER_COOLDOWN_MS] > 0
@@ -46,7 +50,7 @@ export function renderPlayHud({ hud, scene, update }) {
     setStyle(
         hud.laserFill,
         'width',
-        `${scene[S.CHARGING] ? scene[S.CHARGE_MS] / 15 : scene[S.LASER_COOLDOWN_MS] > 0 ? (1 - scene[S.LASER_COOLDOWN_MS] / 5000) * 100 : 100}%`,
+        `${scene[S.CHARGING] ? scene[S.CHARGE_MS] / (ability.windup / 100) : scene[S.LASER_COOLDOWN_MS] > 0 ? (1 - scene[S.LASER_COOLDOWN_MS] / ability.cooldown) * 100 : 100}%`,
     );
     update(
         hud.shieldStatus,

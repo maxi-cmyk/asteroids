@@ -1,10 +1,11 @@
+import { sanitizePaints } from '../ship/paint.mjs';
 // Hangar: which cosmetic hull each local profile flies. Hulls change looks only;
 // movement, hitboxes, weapons and scoring are identical, so records stay
 // comparable. Choices persist per profile under their own storage key, apart
 // from Settings, so equipping never counts as an unapplied settings change.
 export const HANGAR_KEY = 'asteroids.web.hangar-v1';
 export const DEFAULT_HULL = 'vanguard';
-// `vanguard` is the stock sprite in sprites.png; the rest come from ships.png.
+// Each hull owns assets/ships/<id>/states.png. Vanguard keeps its public stock sprite IDs.
 export const HULLS = Object.freeze([
     {
         id: 'vanguard',
@@ -47,7 +48,10 @@ export const hullIcon = (id) => (id === DEFAULT_HULL || !isHull(id) ? 'ship' : `
 
 export function sanitizeHangar(raw) {
     const list = Array.isArray(raw?.profiles) ? raw.profiles : [];
-    return { profiles: [0, 1].map((i) => (isHull(list[i]) ? list[i] : DEFAULT_HULL)) };
+    return {
+        profiles: [0, 1].map((i) => (isHull(list[i]) ? list[i] : DEFAULT_HULL)),
+        paints: sanitizePaints(raw?.paints),
+    };
 }
 export function loadHangar(storage) {
     let raw;

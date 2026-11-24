@@ -84,7 +84,8 @@ export function gradeAtlas(atlas, sprites) {
     ctx.drawImage(atlas, 0, 0);
     for (const [name, cell] of Object.entries(sprites)) {
         if (name.startsWith('rock-')) relightRock(ctx, cell);
-        else if (name === 'ship' || name.startsWith('ship-aim-')) liftShip(ctx, cell);
+        else if (!cell.authored && (name === 'ship' || name.startsWith('ship-aim-')))
+            liftShip(ctx, cell);
         // Hangar hulls are authored bright, so they skip the lift.
     }
     return canvas;

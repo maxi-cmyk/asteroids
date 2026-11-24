@@ -1,3 +1,4 @@
+import { loadoutText } from '../ship/catalogue.mjs';
 import { element, setData, setHidden } from '../app/dom.mjs';
 import { accuracyText } from '../state/records.mjs';
 import { regionForWave } from '../render/regions.mjs';
@@ -40,7 +41,8 @@ export function renderResultsScreen({
         setHidden(bosses, !line);
         setHidden(element('exportFightLog'), !fightLogCount);
         update(element('resultScore'), String(result.score));
-        for (const id of ['levelNext', 'levelRetry', 'levelSelect']) setHidden(element(id), !level);
+        for (const id of ['levelNext', 'levelRetry', 'levelSelect', 'resultHangar'])
+            setHidden(element(id), !level);
         setHidden(element('continueResults'), !!level);
         setHidden(element('levelResult'), !level);
         if (level) {
@@ -69,7 +71,7 @@ export function renderResultsScreen({
         update(element('resultMultiplier'), `×${result.bestMultiplier}`);
         update(
             element('resultLaser'),
-            `Laser · ${result.laserShots} shot${result.laserShots === 1 ? '' : 's'} · ${result.laserKills} kill${result.laserKills === 1 ? '' : 's'}`,
+            `Secondary · ${result.laserShots} shot${result.laserShots === 1 ? '' : 's'} · ${result.laserKills} kill${result.laserKills === 1 ? '' : 's'}`,
         );
     }
 }
@@ -91,12 +93,14 @@ function renderLevelResult(result, update) {
     element('levelRetry').classList.toggle('primary', !facts.cleared);
     element('levelSelect').classList.toggle('primary', complete);
     const first = facts.pilots.some((p) => p.firstClear);
-    const unlock =
+    const levelUnlock =
         !facts.cleared || !first
             ? ''
             : facts.act1Done
               ? 'Act 1 complete · Endless unlocked'
               : `Level ${facts.level + 1} unlocked`;
+    const rewards = (facts.newKits || []).map((p) => `Unlocked: ${loadoutText(p.kit)}`);
+    const unlock = [levelUnlock, ...rewards].filter(Boolean).join(' · ');
     update(element('levelUnlock'), unlock);
     setHidden(element('levelUnlock'), !unlock);
     // Rebuild the star rows only when a different result shows.

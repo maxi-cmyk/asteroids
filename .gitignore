@@ -10,3 +10,8 @@
 /inspo/
 /tools/
 node_modules/
+.cache/
+.claude
+__pycache__/
+*.pyc
+/compile_commands.json

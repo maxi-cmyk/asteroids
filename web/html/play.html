@@ -175,13 +175,14 @@
                                 <button id="levelSelect" hidden>Level select</button>
                                 <button id="levelRetry" hidden>Retry</button>
                                 <button id="levelNext" class="primary" hidden>Next level</button>
+                                <button id="resultHangar" data-go="hangar" hidden>Hangar</button>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="combat-hud" aria-label="Weapon abilities">
                     <span class="ability" data-ability="laser"
-                        ><kbd>L2</kbd> LASER <b id="laserStatus">READY</b
+                        ><kbd>L2</kbd> <span id="secondaryLabel">BEAM</span> <b id="laserStatus">READY</b
                         ><span class="track"><i id="laserFill"></i></span
                     ></span>
                     <span class="ability" data-ability="shield"

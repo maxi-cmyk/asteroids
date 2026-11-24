@@ -24,10 +24,10 @@ export function createRecordsActions({ getRuntime, profileStore, draw, storage }
             element('resetRecords').textContent = `Confirm reset for Player ${current + 1}`;
             element('cancelResetRecords').hidden = false;
             element('recordsStatus').textContent =
-                'Clears all personal bests for this profile, including practice. Top-five scores are kept.';
+                'Clears Campaign best times and scores and all Endless personal bests for this profile, including practice. Campaign stars, unlocked levels, ships and top-five scores are kept.';
             return;
         }
-        getRuntime().records.reset(current);
+        getRuntime().resetPersonalBests(current);
         disarmRecordsReset();
         draw();
     });
@@ -47,7 +47,7 @@ export function createRecordsActions({ getRuntime, profileStore, draw, storage }
             element('cancelBrowserReset').hidden = false;
             status.textContent =
                 'Clears solo and co-op team leaderboards and all personal bests ' +
-                'for both profiles, including practice. This cannot be undone.';
+                'for both profiles, including practice and campaign progress. Ship, weapon and appearance unlocks are kept. This cannot be undone.';
             return;
         }
         const cleared = getRuntime().clearRecords();

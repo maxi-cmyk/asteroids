@@ -19,7 +19,7 @@ function onScreen(el) {
     return middle >= Math.max(0, clip.top) && middle <= Math.min(innerHeight, clip.bottom);
 }
 
-const FOCUSABLE = 'button,a,input,select';
+const FOCUSABLE = 'button,a,input,select,summary';
 const reachable = (el) =>
     !el.disabled && !el.hidden && !el.closest('[inert]') && el.getClientRects().length;
 
@@ -89,7 +89,7 @@ export class MenuFocus {
     // L1 / R1 step through the active tab strip (Settings categories, Hangar pilots).
     stepTab(direction) {
         const tabs = [
-            ...this.scope().querySelectorAll('.settings-tabs button, .hangar-pilots button'),
+            ...this.scope().querySelectorAll('.settings-tabs button, .hangar-tabs button'),
         ].filter((el) => !el.disabled && !el.closest('[inert]') && el.getClientRects().length);
         if (tabs.length < 2) return false;
         const active = tabs.findIndex((el) => el.getAttribute('aria-pressed') === 'true');

@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "hulls": [
+    {
+      "id": "vanguard",
+      "manifest": "./assets/ships/vanguard/states.json"
+    },
+    {
+      "id": "dart",
+      "manifest": "./assets/ships/dart/states.json"
+    },
+    {
+      "id": "lancer",
+      "manifest": "./assets/ships/lancer/states.json"
+    },
+    {
+      "id": "wasp",
+      "manifest": "./assets/ships/wasp/states.json"
+    },
+    {
+      "id": "hammer",
+      "manifest": "./assets/ships/hammer/states.json"
+    },
+    {
+      "id": "moth",
+      "manifest": "./assets/ships/moth/states.json"
+    },
+    {
+      "id": "comet",
+      "manifest": "./assets/ships/comet/states.json"
+    }
+  ]
+}

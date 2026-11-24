@@ -1,18 +1,44 @@
             <section data-view="hangar" class="utility-view hangar" hidden inert aria-label="Hangar">
-                <h1 tabindex="-1">Hangar</h1>
-                <div class="hangar-pilots" role="group" aria-label="Choose for which pilot">
-                    <button type="button" data-pilot="0" aria-pressed="true">Player 1</button>
-                    <button type="button" data-pilot="1" aria-pressed="false">Player 2</button>
-                </div>
-                <div class="hangar-stage">
-                    <canvas id="hangarStage" width="240" height="135" aria-hidden="true"></canvas>
-                    <div class="hangar-info">
-                        <em id="hangarTag">EQUIPPED</em>
+                <header class="hangar-header">
+                    <div class="hangar-heading"><h1 tabindex="-1">Hangar</h1><span>Loadout</span></div>
+                    <div class="hangar-pilots" role="group" aria-label="Choose profile">
+                        <button type="button" data-pilot="0" aria-pressed="true">Profile 1</button>
+                        <button type="button" data-pilot="1" aria-pressed="false">Profile 2</button>
+                    </div>
+                </header>
+                <div class="hangar-showroom">
+                    <aside class="hangar-selection" aria-live="polite">
                         <h2 id="hangarName">Vanguard</h2>
+                        <span id="hangarCount">01 / 06</span>
+                        <span id="hangarTag">EQUIPPED</span>
                         <p id="hangarBlurb"></p>
-                        <p class="hangar-note">Cosmetic only.</p>
-                        <p id="hangarStatus" role="status"></p>
+                        <dl id="loadoutDetails" class="hangar-stats"></dl>
+                        <div class="hangar-paint"><span id="paintLabel">Ship colour · Cobalt</span><div id="hangarPaints" role="group" aria-labelledby="paintLabel"></div></div>
+                    </aside>
+                    <div class="hangar-carousel" id="hangarCarousel">
+                        <canvas id="hangarStage" width="960" height="400" aria-label="Selected ship artwork"></canvas>
+                        <button id="hangarPrevious" class="hangar-arrow previous" aria-label="Preview previous option"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
+                        <button id="hangarNext" class="hangar-arrow next" aria-label="Preview next option"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+                        <figure id="hangarTest" class="loadout-range" hidden><canvas id="hangarRange" width="480" height="270" aria-label="Automatic practice preview of the selected loadout"></canvas><figcaption>Practice preview only · no records or unlocks.</figcaption></figure>
                     </div>
                 </div>
-                <div id="hangarBay" class="hangar-bay" role="radiogroup" aria-label="Hulls"></div>
+                <div id="hangarOptions" class="hangar-cards" role="group" aria-label="Preview options"></div>
+                <footer class="hangar-dock">
+                    <div class="hangar-tabs" role="group" aria-label="Loadout slot">
+                        <button data-hangar-slot="ship" aria-pressed="true"><span>Ship</span><strong id="equipped-ship">Vanguard</strong><small id="equipped-ship-detail"></small></button>
+                        <button data-hangar-slot="primary" aria-pressed="false"><span>Primary</span><strong id="equipped-primary">Repeater</strong><small id="equipped-primary-detail"></small></button>
+                        <button data-hangar-slot="secondary" aria-pressed="false"><span>Secondary</span><strong id="equipped-secondary">Beam</strong><small id="equipped-secondary-detail"></small></button>
+                    </div>
+                    <button id="equipPreview" class="hangar-equip">Equip ship</button>
+                    <button id="testLoadout" aria-expanded="false" aria-controls="hangarTest">Test loadout</button>
+                </footer>
+                <div class="hangar-notes">
+                    <p id="loadoutSummary" class="visually-hidden"></p>
+                    <p class="hangar-compatibility">Weapons fit any ship.</p>
+                    <details class="hangar-legacy"><summary>Legacy appearances</summary><p>Previously earned appearances stay available. They change appearance only.</p><div id="hangarBay" class="hangar-bay" role="group" aria-label="Legacy appearances"></div></details>
+                </div>
+                <p id="loadoutStatus" role="status"></p>
+                <button id="retryLoadout" hidden>Retry saving loadout</button>
+                <p id="hangarStatus" role="status"></p>
+                <button id="retryPaint" hidden>Retry saving appearance</button>
             </section>

@@ -29,7 +29,7 @@ export class PlayersLayer {
     laser({ px, ctx }, scene, style) {
         const colour = style.colour || COLOUR.cyan;
         if (scene[S.CHARGING] && scene[S.SHIP_ALIVE]) {
-            const progress = Math.min(1, scene[S.CHARGE_MS] / 1500);
+            const progress = Math.min(1, scene[S.CHARGE_MS] / (scene[S.SECONDARY_WINDUP] || 1500));
             const x = scene[S.SHIP_X] + scene[S.AIM_X] * 13,
                 y = scene[S.SHIP_Y] + scene[S.AIM_Y] * 13;
             px.ray(
@@ -58,7 +58,7 @@ export class PlayersLayer {
             px.ray(...at, 560, COLOUR.ink, 2, style.owner === 1 ? 7 : 1);
         }
     }
-    ship({ px, ctx, hulls, observer, players, aimMarker = true }, scene, style) {
+    ship({ px, ctx, hulls, paints = [], observer, players, aimMarker = true }, scene, style) {
         const x = Math.round(scene[S.SHIP_X]),
             y = Math.round(scene[S.SHIP_Y]);
         const colour = style.colour || COLOUR.cyan;
@@ -88,7 +88,14 @@ export class PlayersLayer {
             glow(ctx, x, y, 13, '90,200,255', 0.18);
             px.ray(x - dx * 11, y - dy * 11, -dx, -dy, flame + 4, '#9d502e', 3);
             px.ray(x - dx * 11, y - dy * 11, -dx, -dy, flame + 2, COLOUR.amber, 1);
-            px.sprite(hullSprite(hulls[style.owner ?? 0], direction), x - 16, y - 16);
+            px.sprite(
+                hullSprite(hulls[style.owner ?? 0], direction),
+                x - 16,
+                y - 16,
+                1,
+                1,
+                paints[style.owner ?? 0] || 'cobalt',
+            );
         }
         if (scene[S.MULTISHOT_MS]) {
             ctx.fillStyle = colour;

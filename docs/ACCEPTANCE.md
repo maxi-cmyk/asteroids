@@ -140,3 +140,86 @@ Device and browser as above (the built-in Chromium pane, M4 MacBook Pro). Nothin
 
 - [ ] Play Act 1 by hand with a keyboard and a controller; check par against real play times (R1).
 - [ ] Two real input devices through a co-op level, including Retry and Next level.
+
+
+## Ship customisations — automated evidence, 2026-11-23
+
+- [x] Enumerated all 216 loadouts: valid launch, primary fire, secondary activation, bounded
+  pools, finite extended scenes and exact replay through the full appended loadout scene.
+- [x] The scripted pilot clears all six campaign levels with the starter kit and persists
+  their kit grants; this is automated reachability evidence, not human balance acceptance.
+- [x] Every primary family damages every boss family through its mechanic route; accuracy
+  stays at or below actual projectile spawns.
+- [x] Distinct weapon patterns and damage, charge/cooldown values, pause, death cancellation,
+  queued-burst accounting, immutable active kits, Retry capture and independent co-op states.
+- [x] Starter defaults, first-clear grants to both profiles, locks, migration, save export/import/
+  merge, refused writes and locked Hangar previews that grant/equip nothing.
+- [x] Existing legacy scene goldens remain unchanged over their original ABI prefix; class
+  headers for all 18 ships/weapons compile independently for WebAssembly.
+- [ ] Browser visual inspection of the new Hangar. Browser connector was unavailable; native
+  browser actions were blocked by desktop state changes. No screenshot verification claimed.
+- [ ] Physical keyboard/controller session, two-device co-op and final human balance pass (R1).
+
+The Hangar redesign is HG1 before S2. Implementation checks are separate from the deferred
+human playtest; this evidence does not mark R1 complete.
+
+Final implementation checks: `npm run check` passed all 334 tests (zero lint errors; six
+existing unused-variable warnings), strict host checks passed, and all 18 class headers
+compiled independently. The production package contains 261 files and no tests, tools, dev
+pages, test engines or object files. `npm test` now rebuilds production WASM as well as both
+test engines, preventing stale production binaries from invalidating replay checks. The
+Impeccable detector reported only the existing pixel-theme heading gradient.
+
+## HG1 carousel, ship drafts and paint — 2026-11-23
+
+`npm run check`: 338 tests pass, zero lint errors (six existing warnings). New checks cover
+preview versus equip, slot/profile isolation, locked options, bounded carousel selection,
+paint migration, import/export/merge, storage refusal, preservation of glass/metal/fire/alpha,
+six distinct RGBA PNG files and a screen-level control smoke test. PNG inspection confirms
+real transparent pixels in all six 1536×1024 drafts. The production package contains all six
+drafts and the slider/paint/equip controls. Impeccable reports no findings on the new surface.
+
+Browser access host is unavailable. No rendered screenshot, touch session or physical
+controller acceptance is claimed; those remain under HG1 before S2. Draft artwork approval
+and matching gameplay aiming sprites are also pending.
+
+## Per-ship state drafts — 2026-11-23
+
+Ten focused Hangar/asset checks pass, plus targeted ESLint. Each of the six new state sheets
+contains 16 distinct nonempty orientations, no partial alpha and at most eight flat colours.
+Manifests retain right-facing index 0 and clockwise 22.5° steps; all sprite/icon cells fit.
+Comet preserves its old sheet row exactly. The old shared `ships.png` is removed and loader
+references use individual sheets. Visually inspected the combined review PNG. No gameplay
+build, browser rendering or physical-input acceptance is claimed for these drafts.
+
+## Restored local playtesting — 2026-11-23
+
+Cleanup removed `web/dist/game.wasm`, causing the Home menu to show Reload. Rebuilt the
+game, verified the local server downloads the WASM, and used Helium to reload the page,
+choose Play → Campaign → Level 1, and observe PLAYING with three ships. All 339 automated
+tests pass. The local server now rebuilds missing WASM before listening, so a fresh checkout
+or generated-output cleanup does not require a separate manual build command. This launch
+smoke test is not the deferred human balance/input or full Hangar acceptance pass.
+
+## Desktop Home composition — 2026-11-23
+
+Centered the title, subtitle, menu and How to play as one group. Tightened menu rows and
+placed the selection chevron beside its label. Moved the flare and flyby to the right so
+they do not cross menu text, and centered the dark veil for region menu looks. Removed the
+duplicate menu sizing override from refinements.css. Visually inspected the desktop Home
+in Helium. Mobile preview was explicitly excluded by the user. Home checks, formatting,
+targeted lint and production packaging pass; gameplay rules are unchanged.
+
+## Reference showroom Hangar — 2026-11-23
+
+Replaced the centered composition with the supplied reference: one header, specification
+sidebar, large single-ship preview, six thumbnail cards, slider and equipped three-slot
+dock. Paint remains in the sidebar. Cleared canvas defaults and constrained preview geometry
+to its own area so ship art cannot overlap the name/stats. Test loadout opens in that area.
+
+Observed in Helium desktop: Dart preview and correct stats while the dock still shows
+equipped Vanguard; locked Moth preview and disabled equip; Primary selection; test-range
+overlay and a final clean showroom screenshot. No profile equipment was changed by these
+checks. The screen test also covers horizontal-wheel browsing without equipping.
+Mobile review was excluded as requested. Physical-controller acceptance and final balance
+remain pending. Build, lint, layout detector and automated checks pass.

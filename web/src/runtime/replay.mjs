@@ -38,6 +38,7 @@ export const RECORDED_CALLS = [
     'web_practice_next_wave',
     'web_practice_reset_stats',
     'web_start_level',
+    'web_loadout',
 ];
 // Settings that persist across runs: their latest values open every replay.
 const SETTINGS = ['web_boss_assist', 'web_ascendant', 'web_practice_config'];
@@ -84,6 +85,9 @@ export class ReplayRecorder {
                 return call(...args);
             };
         }
+    }
+    describe(extra) {
+        if (this.tape) this.tape.rules = { ...this.tape.rules, ...extra };
     }
     get recording() {
         return !!this.tape;

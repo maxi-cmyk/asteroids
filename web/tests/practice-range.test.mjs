@@ -41,6 +41,15 @@ test('practice config is validated and clamped', () => {
     assert.equal(drillConfig('nope', {}).drill, 'targets');
 });
 
+test('settings can assign practice config before starting a run', async () => {
+    const g = await runtime();
+    g.practiceConfig = sanitizePractice({ rocks: 'waves', wave: 7, speed: 125 });
+    g.start(true);
+    assert.equal(g.practiceConfig.wave, 7);
+    assert.equal(g.scene()[S.WAVE], 7);
+    assert.equal(g.scene()[S.PRACTICE_FLAGS] >> 8, 125);
+});
+
 test('rock modes: targets, real waves from a chosen wave, an endless stream, none', async () => {
     const g = await runtime();
     g.start(true);

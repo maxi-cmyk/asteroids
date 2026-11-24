@@ -12,14 +12,47 @@ The OLED game retains its original fixed-facing combat and automatic shield.
 - Left stick moves; right stick aims the ship and all weapons through 360°.
 - Aim uses a configurable radial deadzone (25% by default) and keeps the last deliberate direction when
   the right stick returns to neutral. Movement never changes the aim.
-- R2 / Cross fires once per fresh press, without heat or a primary cooldown.
-- Aimed multishot rotates the complete spread. It retains atomic allocation
-  and the single-shot fallback when fewer than three bullet slots are free.
+- R2 / Cross requests one activation per fresh press. Each selected primary has its own
+  interval (160–800 ms); presses during the interval are rejected rather than queued. No heat.
+- Multishot adds two basic wing bolts at ±45° once per activation; it does not recursively
+  multiply a Fan or Burst. The bounded pool drops shots that cannot be allocated.
 - Bullet velocities, swept collisions, muzzle position, and left-edge cleanup
   follow the actual aim direction. Sixteen pixel orientations display the hull.
 - Mouse movement or IJKL can aim; the right stick takes priority while deflected.
-- Left click fires; hold right click to charge the laser. Mouse buttons release
+- Left click fires; hold right click to charge the selected secondary. Mouse buttons release
   safely outside the canvas, and the game canvas suppresses the context menu.
+
+## Ship loadouts (2026-11-23)
+
+The Hangar independently equips six movement types, six primaries and six secondaries: 216
+combinations. Vanguard / Repeater / Beam is available immediately. Clearing Act 1 Levels 2–6
+grants that level's ship, primary and secondary to each participating profile. First-clear
+rewards appear on Results. Previous cosmetic appearances remain selectable without granting
+new weapons. Stats reset keeps grants; the browser-record clear also keeps appearance/loadout
+unlocks while clearing campaign records.
+
+Ships share lives, collision shape, damage and shield rules; speed, acceleration and braking
+differ. Repeater, Twin shot, Lance, Burst, Fan and Seeker use 160, 320, 520, 480, 800 and 200 ms
+intervals. Damage and spread are listed in `src/ship/catalogue.mjs` and the individual native
+classes. Lance penetrates up to three rocks but never passes through boss armor; Seeker turns
+slowly toward eligible targets. Projectile hits count once toward accuracy.
+
+Beam, Rocket salvo, Nova pulse, Mine rack, Drone and Arc volley have 1.5/0.4/0.6/0.2/0.4/0.5 s
+charges and 5/7/9/6/10/6 s cooldowns. Non-Beam abilities allow primary fire while charging.
+Nova clears ordinary bullets, not persistent hazards; mines last 5 s, the drone 4 s. Each pilot
+has a separate 48-slot projectile/effect pool. The 2× pickup repeats an accepted primary
+activation once after 80 ms; it never recurses. Death cancels owned effects and queued shots;
+secondary cooldown is retained. Pause freezes the simulation.
+
+A run captures its loadout at launch; Retry keeps that captured choice. Change loadouts for
+a new run in the Hangar. The preview uses an isolated practice engine, can demonstrate locked
+options and writes no records or grants. Replay metadata records loadout IDs and catalogue
+version; the existing engine fingerprint rejects recordings from incompatible builds. Low-level
+runtime clients that omit the loadout store retain legacy firing for compatibility; the browser
+application always supplies it. The OLED build retains the original fixed-facing rules.
+
+The Beam rules below apply when Beam is selected. Legacy 12-bullet implementation notes in
+older dated documents describe the compatibility path, not the new loadout pool.
 
 ## L2 charge laser
 

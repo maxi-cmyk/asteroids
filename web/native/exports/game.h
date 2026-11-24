@@ -89,6 +89,7 @@ void web_audio_step() {
 }
 void web_start(int practice) {
 #ifdef WEB_HD
+    loadout_reset();
     level_reset();
     coop_active = false;
     boss_bind_solo();
@@ -110,10 +111,12 @@ void web_start(int practice) {
     begin_game();
 #endif
 }
-// Campaign Act 1 (nextSteps.md C1): level 1-6 for one or two pilots, from the level's first
-// wave with the usual three lives and a x1 multiplier. Level n is waves 5n-4 to 5n.
+// Campaign Act 1 (nextSteps.md C1): level 1-6 for one or two pilots, from the
+// level's first wave with the usual three lives and a x1 multiplier. Level n is
+// waves 5n-4 to 5n.
 void web_start_level(int level, int players, int friendly) {
 #ifdef WEB_HD
+    loadout_reset();
     practice_mode = false;
     practice_hold_multishot = practice_hold_double_fire = false;
     practice_goals = 0;
@@ -136,6 +139,7 @@ void web_start_level(int level, int players, int friendly) {
 }
 void web_demo() {
 #ifdef WEB_HD
+    loadout_reset();
     level_reset();
 #endif
     begin_game();
@@ -186,5 +190,29 @@ void web_actions(
     (void)laser;
     (void)precision;
     (void)shield;
+#endif
+}
+
+// Captured immediately after a run starts; replay records the IDs and catalogue
+// version.
+void web_loadout(
+        int owner, int ship_id, int primary, int secondary, int version) {
+#ifdef WEB_HD
+    if (owner < 0 || owner > 1 || version != LOADOUT_DATA_VERSION
+        || game_ms != 0) {
+        return;
+    }
+    auto& s = loadouts[owner];
+    s = {};
+    s.enabled = true;
+    s.ship = ship_id >= 0 && ship_id < 6 ? ship_id : 0;
+    s.primary = primary >= 0 && primary < 6 ? primary : 0;
+    s.secondary = secondary >= 0 && secondary < 6 ? secondary : 0;
+#else
+    (void)owner;
+    (void)ship_id;
+    (void)primary;
+    (void)secondary;
+    (void)version;
 #endif
 }

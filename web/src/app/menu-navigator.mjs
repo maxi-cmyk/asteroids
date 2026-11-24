@@ -96,7 +96,10 @@ export class MenuNavigator {
         }
         if (input.confirm) {
             const focused = document.activeElement;
-            if (this.scope().contains(focused) && focused.matches('input[type=checkbox],button,a'))
+            if (
+                this.scope().contains(focused) &&
+                focused.matches('input[type=checkbox],button,a,summary')
+            )
                 focused.click();
             else if (focused.matches('select,input[type=range]')) {
                 this.editing = !this.editing;

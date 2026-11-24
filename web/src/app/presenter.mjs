@@ -44,6 +44,9 @@ export class Presenter {
         app.practiceRange.render(scene);
         if (['play', 'pause'].includes(navigation.screen) && runtime.state !== 'results') {
             app.renderer.hulls = session.hulls();
+            app.renderer.paints = session
+                .unlockProfiles()
+                .map((profile) => app.hangarStore.paints?.[profile] || 'cobalt');
             app.renderer.renderIfChanged(scene, session.players());
         } else app.renderer?.gate.invalidate();
         app.bossUnlocks.track(scene);

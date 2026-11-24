@@ -1,3 +1,4 @@
+import { createPreviewRuntime } from '../ship/preview.mjs';
 import { createBossUi } from '../boss/ui.mjs';
 import { setupCalibration } from '../input/calibration.mjs';
 import { createDemo } from '../demo/engine.mjs';
@@ -100,6 +101,7 @@ export class App {
         this.hangarScreen = createHangarScreen({
             getArt: () => this.gameArt,
             store: this.hangarStore,
+            loadouts: this.loadouts,
             storage: this.storage,
             unlocks: this.unlocks,
             activeProfile,
@@ -111,6 +113,7 @@ export class App {
             activeProfile,
             reduced: prefersReducedMotion,
             getCampaign: () => this.runtime?.campaign,
+            loadouts: this.loadouts,
         });
         this.levelsScreen = createLevelsScreen({
             getArt: () => this.gameArt,
@@ -244,8 +247,13 @@ export class App {
             storage: this.storage,
             tone: (value) => this.audio.setTone(value),
             scoreKey: 'asteroids.web.hd.scores-v3',
+            loadouts: this.loadouts,
             profile: () => this.profileStore.activeProfile,
         });
+        this.hangarScreen.setPreview(
+            await createPreviewRuntime(bytes),
+            new PixelRenderer(element('hangarRange'), art),
+        );
         this.settingsController.sync();
         this.navigation = new Navigation({
             runtime: this.runtime,

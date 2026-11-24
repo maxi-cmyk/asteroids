@@ -1,3 +1,4 @@
+import { paintedCell } from './ship-paint.mjs';
 import { WIDTH, HEIGHT, COLOUR } from './constants.mjs';
 
 // Pixel-exact drawing helpers over a 2D context: sprites from the atlas, bitmap text in the
@@ -8,15 +9,16 @@ export class PixelCanvas {
         this.art = art;
         this.fonts = new Map(); // colour -> the font sheet tinted that colour
     }
-    sprite(name, x, y, scale = 1, alpha = 1) {
+    sprite(name, x, y, scale = 1, alpha = 1, paint = 'cobalt') {
         const sprite = this.art.sprites[name];
         if (!sprite) return;
         const ctx = this.context;
         ctx.globalAlpha = alpha;
+        const tinted = paint !== 'cobalt' ? paintedCell(this.art.atlas, sprite, paint) : null;
         ctx.drawImage(
-            this.art.atlas,
-            sprite.x,
-            sprite.y,
+            tinted || this.art.atlas,
+            tinted ? 0 : sprite.x,
+            tinted ? 0 : sprite.y,
             sprite.w,
             sprite.h,
             Math.round(x),

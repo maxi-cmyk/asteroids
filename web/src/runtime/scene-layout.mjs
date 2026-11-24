@@ -1,10 +1,21 @@
 // The scene ABI: one table of float offsets shared by the engine and the UI.
 // `build.mjs` turns it into native/scene_layout.h, so a field can only be moved here.
 // Nothing outside this file (and the generated header) may use a bare scene offset.
-export const SCENE_FLOATS = 1580;
+export const SCENE_FLOATS = 2070;
 
 // Single floats, in memory order. Names become SCENE_<NAME> in C++.
 export const S = Object.freeze({
+    LOADOUT_VX: 1588,
+    LOADOUT_VY: 1589,
+    LOADOUT_ENABLED: 1580,
+    SHIP_TYPE: 1581,
+    PRIMARY_TYPE: 1582,
+    SECONDARY_TYPE: 1583,
+    PRIMARY_COOLDOWN: 1584,
+    SECONDARY_COOLDOWN: 1585,
+    SECONDARY_WINDUP: 1586,
+    LOADOUT_VERSION: 1587,
+
     STATE: 0,
     BROWSER_MS: 1,
     GAME_MS: 2,
@@ -109,6 +120,7 @@ export const S = Object.freeze({
 
 // Arrays of records: first float, floats per record, record count.
 export const BLOCKS = Object.freeze({
+    LOADOUT_SHOTS: { at: 1590, stride: 10, count: 48 },
     INITIALS: { at: 32, stride: 1, count: 3 },
     ROCKS: { at: 64, stride: 8, count: 24 },
     BULLETS: { at: 256, stride: 6, count: 12 },

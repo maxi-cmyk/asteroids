@@ -1,13 +1,14 @@
             <section data-view="lobby" class="utility-view coop-lobby" hidden inert>
                 <h1 tabindex="-1">Local co-op</h1>
-                <p class="lobby-lede">Two pilots, one field. Give each pilot their own input and profile, then ready up.</p>
+                <p class="lobby-lede">Two pilots, one field. Equip weapons in the Hangar, choose input and profile here, then ready up.</p>
                 <div class="crew-slots">
                     <fieldset class="crew-slot" data-player="0"><legend>P1 · Diamond</legend>
                         <label>Input device<select id="coopDevice0"></select></label>
                         <label>Local profile<select id="coopProfile0"><option value="0">Profile 1</option><option value="1">Profile 2</option></select></label>
+                        <p id="coopLoadout0" class="records-note"></p>
                         <div class="hull-pick" id="coopHullPick0" hidden>
                             <canvas id="coopHullIcon0" width="48" height="32" aria-hidden="true"></canvas>
-                            <label>Hull<select id="coopHull0"></select></label>
+                            <label>Appearance<select id="coopHull0"></select></label>
                             <button id="coopHullConfirm0" aria-pressed="false">Confirm hull</button>
                         </div>
                         <button id="coopReady0" aria-pressed="false">Ready P1</button>
@@ -15,9 +16,10 @@
                     <fieldset class="crew-slot" data-player="1"><legend>P2 · Square</legend>
                         <label>Input device<select id="coopDevice1"></select></label>
                         <label>Local profile<select id="coopProfile1"><option value="0">Profile 1</option><option value="1">Profile 2</option></select></label>
+                        <p id="coopLoadout1" class="records-note"></p>
                         <div class="hull-pick" id="coopHullPick1" hidden>
                             <canvas id="coopHullIcon1" width="48" height="32" aria-hidden="true"></canvas>
-                            <label>Hull<select id="coopHull1"></select></label>
+                            <label>Appearance<select id="coopHull1"></select></label>
                             <button id="coopHullConfirm1" aria-pressed="false">Confirm hull</button>
                         </div>
                         <button id="coopReady1" aria-pressed="false">Ready P2</button>

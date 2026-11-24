@@ -118,7 +118,7 @@ export function installActions(app) {
     });
     on('clearFightLog', () => app.runtime.fightLog.clear());
     on('retryRecords', () => {
-        app.runtime.records.save();
+        app.runtime.savePersonalBests();
         app.draw();
     });
 

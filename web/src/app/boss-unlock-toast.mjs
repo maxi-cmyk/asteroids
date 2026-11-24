@@ -11,6 +11,7 @@ export class BossUnlockToast {
     }
     track(scene) {
         const { app } = this;
+        if (app.loadouts) return; // Gameplay kits are now earned by level clears, on Results.
         const mask = scene[BOSS_AT + BOSS.DEFEATED_MASK] | 0;
         if (!mask) {
             this.lastMask = 0;

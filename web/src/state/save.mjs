@@ -1,3 +1,4 @@
+import { Loadouts, LOADOUT_KEY, mergeLoadoutProfiles } from './loadouts.mjs';
 // One save (nextSteps.md R4): everything this browser keeps about the players, as one
 // versioned object that can be exported, imported and merged. The parts still live under
 // their own storage keys (each module keeps reading its own); this module reads them all
@@ -109,7 +110,9 @@ export function readSave(storage) {
             ),
         },
         hangar: loadHangar(storage).profiles,
+        shipPaint: loadHangar(storage).paints,
         settings: loadProfiles(storage),
+        loadouts: new Loadouts(storage).profiles,
     };
 }
 
@@ -143,7 +146,8 @@ export function parseSave(text) {
         all: data.unlocks?.all === true,
         profiles: pair(data.unlocks?.profiles, []),
     });
-    put(HANGAR_KEY, { version: 1, profiles: list(data.hangar) });
+    put(LOADOUT_KEY, data.loadouts ? { version: 1, profiles: pair(data.loadouts) } : undefined);
+    put(HANGAR_KEY, { version: 1, profiles: list(data.hangar), paints: data.shipPaint });
     if (data.settings) put(SETTINGS_KEY, data.settings);
     const save = readSave(scratch);
     save.savedAt = typeof data.savedAt === 'string' ? data.savedAt : null;
@@ -176,7 +180,8 @@ export function writeSave(storage, save) {
         [BOSS_RECORDS_KEY, { version: 1, profiles: save.bossDefeats }],
         [CAMPAIGN_KEY, { version: 1, profiles: save.campaign }],
         [UNLOCKS_KEY, { version: 1, ...save.unlocks }],
-        [HANGAR_KEY, { version: 1, profiles: save.hangar }],
+        [LOADOUT_KEY, { version: 1, profiles: save.loadouts }],
+        [HANGAR_KEY, { version: 1, profiles: save.hangar, paints: save.shipPaint }],
         [
             SETTINGS_KEY,
             {
@@ -230,6 +235,12 @@ export function mergeSaves(a, b, { settingsFrom = 'a' } = {}) {
             return out;
         }),
         campaign: [0, 1].map((i) => mergeProfiles(a.campaign[i], b.campaign[i])),
+        loadouts: [0, 1].map((i) =>
+            mergeLoadoutProfiles(
+                pick.loadouts?.[i],
+                pick === a ? b.loadouts?.[i] : a.loadouts?.[i],
+            ),
+        ),
         unlocks: {
             all: a.unlocks.all || b.unlocks.all,
             profiles: [0, 1].map((i) => [
@@ -237,6 +248,7 @@ export function mergeSaves(a, b, { settingsFrom = 'a' } = {}) {
             ]),
         },
         hangar: [...pick.hangar],
+        shipPaint: [...(pick.shipPaint || ['cobalt', 'cobalt'])],
         settings: pick.settings,
     };
 }

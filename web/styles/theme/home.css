@@ -3,20 +3,30 @@
    a chevron, a bright label, and an underline. */
 .home-view {
     image-rendering: pixelated;
+    justify-content: center;
+    overflow-y: auto;
+    padding: clamp(16px, 2.5vh, 28px) 24px;
+    scrollbar-color: #78469e #03071a;
 }
 .home-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: none;
+    width: min(100%, 1000px);
+    min-width: 0;
+    margin: auto;
+    padding: 0;
     background: transparent;
     border: 0;
     box-shadow: none;
-    padding: 0;
-    width: auto;
-    min-width: clamp(220px, 28vw, 340px);
+    text-align: center;
 }
 .home-menu h1 {
     font-family: var(--font-display);
-    font-size: clamp(44px, 7.2vw, 92px);
-    line-height: 1.1;
-    margin: 0 0 6px;
+    font-size: clamp(84px, min(13vw, 16vh), 168px);
+    line-height: 1;
+    margin: 0;
     letter-spacing: 0;
     background: linear-gradient(#fff4d6 0 38%, #ffbe6e 38% 70%, #e8608c 70%);
     -webkit-background-clip: text;
@@ -26,38 +36,46 @@
     text-shadow: none;
     filter: drop-shadow(3px 3px 0 #340e4a) drop-shadow(0 0 14px #ff785a59);
 }
-.home-menu h1::after {
-    content: 'PIXEL FLIGHT';
-    display: block;
-    margin-top: 14px;
-    padding-bottom: 8px;
-    font-size: var(--size-label);
+.home-subtitle {
+    margin: 12px 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(20px, 2.5vh, 26px);
+    line-height: 1.4;
     letter-spacing: 0.12em;
     color: #be96e6;
-    -webkit-text-fill-color: #be96e6;
-    border-bottom: 1px solid #78469e;
-    width: max-content;
-    filter: none;
 }
 .home-menu nav {
-    margin-top: clamp(14px, 3vh, 34px);
-    gap: 2px;
+    width: min(100%, 360px);
+    align-items: center;
+    margin-top: clamp(24px, 4vh, 40px);
+    gap: 6px;
 }
 .home-menu button,
 .home-menu button.primary {
     display: flex;
     align-items: center;
+    justify-content: center;
+    position: relative;
+    width: max-content;
+    max-width: 100%;
+    min-height: clamp(52px, 7vh, 68px);
+    font-size: clamp(32px, min(3.4vw, 4.6vh), 44px);
+    line-height: 1.2;
+    letter-spacing: 0;
     background: transparent;
     border: 0;
     box-shadow: none;
-    padding: 6px 4px;
+    padding: 6px 36px;
     color: #aa8cd2;
     transition: color 0.12s;
 }
 .home-menu button::before {
     content: '';
-    flex: none;
-    background: url('../../assets/ui/chevron.png') center / 14px 14px no-repeat;
+    position: absolute;
+    left: 8px;
+    width: 22px;
+    height: 22px;
+    background: url('../../assets/ui/chevron.png') center / 20px 20px no-repeat;
     image-rendering: pixelated;
     opacity: 0;
 }
@@ -92,17 +110,17 @@
 }
 /* A region menu look (H2) shows that region's sky behind Home, darkened where the menu sits. */
 body[data-look]:not([data-look='classic']) .home-view {
-    background: linear-gradient(90deg, #03071ae0 0 28%, #03071a59 62%, #03071a26),
+    background: linear-gradient(90deg, #03071a80, #03071ae6 35% 65%, #03071a80),
         var(--menu-backdrop);
 }
 /* How to play: a quiet link under the menu, not a fifth menu entry. */
 .home-menu .home-help {
     margin-top: clamp(8px, 2vh, 20px);
-    min-height: 32px;
-    padding: 4px;
+    min-height: 44px;
+    padding: 8px 12px;
     font-family: var(--font-body);
     font-size: var(--size-body);
-    color: #8a76b0;
+    color: #b39acd;
     text-decoration: underline;
     text-decoration-color: #4a3a74;
     text-underline-offset: 4px;
@@ -174,5 +192,30 @@ body[data-screen='home'] .shell-header .icon-button {
 @media (prefers-reduced-motion: reduce) {
     #soundHint {
         animation: none;
+    }
+}
+
+/* Keep the same centered composition compact on short windows. */
+@media (max-height: 650px) {
+    .home-view {
+        padding-block: 16px;
+    }
+    .home-menu h1 {
+        font-size: clamp(64px, 14vh, 96px);
+    }
+    .home-subtitle {
+        margin-top: 6px;
+        font-size: 18px;
+    }
+    .home-menu nav {
+        margin-top: 16px;
+        gap: 0;
+    }
+    .home-menu nav button {
+        min-height: 44px;
+        font-size: clamp(28px, 5vh, 34px);
+    }
+    .home-menu .home-help {
+        margin-top: 8px;
     }
 }

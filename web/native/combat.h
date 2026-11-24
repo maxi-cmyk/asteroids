@@ -7,6 +7,8 @@ static const unsigned long LASER_BEAM_MS = 400;
 static const float PRECISION_SPEED_SCALE = 0.5f;
 static const float AIM_DEADZONE = 0.25f;
 
+#include "ship/state.h"
+
 struct CombatInput {
     float aim_x;
     float aim_y;
@@ -18,6 +20,7 @@ struct CombatState {
     uint32_t primary_presses = 0;
     uint32_t primary_volleys = 0;
     uint32_t primary_pool_blocked = 0;
+    uint32_t primary_rate_blocked = 0;
     uint32_t primary_laser_blocked = 0;
     // One input event per 20ms tick: 64 slots cover a full active second.
     unsigned long press_times[64] = {};
@@ -43,6 +46,12 @@ struct CombatState {
 };
 static CombatInput combat_input = {};
 static CombatState combat = {};
+static bool loadout_primary(bool repeat);
+static void loadout_activate_beam();
+static void loadout_move(const InputState& input);
+static bool loadout_secondary(bool pressed);
+static void loadout_cancel(unsigned owner);
+
 static bool practice_mode = false;
 #include "level.h"
 // Practice pickups the player has switched on: held at full time until switched
@@ -51,9 +60,10 @@ static bool practice_hold_multishot = false;
 static bool practice_hold_double_fire = false;
 static unsigned long practice_empty_since = 0;
 static unsigned practice_goals = 0;
-// The practice range (nextSteps.md H3). Rocks: targets (three still dummies), waves (real
-// waves from practice_wave, advancing unless held), stream (practice_wave's rocks without
-// end), or none. Speed scales rocks as they enter; drops turns the random pickups on.
+// The practice range (nextSteps.md H3). Rocks: targets (three still dummies),
+// waves (real waves from practice_wave, advancing unless held), stream
+// (practice_wave's rocks without end), or none. Speed scales rocks as they
+// enter; drops turns the random pickups on.
 enum PracticeRocks : uint8_t {
     PRACTICE_TARGETS,
     PRACTICE_WAVES,
@@ -78,7 +88,8 @@ static void practice_targets() {
     practice_empty_since = 0;
 }
 
-// Starts practice_wave afresh: its rocks begin after the usual entrance warning.
+// Starts practice_wave afresh: its rocks begin after the usual entrance
+// warning.
 static void practice_begin_wave() {
     memset(rocks, 0, sizeof(rocks));
     memset(practice_scaled, 0, sizeof(practice_scaled));
@@ -97,8 +108,8 @@ static void practice_apply_rocks() {
         practice_begin_wave();
     }
 }
-// Rocks entering from the right edge take the practice speed once; fragments inherit their
-// parent's (already scaled) speed, so they are left alone.
+// Rocks entering from the right edge take the practice speed once; fragments
+// inherit their parent's (already scaled) speed, so they are left alone.
 static void practice_scale_entering() {
     for (int i = 0; i < ASTEROID_MAX; i++) {
         Asteroid& rock = rocks[i];
@@ -142,7 +153,8 @@ static void practice_update_rocks() {
         wave_number = practice_wave;
         if (!pending_asteroids) {
             prepare_wave(game_ms);
-            next_spawn_ms = game_ms; // no gap: the next rock still gets its warning
+            next_spawn_ms
+                    = game_ms; // no gap: the next rock still gets its warning
         }
         asteroids_update(game_ms);
         break;
@@ -151,7 +163,8 @@ static void practice_update_rocks() {
     }
     practice_scale_entering();
 }
-// Pickups drop from destroyed rocks only when drops are on (always outside practice).
+// Pickups drop from destroyed rocks only when drops are on (always outside
+// practice).
 static void combat_drop(float position_x, float position_y) {
     if (!practice_mode || practice_drops) {
         powerups_drop(position_x, position_y);
@@ -177,6 +190,10 @@ static void combat_update_aim() {
 }
 
 static void combat_move_ship(const InputState& input) {
+    if (loadouts[loadout_owner].enabled) {
+        loadout_move(input);
+        return;
+    }
     float length = max(1.0f,
                        sqrtf(input.joystick_x * input.joystick_x
                              + input.joystick_y * input.joystick_y));
@@ -263,7 +280,10 @@ static void combat_update_cps(bool pressed) {
     combat.peak_cps = max(combat.peak_cps, combat.cps);
 }
 
-static void combat_primary_event() {
+static bool combat_primary_event(bool repeat = false) {
+    if (loadouts[loadout_owner].enabled) {
+        return loadout_primary(repeat);
+    }
     if (combat_fire_volley()) {
         combat.primary_volleys++;
         if (practice_mode) {
@@ -271,10 +291,12 @@ static void combat_primary_event() {
         }
         weapon_shot_succeeded(ship.weapon, game_ms);
         sound_play(SFX_SHOOT);
+        return true;
     } else {
         // A full pool drops this event; it is never retried later.
         combat.primary_pool_blocked++;
     }
+    return false;
 }
 
 static bool combat_beam_hits(const Asteroid& rock) {
@@ -312,7 +334,7 @@ static void combat_destroy_laser_targets() {
     }
 }
 
-static void combat_fire_laser() {
+static void combat_prepare_beam() {
     combat.laser_shots++;
     combat.charging = false;
     combat.cooldown_left_ms = LASER_COOLDOWN_MS;
@@ -321,6 +343,13 @@ static void combat_fire_laser() {
     combat.beam_y = ship.position_y + combat.aim_y * SHIP_BULLET_OFFSET;
     combat.beam_direction_x = combat.aim_x;
     combat.beam_direction_y = combat.aim_y;
+}
+static void combat_fire_laser() {
+    if (loadouts[loadout_owner].enabled) {
+        loadout_activate_beam();
+    } else {
+        combat_prepare_beam();
+    }
     combat_destroy_laser_targets();
     if (practice_mode) {
         practice_goals |= 8;
@@ -330,6 +359,10 @@ static void combat_fire_laser() {
 }
 
 static bool combat_update_laser(bool pressed) {
+    if (loadouts[loadout_owner].enabled
+        && loadouts[loadout_owner].secondary != 0) {
+        return loadout_secondary(pressed);
+    }
     combat.cooldown_left_ms
             -= min(combat.cooldown_left_ms, (unsigned long)FRAME_TIME_MS);
     combat.beam_left_ms
@@ -353,12 +386,14 @@ static bool combat_update_laser(bool pressed) {
 }
 
 #include "boss.h"
+#include "ship/system.h"
 
 static void combat_ship_hit() {
     if (ship.invincible_left) {
         return;
     }
-    // A hit that a shield absorbs still counts as taken (practice has no level).
+    // A hit that a shield absorbs still counts as taken (practice has no
+    // level).
     level_hit(0, false);
     if (ship.effects.shield) {
         ship.effects.shield = false;
@@ -377,6 +412,7 @@ static void combat_ship_hit() {
         level_run.lives_lost[0]++;
     }
     ship_die(ship);
+    loadout_cancel(0);
     // Dying never resets a boss, but its attacks are cleared so the return is
     // fair.
     if (boss.active) {
@@ -436,8 +472,10 @@ static void combat_update_playing(bool laser_pressed) {
     for (unsigned long& due : combat.pending_shots) {
         if (due && game_ms >= due) {
             due = 0;
-            if (!combat.charging && !laser_fired) {
-                combat_primary_event();
+            if (!(combat.charging
+                  && (!loadouts[0].enabled || loadouts[0].secondary == 0))
+                && !laser_fired) {
+                combat_primary_event(true);
             } else {
                 combat.primary_laser_blocked++;
             }
@@ -445,11 +483,14 @@ static void combat_update_playing(bool laser_pressed) {
     }
     if (input.fire_pressed) {
         combat.primary_presses++;
-        if (combat.charging || laser_fired) {
+        if ((combat.charging
+             && (!loadouts[0].enabled || loadouts[0].secondary == 0))
+            || laser_fired) {
             combat.primary_laser_blocked++;
         } else {
-            combat_primary_event();
-            if (ship.effects.double_fire_left_ms) {
+            bool accepted = combat_primary_event();
+            if ((!loadouts[loadout_owner].enabled || accepted)
+                && ship.effects.double_fire_left_ms) {
                 for (unsigned long& due : combat.pending_shots) {
                     if (!due) {
                         due = game_ms + 80;
@@ -471,6 +512,7 @@ static void combat_update_playing(bool laser_pressed) {
     if (state == STATE_PLAYING && (!practice_mode || boss.practice)) {
         boss_update(laser_fired);
     }
+    loadout_world_step(0, ship, combat);
     level_tick();
 }
 
@@ -484,7 +526,8 @@ static void combat_game_update() {
     } else {
         GameState previous = state;
         game_update();
-        // A lost level never reaches the leaderboard: it goes straight to game over.
+        // A lost level never reaches the leaderboard: it goes straight to game
+        // over.
         if (level_run.active && state == STATE_INITIALS) {
             saved_rank = -1;
             set_state(STATE_GAME_OVER);

@@ -7,7 +7,7 @@ const uint32_t *web_fire_diagnostics() {
 #ifdef WEB_HD
     values[0] = combat.primary_presses;
     values[1] = combat.primary_volleys;
-    values[2] = combat.primary_pool_blocked;
+    values[2] = combat.primary_pool_blocked + combat.primary_rate_blocked;
     values[3] = combat.primary_laser_blocked;
 #endif
     return values;

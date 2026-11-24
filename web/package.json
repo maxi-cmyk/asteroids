@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node build.mjs --test --oled && node build.mjs --test && node --test tests/*.test.mjs tests/*/*.test.mjs",
+    "test": "node build.mjs && node build.mjs --test --oled && node build.mjs --test && node --test tests/*.test.mjs tests/*/*.test.mjs",
     "start": "node serve.mjs",
     "stress": "node build.mjs --test && SERVE_TEST_WASM=1 node serve.mjs",
     "format": "prettier --write \"**/*.{mjs,css}\"",

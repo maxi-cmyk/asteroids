@@ -1,3 +1,4 @@
+import { Loadouts } from '../state/loadouts.mjs';
 import { CoopInput } from '../input/coop-input.mjs';
 import { Controls } from '../input/controls.mjs';
 import { GameAudio } from '../audio/audio.mjs';
@@ -24,6 +25,7 @@ export function createServices() {
     } catch {}
     return {
         storage,
+        loadouts: new Loadouts(storage),
         profileStore,
         settings,
         unlocks: createUnlocks(storage),

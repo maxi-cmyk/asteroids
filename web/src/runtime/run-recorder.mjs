@@ -96,6 +96,8 @@ export class RunRecorder {
             rules: run.rules,
             profile: profiles[0],
             players: summaries,
+            loadouts: run.loadouts,
+            loadoutVersion: run.loadoutVersion,
             score: players[0].teamScore,
             wave: players[0].scene[S.WAVE],
             elapsedMs: players[0].scene[S.GAME_MS],

@@ -21,6 +21,7 @@ web/
                        and progress (campaign-data.mjs is pure data; campaign.mjs stores it),
                        and the one save that bundles them for export, import and merging
                        (save.mjs)
+    ship/              immutable loadout catalogue and isolated practice preview
     input/             controllers, keyboard/pad bindings, co-op input, calibration
     audio/             sound effects and music
     demo/              the isolated Home demo run
@@ -153,3 +154,75 @@ declarations that a later same-selector rule always overrides.
 
 Goldens are characterisation tests: after a deliberate gameplay or art change, regenerate
 them and review the diff; after a refactor they must not move.
+
+
+## Module boundaries (2026-11-23)
+
+`runtime/runtime.mjs` is the public facade and common solo run lifecycle. The extracted classes
+have one responsibility each:
+
+| Module | Owns |
+| --- | --- |
+| `runtime/campaign-run.mjs` | Campaign starts, next-level lookup and per-profile result credit |
+| `runtime/coop-driver.mjs` | Co-op input delivery, scene decoding and end detection |
+| `runtime/practice-tools.mjs` | Practice configuration, held pickups and assist commands |
+| `runtime/engine-reader.mjs` | Typed engine memory reads and the co-op results scene overlay |
+| `runtime/record-actions.mjs` | Personal-best reset/retry and complete record clearing |
+
+`CoopRun` still owns co-op results/initials flow; `RunRecorder` still creates run summaries.
+Keep callers using the Runtime API; its practice configuration getter/setter remain compatible
+with Settings. These controllers operate on the same live engine and stores, not copies.
+
+`native/boss/core.h` assembles `core/types.h`, `state.h`, `math.h`, `pilots.h` and `pools.h`.
+`native/boss/fights/bastion.h` assembles `bastion/setup.h`, `motion.h`, `attacks.h`, `targets.h`
+and `ops.h`. The include order preserves the single translation unit's definition order;
+these are internal unity-build fragments, not standalone public headers.
+
+`tests/campaign.test.mjs` remains the campaign suite entry point; its cases are grouped in
+`tests/campaign/{levels,progress,saves,replay-coop,reset}.mjs`, with one shared harness.
+Generated Ninefold pose data remains generated; edit `tools/fox_game.py`/`fox_poses.py` rather
+than hand-editing or splitting the output without updating its generator.
+
+Ship gameplay follows the class layout in
+[the ship customisation plan](../docs/SHIP-CUSTOMISATION-PLAN.md): one class per ship, primary
+weapon and secondary weapon under `native/ship/<type>/`, registered independently for 216 loadouts.
+`native/ship/engine/` isolates the remaining legacy-world adapter; individual gameplay classes
+compile without the engine world. `src/state/loadouts.mjs` owns per-profile grants and equipped
+slots; `src/state/hangar-selection.mjs` separates browsing from equipping. The Hangar screen
+coordinates the showroom, `hangar-stage.mjs` draws the large ship preview,
+`hangar-cards.mjs` owns the thumbnail rail, and `hangar-stats.mjs` presents stats and the
+equipped dock. `src/ship/preview.mjs`
+uses a separate practice instance with no storage writes or replay recording.
+
+The remaining architecture changes are planned in
+[MODULARISATION-PLAN.md](../docs/MODULARISATION-PLAN.md): narrow runtime ports, explicit native
+world/player contexts and real C++ translation units before LAN.
+
+## Source branches versus deployed files
+
+Keep `web/tests/` and `web/tools/` on **both dev and main**. The main branch is reproducible
+release source, not the static hosting directory. Main's GitHub workflow runs `npm run check`,
+which runs the tests. `build.mjs` and `serve.mjs` import `tools/assemble-html.mjs` and
+`tools/build-info.mjs`; other tools regenerate art/audio and support maintenance.
+
+Deploy **only `web/dist/site/`**, the allowlisted output of `npm run build`. That output contains
+the page, styles, browser modules, assets, production WASM and third-party licence notice.
+It excludes tests, tools, developer pages, test WASM, objects and generated build headers.
+Removing tests from main would break release verification; removing tools would break the build.
+There is no need to delete either source directory to keep them off the public website.
+
+Ship paint uses stable named IDs per profile in the existing Hangar store. Save import/merge
+preserves them. `src/ship/paint.mjs` owns the palette and pure pixel mapping;
+`src/render/ship-paint.mjs` caches recoloured cells. A paint is a trim colour, not a whole-ship
+tint: hulls are steel and carry two stored shades of Cobalt (`accent`, `accentDark`), and paint swaps
+exactly those two colours. The Hangar showroom draws the same hull sheets the game flies (the
+24×16 side view in each `states.png`) and the weapon icons in `assets/weapons/icons.png`
+(`node tools/make-weapon-icons.mjs`). Paint does not change simulation, records or replay rules.
+
+Ship aiming art is authored independently under `assets/ships/<id>/`: `design.json` defines
+pixel-grid layers, `states.png` holds 16 nearest-neighbour 32×32 orientations plus a 24×16
+icon, and `states.json` describes the cells. `assets/ships/index.json` lists all seven
+appearances, including legacy Comet. `render/art.mjs` assembles these into its runtime atlas;
+Vanguard keeps the public stock sprite names but uses its own sheet. The shared `ships.png`
+has been retired. `node tools/make-ships.mjs` drafts these assets without building gameplay;
+`tools/ship-art/accents.mjs` says where each hull wears its trim.

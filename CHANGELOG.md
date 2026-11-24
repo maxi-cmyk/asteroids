@@ -6,7 +6,27 @@ in Settings → About (`web/package.json`, `web/tools/build-info.mjs`).
 
 ## v0.4: the campaign (unreleased)
 
-Built so far: **C1, Act 1** (`nextSteps.md`). Endless with prestige, achievements and Act 2 follow.
+Built so far: **C1, Act 1 and ship customisations** (`nextSteps.md`). Endless with prestige, achievements and Act 2 follow.
+
+**Hangar art pass (2026-11-24)**
+- Ship colour is now an accent: hulls are steel with trim in two shades of Cobalt, and the six
+  paints swap only that trim. Menu and gameplay use the same hull sheets.
+- All twelve primary and secondary weapons have pixel icons (`assets/weapons/icons.png`), shown on
+  the cards and beside the ship on the stage. The Hangar's draggable slider is gone; arrows, cards,
+  swiping and scrolling still browse.
+- Removed the AI-drafted showroom PNGs (`assets/ships/drafts`), the stale ship review image and the
+  unused `assets/ui/x2.png`.
+
+**Ship customisations (2026-11-23)**
+- Six independent ship, primary and secondary choices (216 loadouts), with a starter kit and
+  first-clear kit rewards for Levels 2–6. Existing cosmetic entitlements survive migration.
+- Individual native classes, per-pilot movement/weapon state, bounded projectile/effect pools,
+  save/merge support, replay capture and immutable active-run loadouts.
+- Three Hangar selectors, locked-item practice previews in an isolated engine, gameplay HUD
+  labels, mode/lobby summaries and a Results route to the Hangar. HG1 will redesign this surface.
+- Automated checks include all 216 exact replays, every primary against each boss family,
+  co-op isolation, death/queue cancellation, cooldowns, migration and storage refusal. Human
+  balancing and physical/visual acceptance remain R1.
 
 **Campaign Act 1**
 - Six levels, one for each region. Each is five waves (rocks, rocks, the mini-boss on wave 3,
@@ -106,3 +126,12 @@ The v0.3 release is waiting on a playtest and the release checks (`nextSteps.md`
 - Asteroids on the ESP32 with an OLED display and a motion-controlled ship.
 - 2D movement, a score multiplier and rising difficulty.
 - A top-five highscore table with initials.
+
+### Hangar carousel and ship-art drafts (2026-11-23)
+
+- Dedicated centered ship carousel with six-stop slider, horizontal scrolling/swiping,
+  independent weapon slots, explicit equip and isolated test preview.
+- Six cohesive transparent pixel-art ship drafts under `web/assets/ships/drafts`.
+- Six named paint choices per profile, saved/imported/merged and applied to showroom armour
+  and gameplay sprites while co-op ownership markers remain distinct.
+- HG1 visual/input acceptance remains before S2; new gameplay aiming art awaits draft approval.

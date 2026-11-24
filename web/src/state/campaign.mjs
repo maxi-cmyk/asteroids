@@ -115,6 +115,17 @@ export class CampaignProgress {
         result.saved = this.#write();
         return result;
     }
+    // Reset measured bests without revoking earned stars, level access or Endless.
+    resetBests(profile) {
+        for (const entry of Object.values(this.#of(profile).levels)) {
+            entry.bestMs = 0;
+            entry.bestScore = 0;
+        }
+        return this.save();
+    }
+    save() {
+        return this.#write();
+    }
     reset() {
         this.profiles = [emptyProfile(), emptyProfile()];
     }

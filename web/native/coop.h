@@ -27,6 +27,7 @@ static unsigned long coop_paused_at = 0;
 
 static void coop_load(unsigned owner) {
     coop_owner = owner;
+    loadout_owner = owner;
     const CoopPlayer& player = coop_players[owner];
     ship = player.hull;
     combat = player.weapons;
@@ -61,6 +62,7 @@ static void coop_hit(unsigned owner) {
     }
     level_hit(owner, true);
     ship_die(player.hull);
+    loadout_cancel(owner);
     player.respawn_at = game_ms + DEATH_ANIMATION_MS;
     player.weapons.charging = false;
     player.weapons.beam_left_ms = 0;
@@ -77,6 +79,7 @@ static void coop_hit(unsigned owner) {
 static void coop_bind_boss();
 static void coop_begin(bool friendly) {
     begin_game();
+    loadout_reset();
     coop_active = true;
     coop_friendly = friendly;
     coop_tick = 0;
@@ -352,37 +355,41 @@ static void coop_weapons(unsigned owner) {
         ship.effects.shield = true;
         combat.shield_stored = false;
     }
-    // Defer laser damage to the shared collision phase.
-    combat.cooldown_left_ms
-            -= min(combat.cooldown_left_ms, (unsigned long)FRAME_TIME_MS);
-    combat.beam_left_ms
-            -= min(combat.beam_left_ms, (unsigned long)FRAME_TIME_MS);
-    if (pressed && !combat.cooldown_left_ms) {
-        combat.charging = true;
-        combat.charge_started_ms = game_ms;
-    }
-    if (!combat_input.laser) {
-        combat.charging = false;
-    }
-    if (combat.charging
-        && game_ms - combat.charge_started_ms >= LASER_WINDUP_MS) {
-        combat.charging = false;
-        combat.laser_shots++;
-        combat.cooldown_left_ms = LASER_COOLDOWN_MS;
-        combat.beam_left_ms = LASER_BEAM_MS;
-        combat.beam_x = ship.position_x + combat.aim_x * SHIP_BULLET_OFFSET;
-        combat.beam_y = ship.position_y + combat.aim_y * SHIP_BULLET_OFFSET;
-        combat.beam_direction_x = combat.aim_x;
-        combat.beam_direction_y = combat.aim_y;
-        player.laser_fired = true;
+    if (loadouts[owner].enabled && loadouts[owner].secondary != 0) {
+        loadout_secondary(pressed);
+    } else {
+        // Defer laser damage to the shared collision phase.
+        combat.cooldown_left_ms
+                -= min(combat.cooldown_left_ms, (unsigned long)FRAME_TIME_MS);
+        combat.beam_left_ms
+                -= min(combat.beam_left_ms, (unsigned long)FRAME_TIME_MS);
+        if (pressed && !combat.cooldown_left_ms) {
+            combat.charging = true;
+            combat.charge_started_ms = game_ms;
+        }
+        if (!combat_input.laser) {
+            combat.charging = false;
+        }
+        if (combat.charging
+            && game_ms - combat.charge_started_ms >= LASER_WINDUP_MS) {
+            if (loadouts[owner].enabled) {
+                loadout_activate_beam();
+            } else {
+                combat_prepare_beam();
+            }
+            player.laser_fired = true;
+        }
     }
     combat_update_cps(input_state.fire_pressed);
     combat.highest_wave = max(combat.highest_wave, unsigned(wave_number));
     for (unsigned long& due : combat.pending_shots) {
         if (due && game_ms >= due) {
             due = 0;
-            if (!combat.charging && !player.laser_fired) {
-                combat_primary_event();
+            if (!(combat.charging
+                  && (!loadouts[owner].enabled
+                      || loadouts[owner].secondary == 0))
+                && !player.laser_fired) {
+                combat_primary_event(true);
             } else {
                 combat.primary_laser_blocked++;
             }
@@ -390,12 +397,17 @@ static void coop_weapons(unsigned owner) {
     }
     if (input_state.fire_pressed) {
         combat.primary_presses++;
-        if (combat.charging || player.laser_fired) {
+        if ((combat.charging
+             && (!loadouts[owner].enabled || loadouts[owner].secondary == 0))
+            || player.laser_fired) {
             combat.primary_laser_blocked++;
         }
-        if (!combat.charging && !player.laser_fired) {
-            combat_primary_event();
-            if (ship.effects.double_fire_left_ms) {
+        if (!(combat.charging
+              && (!loadouts[owner].enabled || loadouts[owner].secondary == 0))
+            && !player.laser_fired) {
+            bool accepted = combat_primary_event();
+            if ((!loadouts[loadout_owner].enabled || accepted)
+                && ship.effects.double_fire_left_ms) {
                 for (unsigned long& due : combat.pending_shots) {
                     if (!due) {
                         due = game_ms + 80;
@@ -499,6 +511,18 @@ static void coop_update() {
     coop_boss_update();
     coop_lasers();
     coop_projectiles();
+    auto previous_award = loadout_award_hook;
+    loadout_award_hook = [](unsigned owner, uint32_t points) {
+        coop_award(owner, points);
+    };
+    for (unsigned p = 0; p < 2; p++) {
+        loadout_world_step(p,
+                           coop_players[p].hull,
+                           coop_players[p].weapons,
+                           &coop_players[1 - p].hull,
+                           coop_friendly);
+    }
+    loadout_award_hook = previous_award;
     for (unsigned p = 0; p < 2; p++) {
         if (asteroid_hits_ship(coop_players[p].hull)) {
             coop_hit(p);

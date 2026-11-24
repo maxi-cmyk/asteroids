@@ -1,3 +1,4 @@
+import { SECONDARIES, loadoutText } from '../ship/catalogue.mjs';
 import { S } from '../runtime/scene-layout.mjs';
 import { element, setData, setHidden, setProp, setText } from '../app/dom.mjs';
 import { accuracyText } from '../state/records.mjs';
@@ -96,7 +97,10 @@ class CoopScreen {
         saveHangar(hangar.storage, hangar.store);
     }
     #unlocked(profile, id) {
-        return this.hangar?.unlocks ? this.hangar.unlocks.isUnlocked(profile, id) : true;
+        return this.hangar?.unlocks
+            ? this.hangar.unlocks.isUnlocked(profile, id) ||
+                  this.getRuntime()?.loadouts?.owns(profile, 'ship', id)
+            : true;
     }
     // One pilot's hull field: unlocked hulls for their profile, locked ones listed but disabled.
     #renderHull(slot, picking) {
@@ -181,6 +185,13 @@ class CoopScreen {
             runtime = this.getRuntime(),
             navigation = this.getNavigation();
         this.#syncDevices(pads);
+        for (let slot = 0; slot < 2; slot++) {
+            const node = document.getElementById(`coopLoadout${slot}`);
+            if (node && runtime?.loadouts)
+                node.textContent = loadoutText(
+                    runtime.loadouts.get(this.input.profileIds?.[slot] ?? slot),
+                );
+        }
         if (navigation?.screen === 'lobby') this.#renderLobby(pads);
         const active = !!runtime?.coop;
         setData(document.body, 'coop', String(active));
@@ -262,7 +273,7 @@ class CoopScreen {
                 : p.lives
                   ? ` · RESPAWN ${(p.respawnMs / 1000).toFixed(1)}s`
                   : ' · ELIMINATED';
-            const text = `P${i + 1} · ${p.lives} LIVES${status}\n${p.score} · ×${p.multiplier}\nLASER ${p.charging ? 'CHARGING' : p.laserMs ? `${(p.laserMs / 1000).toFixed(1)}s` : 'READY'} · SHIELD ${p.shield}\nMULTI ${(p.multishotMs / 1000).toFixed(1)}s · 2× ${(p.stats.doubleFireMs / 1000).toFixed(1)}s`;
+            const text = `P${i + 1} · ${p.lives} LIVES${status}\n${p.score} · ×${p.multiplier}\n${SECONDARIES[p.scene[S.SECONDARY_TYPE] || 0].name.toUpperCase()} ${p.charging ? 'CHARGING' : p.laserMs ? `${(p.laserMs / 1000).toFixed(1)}s` : 'READY'} · SHIELD ${p.shield}\nMULTI ${(p.multishotMs / 1000).toFixed(1)}s · 2× ${(p.stats.doubleFireMs / 1000).toFixed(1)}s`;
             setText(element('coopHud' + i), text);
             setProp(element('reconnectDevice' + i), 'value', input.devices[i]);
         });
@@ -296,7 +307,7 @@ class CoopScreen {
             h.textContent = `P${i + 1} · Profile ${p.profile + 1}`;
             score.textContent = String(p.score);
             section.style.setProperty('--pilot', PILOT_COLOURS[i]);
-            body.textContent = `Accuracy ${accuracyText(p.hits, p.shots)} · Chain ${p.longestChain} · ${p.destroyed} rocks · Best ×${p.bestMultiplier} · Laser ${p.laserKills} kills`;
+            body.textContent = `Accuracy ${accuracyText(p.hits, p.shots)} · Chain ${p.longestChain} · ${p.destroyed} rocks · Best ×${p.bestMultiplier} · Secondary ${p.laserKills} kills`;
             section.append(h, score, body);
             resultBox.append(section);
         });

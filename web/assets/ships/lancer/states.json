@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "id": "lancer",
+  "image": "./assets/ships/lancer/states.png",
+  "width": 544,
+  "height": 32,
+  "direction0": "right",
+  "stepDegrees": 22.5,
+  "cells": {
+    "hull-lancer-aim-0": {
+      "x": 0,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-1": {
+      "x": 32,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-2": {
+      "x": 64,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-3": {
+      "x": 96,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-4": {
+      "x": 128,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-5": {
+      "x": 160,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-6": {
+      "x": 192,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-7": {
+      "x": 224,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-8": {
+      "x": 256,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-9": {
+      "x": 288,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-10": {
+      "x": 320,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-11": {
+      "x": 352,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-12": {
+      "x": 384,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-13": {
+      "x": 416,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-14": {
+      "x": 448,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-aim-15": {
+      "x": 480,
+      "y": 0,
+      "w": 32,
+      "h": 32
+    },
+    "hull-lancer-icon": {
+      "x": 516,
+      "y": 8,
+      "w": 24,
+      "h": 16
+    }
+  }
+}

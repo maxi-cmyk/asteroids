@@ -7,25 +7,40 @@ export async function loadImage(url) {
     return image;
 }
 export async function loadArt() {
-    const [atlas, font, response, hullImage, hullResponse] = await Promise.all([
+    const [atlas, font, response, hullResponse] = await Promise.all([
         loadImage('./assets/sprites.png'),
         loadImage('./assets/font.png'),
         fetch('./assets/sprites.json'),
-        loadImage('./assets/ships.png'),
-        fetch('./assets/ships.json'),
+        fetch('./assets/ships/index.json'),
     ]);
     if (!response.ok || !hullResponse.ok) throw new Error('Sprite manifest could not load');
-    const sprites = await response.json(),
-        { cells } = await hullResponse.json();
-    // Hangar hulls ride below the stock atlas so one image serves every sprite.
+    const sprites = await response.json();
+    const index = await hullResponse.json();
+    const hulls = await Promise.all(
+        index.hulls.map(async ({ manifest }) => {
+            const response = await fetch(manifest);
+            if (!response.ok) throw new Error(`Ship states could not load: ${manifest}`);
+            const spec = await response.json();
+            const image = await loadImage(spec.image);
+            if (image.width !== spec.width || image.height !== spec.height)
+                throw new Error(`Ship sheet dimensions do not match: ${spec.id}`);
+            return { image, cells: spec.cells };
+        }),
+    );
+    // Keep one runtime atlas, assembled from independently authored ship PNGs.
     const sheet = document.createElement('canvas');
-    sheet.width = Math.max(atlas.width, hullImage.width);
-    sheet.height = atlas.height + hullImage.height;
+    sheet.width = Math.max(atlas.width, ...hulls.map(({ image }) => image.width));
+    sheet.height = atlas.height + hulls.reduce((height, { image }) => height + image.height, 0);
     const ctx = sheet.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(atlas, 0, 0);
-    ctx.drawImage(hullImage, 0, atlas.height);
-    for (const [name, cell] of Object.entries(cells))
-        sprites[name] = { ...cell, y: cell.y + atlas.height };
+    let y = atlas.height;
+    for (const { image, cells } of hulls) {
+        ctx.drawImage(image, 0, y);
+        for (const [name, cell] of Object.entries(cells))
+            sprites[name] = { ...cell, y: cell.y + y, authored: true };
+        y += image.height;
+    }
     // Region scenery (planets, moons, the black hole) is optional: without it the
     // backgrounds still draw their sky, nebulae and stars.
     let worlds = null;

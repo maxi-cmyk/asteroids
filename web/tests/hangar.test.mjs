@@ -53,13 +53,21 @@ test('the stock hull uses the original atlas names; others use hull cells', () =
     assert.equal(hullIcon('hammer'), 'hull-hammer-icon');
 });
 
-test('ships.json carries all sixteen aiming cells and an icon for every non-stock hull', () => {
-    const meta = JSON.parse(readFileSync(new URL('../assets/ships.json', import.meta.url)));
-    for (const hull of HULLS.filter((h) => h.id !== DEFAULT_HULL)) {
+test('each ship owns sixteen aiming cells and an icon in an independent PNG', () => {
+    const index = JSON.parse(readFileSync(new URL('../assets/ships/index.json', import.meta.url)));
+    assert.equal(index.hulls.length, HULLS.length);
+    for (const hull of HULLS) {
+        const entry = index.hulls.find((entry) => entry.id === hull.id);
+        assert.ok(entry, hull.id);
+        const meta = JSON.parse(
+            readFileSync(new URL(`../${entry.manifest.slice(2)}`, import.meta.url)),
+        );
+        assert.equal(meta.id, hull.id);
+        assert.equal(meta.direction0, 'right');
+        assert.equal(meta.stepDegrees, 22.5);
         for (let n = 0; n < 16; n++)
-            assert.ok(meta.cells[`hull-${hull.id}-aim-${n}`], `${hull.id} aim ${n}`);
-        assert.ok(meta.cells[`hull-${hull.id}-icon`]);
-        assert.equal(meta.hulls.find((h) => h.id === hull.id)?.name, hull.name);
+            assert.deepEqual(meta.cells[hullSprite(hull.id, n)], { x: n * 32, y: 0, w: 32, h: 32 });
+        assert.deepEqual(meta.cells[hullIcon(hull.id)], { x: 516, y: 8, w: 24, h: 16 });
     }
     assert.equal(new Set(HULLS.map((h) => h.id)).size, HULLS.length);
 });

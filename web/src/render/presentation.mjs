@@ -101,7 +101,8 @@ export function drawHome(
 // Sunlight skimming the planet's limb: a soft bloom that breathes, a thin
 // anamorphic streak and a few faint lens ghosts along the line from the sun
 // (off-screen upper left) through the planet. Additive, so it only brightens.
-const GLARE = [262, 150];
+// Leave the centered Home menu clear of the brightest bloom and streak.
+const GLARE = [420, 70];
 function sunGlare(ctx, t) {
     const breathe = 0.5 + 0.5 * Math.sin(t * 0.7),
         flutter = 0.5 + 0.5 * Math.sin(t * 2.3 + 1);
@@ -121,7 +122,7 @@ function sunGlare(ctx, t) {
     ctx.fillRect(x - 70, y - 1, 140, 3);
     ctx.restore();
     // Ghosts: reflections of the sun spaced along the sun-to-planet line.
-    const [sx, sy, px, py] = [30, 10, 372, 214];
+    const [sx, sy, px, py] = [310, 10, 470, 110];
     for (const [f, r, a] of [
         [0.3, 14, 0.1],
         [0.56, 7, 0.14],
@@ -138,15 +139,15 @@ function sunGlare(ctx, t) {
     }
 }
 
-// A ship crosses the sky every 17 seconds, diving in from the top and passing in
-// front of the planet, clear of the menu column on the left. It flies the hull equipped for the active profile.
+// A ship crosses the right side every 17 seconds, clear of the centered menu.
+// It flies the hull equipped for the active profile.
 const FLYBY_MS = 17000,
     FLYBY_SPAN = 12000;
 function flyby(ctx, art, hull, t) {
     const cycle = (t * 1000) % FLYBY_MS;
     if (cycle > FLYBY_SPAN) return;
     const p = cycle / FLYBY_SPAN,
-        path = (q) => [150 + q * 410, -34 + q * 304 + Math.sin(q * TAU) * 6];
+        path = (q) => [320 + q * 250, -34 + q * 304 + Math.sin(q * TAU) * 6];
     const [x, y] = path(p),
         [nx, ny] = path(Math.min(1, p + 0.01));
     const angle = Math.atan2(ny - y, nx - x);
