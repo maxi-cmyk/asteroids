@@ -58,9 +58,12 @@ inline long map(long value,
                 long input_max,
                 long output_min,
                 long output_max) {
-    return (value - input_min) * (output_max - output_min)
-                   / (input_max - input_min)
-           + output_min;
+    // As Arduino-ESP32's map: an empty input range returns the middle of the output range.
+    const long run = input_max - input_min;
+    if (run == 0) {
+        return (output_min + output_max) / 2;
+    }
+    return (value - input_min) * (output_max - output_min) / run + output_min;
 }
 
 template <class T> T constrain(T value, T low, T high) {

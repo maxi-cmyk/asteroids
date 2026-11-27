@@ -7,6 +7,14 @@
 // reduction and kernels follow fdlibm (k_sin.c, k_cos.c): error far below one
 // float ulp. Included once, from bridge.cpp.
 
+// Supported domain: |x| <= MATHF_MAX_ARG radians. The reduction splits pi/2 into a 33-bit high part
+// and a low part, so k * PIO2_HI is exact only while k fits 20 bits (|x| below about 1.6e6); past
+// that the reduced angle leaves [-pi/4, pi/4] and the kernels return values far outside [-1, 1].
+// The engine's angles are small (headings, spins and wave phases wrap or restart every run); one
+// million radians is hours of continuous spinning. Beyond it sinf returns 0 and cosf returns 1:
+// finite, in range and the same on every runtime, never garbage.
+static const float MATHF_MAX_ARG = 1.0e6f;
+
 static const double MATHF_2_OVER_PI = 6.36619772367581382433e-01;
 static const double MATHF_PIO2_HI = 1.57079632673412561417e+00; // first 33 bits
 static const double MATHF_PIO2_LO
@@ -57,6 +65,9 @@ extern "C" float sinf(float x) {
     if (x == 0.0f) {
         return x; // keeps the sign of zero, as Math.sin does
     }
+    if (x > MATHF_MAX_ARG || x < -MATHF_MAX_ARG) {
+        return 0.0f; // outside the supported domain (see MATHF_MAX_ARG)
+    }
     double r;
     switch (mathf_reduce(x, &r)) {
     case 0:
@@ -72,6 +83,9 @@ extern "C" float sinf(float x) {
 extern "C" float cosf(float x) {
     if (!(x - x == 0.0f)) {
         return x - x;
+    }
+    if (x > MATHF_MAX_ARG || x < -MATHF_MAX_ARG) {
+        return 1.0f; // outside the supported domain (see MATHF_MAX_ARG)
     }
     double r;
     switch (mathf_reduce(x, &r)) {

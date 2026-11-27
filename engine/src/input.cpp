@@ -70,9 +70,12 @@ debounce(bool raw, bool& last_raw, bool& stable, unsigned long& last_change) {
 static float normalize_axis(int raw, int center) {
     int percent = 0;
 
+    // A side with no travel (the centre sits at an end of the range) has nothing to deflect.
     if (raw > center) {
-        percent = map(raw, center, ADC_MAX, 0, JOYSTICK_PERCENT_MAX);
-    } else {
+        if (ADC_MAX > center) {
+            percent = map(raw, center, ADC_MAX, 0, JOYSTICK_PERCENT_MAX);
+        }
+    } else if (center > 0) {
         percent = map(raw, 0, center, -JOYSTICK_PERCENT_MAX, 0);
     }
 

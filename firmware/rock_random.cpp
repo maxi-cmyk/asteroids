@@ -38,10 +38,19 @@ uint32_t rock_random_bounded(uint32_t upper) {
     abort();
 }
 
+// A value in [lower, upper). An empty or reversed interval returns `lower`, and so does one wider
+// than a 32-bit draw can cover (impossible on the ESP32, whose long is 32-bit; the host's is
+// 64). The span is computed in unsigned arithmetic so no interval can overflow a signed long.
 long rock_random_range(long lower, long upper) {
     if (upper <= lower) {
         return lower;
     }
 
-    return lower + long(rock_random_bounded(uint32_t(upper - lower)));
+    unsigned long span = (unsigned long)upper - (unsigned long)lower;
+    if (span > UINT32_MAX) {
+        return lower;
+    }
+
+    unsigned long offset = rock_random_bounded(uint32_t(span));
+    return long((unsigned long)lower + offset);
 }

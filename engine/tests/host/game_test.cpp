@@ -6,6 +6,7 @@
 #include "test_scoring.h"
 #include "test_powerups.h"
 #include "test_demo.h"
+#include "test_contracts.h"
 
 int main() {
     assert(rock_random_init());
@@ -17,6 +18,9 @@ int main() {
     test_powerup_game_rules();
     test_powerup_input_and_rendering();
     test_hardware_random_ranges();
+    test_random_range_intervals();
+    test_map_guards_an_empty_input_range();
+    test_zero_calibration_centre_reads_as_centred();
     test_difficulty_profiles();
     test_deferred_spawns_and_patterns();
     test_scoring_chain();

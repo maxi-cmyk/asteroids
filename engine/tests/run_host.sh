@@ -26,7 +26,7 @@ done
     "$artifact"/*.o -o "$artifact/core-test"
 "$artifact/core-test"
 "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -fsanitize="$sanitizers" \
-    -Iengine/tests/host -Iengine/include engine/tests/host/game_test.cpp engine/src/input.cpp \
+    -fno-sanitize-recover=all -Iengine/tests/host -Iengine/include engine/tests/host/game_test.cpp engine/src/input.cpp \
     "$artifact"/*.o -o "$artifact/game-test"
 "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -fsanitize="$sanitizers" \
     -DOLED_I2C_CLOCK_HZ=800000UL \
@@ -34,3 +34,6 @@ done
     -o "$artifact/display-test"
 "$artifact/display-test"
 "$artifact/game-test"
+"${CXX:-c++}" -std=c++17 -fno-builtin -Wall -Wextra -Werror -fsanitize="$sanitizers" \
+    -fno-sanitize-recover=all engine/tests/host/mathf_test.cpp -o "$artifact/mathf-test"
+"$artifact/mathf-test"
