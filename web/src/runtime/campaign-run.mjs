@@ -6,7 +6,7 @@ export class CampaignRun {
     constructor(runtime) {
         this.runtime = runtime;
     }
-    start(level, { profiles = null, friendlyFire = false, seed } = {}) {
+    start(level, { profiles = null, friendlyFire = false, seed, profile } = {}) {
         if (!levelInfo(level)) throw new RangeError(`No level ${level}`);
         const coop = Array.isArray(profiles);
         this.runtime.level = {
@@ -30,7 +30,7 @@ export class CampaignRun {
             this.runtime.recorder.beginCoop(friendlyFire, level);
         } else {
             this.runtime.coop = null;
-            this.runtime.recorder.beginSolo(false, level);
+            this.runtime.recorder.beginSolo(false, level, profile);
             this.runtime.resultsVisible = false;
             this.runtime.resultsReady = false;
             this.runtime.awaitResultsRelease = false;

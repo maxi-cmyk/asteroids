@@ -119,6 +119,13 @@ export class Navigation {
         this.origin = 'home';
         this.set('play');
     }
+    // Retry and Restart level: the runtime relaunches the run's captured pilot and kit.
+    restartLevel() {
+        this.pending = null;
+        this.runtime.restartLevel();
+        this.origin = 'home';
+        this.set('play');
+    }
     startCoop(options) {
         if (options.level) {
             const { level, ...rest } = options;

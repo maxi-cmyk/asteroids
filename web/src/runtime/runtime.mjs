@@ -116,10 +116,16 @@ class Runtime {
     restartLevel() {
         if (!this.level) return;
         const { level, profiles, friendlyFire } = this.level;
+        const profile = this.runProfile;
         this.#endFight();
         this.recorder.discardRun();
         this.recorder.discardResult();
-        this.startLevel(level, { profiles, friendlyFire, loadoutSnapshot: this.runLoadouts });
+        this.startLevel(level, {
+            profiles,
+            friendlyFire,
+            profile,
+            loadoutSnapshot: this.runLoadouts,
+        });
     }
     nextLevel() {
         return this.campaignRun.nextLevel();

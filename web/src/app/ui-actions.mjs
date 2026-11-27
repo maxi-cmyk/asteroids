@@ -40,16 +40,13 @@ export function installActions(app) {
         const next = app.runtime.nextLevel();
         if (next && app.runtime.campaign.isOpen(app.runtime.runProfile, next)) app.runLevel(next);
     });
-    on('levelRetry', () => app.runLevel(app.runtime.level.level));
+    on('levelRetry', () => app.restartLevel());
     on('levelSelect', () => {
         app.runtime.abandon();
         app.controls.clear();
         nav().request('levels');
     });
-    on('restartLevel', () => {
-        if (!app.runtime.level) return;
-        app.runLevel(app.runtime.level.level);
-    });
+    on('restartLevel', () => app.restartLevel());
     // Help's "Watch a flight": the demo plays on Home, so go there first.
     on('watchDemo', () => {
         if (app.consumeDemo()) return;

@@ -27,9 +27,10 @@ export class RunRecorder {
         return this.run?.profile ?? this.result?.profile ?? (this.profile() === 1 ? 1 : 0);
     }
     // A campaign level (`level` 1-6) is a solo run that never touches the Endless personal bests.
-    beginSolo(practice = false, level = 0) {
+    // `profile` pins the pilot (a Retry keeps the run's own); without it the active profile plays.
+    beginSolo(practice = false, level = 0, profile = this.profile()) {
         this.run = {
-            profile: this.profile() === 1 ? 1 : 0,
+            profile: profile === 1 ? 1 : 0,
             rules: { mode: 'solo', friendlyFire: false, modifiers: [], practice },
             level,
         };

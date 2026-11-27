@@ -175,15 +175,29 @@ export class App {
         this.coopInput.live = false;
         this.launch.begin(() => this.navigation.startLevel(level));
     }
-    // Retry, Next level and Restart level: straight back in with the same pilots, no warp.
+    // Next level: straight back in with the same pilots, no warp.
     runLevel(level) {
         const { profiles, friendlyFire } = this.runtime.level ?? {};
+        this.#resetForRun();
+        this.navigation.startLevel(level, { profiles, friendlyFire });
+        this.#showRun();
+    }
+    // Retry and Restart level: the same level with the run's captured pilot and kit, even if the
+    // active profile or equipment changed meanwhile (paused Settings).
+    restartLevel() {
+        if (!this.runtime.level) return;
+        this.#resetForRun();
+        this.navigation.restartLevel();
+        this.#showRun();
+    }
+    #resetForRun() {
         this.controls.clear();
         this.coopInput.clear();
         this.menu.reset();
         this.input.gameplayReady = false;
         this.input.pointerPosition = null;
-        this.navigation.startLevel(level, { profiles, friendlyFire });
+    }
+    #showRun() {
         this.draw();
         this.layout.fit();
     }
