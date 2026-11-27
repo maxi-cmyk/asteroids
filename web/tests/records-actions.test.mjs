@@ -51,7 +51,7 @@ test('reset confirms its scope, cancels safely and follows the selected profile'
 });
 
 // ---- import UI (audit A06/A07) ---------------------------------------------------------------
-const { memoryStorage, readSave, saveFileText, writeSave } = await import('../src/state/save.mjs');
+const { memoryStorage, readSave, saveFileText } = await import('../src/state/save.mjs');
 async function importing({ allowWrites, size }) {
     const base = memoryStorage();
     let writes = 0;
