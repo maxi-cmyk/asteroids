@@ -11,6 +11,8 @@
 //     mantissa bits, so the XOR is small).
 // Stick input changes a little each tick, so most arguments take one byte. Files over
 // MAX_REPLAY_BYTES are refused both ways.
+import { REPLAY_LIMITS } from './replay-schema.mjs';
+
 const MAGIC = [0x41, 0x53, 0x54, 0x52]; // "ASTR"
 const CODEC_FORMAT = 1;
 export const MAX_REPLAY_BYTES = 4 * 1024 * 1024;
@@ -144,10 +146,12 @@ export function decodeReplay(input) {
         bits = new Uint32Array(f32.buffer);
     const ticks = [];
     const groups = r.varint();
+    if (groups > REPLAY_LIMITS.groups) throw new Error('Replay file has too many groups');
     for (let g = 0; g < groups; g++) {
         const count = r.varint(),
             n = r.varint(),
             calls = [];
+        if (n > REPLAY_LIMITS.callsPerGroup) throw new Error('Replay file has too many calls');
         for (let c = 0; c < n; c++) {
             const id = r.varint(),
                 argc = r.varint();

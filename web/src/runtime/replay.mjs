@@ -6,43 +6,11 @@ import { SCENE_FLOATS } from './scene-layout.mjs';
 import { SeededRandom, randomSeed, validSeed } from './rng.mjs';
 import { WasmHost } from './wasm-host.mjs';
 
-export const REPLAY_FORMAT = 1;
+import { RECORDED_CALLS, SETTINGS, REPLAY_LIMITS, validateReplay } from './replay-schema.mjs';
 
-// Engine calls that change its state, in a fixed order: a call is stored as its index here.
-// Anything not listed only reads (web_scene, web_state, web_stats...) and is not recorded.
-export const RECORDED_CALLS = [
-    'web_step',
-    'web_fire_press',
-    'web_actions',
-    'web_audio_step',
-    'web_start',
-    'web_menu',
-    'web_coop_start',
-    'web_coop_input',
-    'web_coop_pause',
-    'web_practice_targets',
-    'web_practice_double_fire',
-    'web_practice_multishot',
-    'web_practice_hold',
-    'web_boss_practice',
-    'web_boss_assist',
-    'web_reload_scores',
-    'web_demo',
-    'web_demo_lives',
-    'web_set_clock',
-    'web_ascendant',
-    'web_practice_config',
-    'web_practice_spawn',
-    'web_practice_clear',
-    'web_practice_respawn',
-    'web_practice_next_wave',
-    'web_practice_reset_stats',
-    'web_start_level',
-    'web_loadout',
-];
-// Settings that persist across runs: their latest values open every replay.
-const SETTINGS = ['web_boss_assist', 'web_ascendant', 'web_practice_config'];
-const LIMIT_TICKS = 50 * 60 * 60; // an hour of play; longer runs are not kept
+export { RECORDED_CALLS };
+export const REPLAY_FORMAT = 1;
+const LIMIT_TICKS = REPLAY_LIMITS.ticks;
 
 // A short fingerprint of the engine build (FNV-1a over the WASM bytes). A replay only plays on
 // the build that made it.
@@ -153,10 +121,7 @@ export class ReplayPlayer {
         if (replay.engine !== engineFingerprint(bytes))
             throw new Error('Replay is from another build');
         if (!validSeed(replay.seed)) throw new Error('Replay seed is malformed');
-        if (!Array.isArray(replay.clock) || replay.clock.some((v) => !(v >= 0 && v < 2 ** 32)))
-            throw new Error('Replay clock is malformed');
-        if (!Array.isArray(replay.ticks) || !Array.isArray(replay.settings))
-            throw new Error('Replay is malformed');
+        validateReplay(replay); // complete, engine-free: nothing below runs on a bad tape
         const values = new Map(
             typeof replay.scores === 'string' ? [[scoreKey, replay.scores]] : [],
         );
@@ -182,7 +147,6 @@ export class ReplayPlayer {
         this.replay = replay;
         this.tick = 0;
         this.length = replay.ticks.reduce((n, [count]) => n + count, 0);
-        if (!(this.length <= LIMIT_TICKS)) throw new Error('Replay is too long');
         this.group = 0;
         this.left = replay.ticks[0]?.[0] ?? 0;
         this.api.web_set_clock(...replay.clock);
@@ -191,9 +155,7 @@ export class ReplayPlayer {
     #call(call) {
         const [id, ...args] = Array.isArray(call) ? call : [];
         const name = RECORDED_CALLS[id];
-        if (!Number.isInteger(id) || typeof this.api[name] !== 'function')
-            throw new Error(`Replay calls unknown ${id}`);
-        if (!args.every(Number.isFinite)) throw new Error('Replay holds a bad value');
+        if (typeof this.api[name] !== 'function') throw new Error(`Replay calls unknown ${id}`);
         this.api[name](...args);
     }
     get done() {

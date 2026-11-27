@@ -55,12 +55,18 @@ $('file').onchange = async () => {
 };
 const frame = (now) => {
     if (player) {
-        if (previous !== null && !paused) accumulator += Math.min(100, now - previous);
-        previous = now;
-        while (accumulator >= 20 && player.step()) accumulator -= 20;
-        renderer.render(player.scene());
-        const s = (n) => (n / 50).toFixed(1);
-        $('status').textContent = `${s(player.tick)} / ${s(player.length)} s`;
+        try {
+            if (previous !== null && !paused) accumulator += Math.min(100, now - previous);
+            previous = now;
+            while (accumulator >= 20 && player.step()) accumulator -= 20;
+            renderer.render(player.scene());
+            const s = (n) => (n / 50).toFixed(1);
+            $('status').textContent = `${s(player.tick)} / ${s(player.length)} s`;
+        } catch (error) {
+            // A bad replay stops itself and says why; the page keeps running.
+            player = null;
+            $('status').textContent = `Replay stopped: ${error.message}`;
+        }
     }
     requestAnimationFrame(frame);
 };
