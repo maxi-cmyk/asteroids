@@ -122,3 +122,27 @@ test('every ship keeps accent pixels that paint can recolour', () => {
         );
     }
 });
+
+test('HangarStage records a failed weapon sheet and draws a placeholder instead of nothing', async () => {
+    const made = [];
+    globalThis.Image = class {
+        constructor() {
+            made.push(this);
+        }
+        set src(value) {
+            this.url = value;
+            queueMicrotask(() => (value.includes('weapons') ? this.onerror?.() : null));
+        }
+    };
+    globalThis.document = { createElement: () => ({ getContext: () => ({}) }) };
+    const { HangarStage } = await import('../../src/screens/hangar-stage.mjs');
+    const stage = new HangarStage({});
+    await new Promise((done) => setTimeout(done, 0));
+    assert.equal(stage.weaponsFailed, true);
+    const calls = [];
+    const ctx = { fillText: (...a) => calls.push(['text', ...a]), fillRect: () => {} };
+    stage.weapon(ctx, { width: 120, height: 80 }, PRIMARIES[0].id);
+    assert.ok(calls.some((c) => c[0] === 'text'));
+    delete globalThis.Image;
+    delete globalThis.document;
+});

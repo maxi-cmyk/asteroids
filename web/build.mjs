@@ -14,6 +14,7 @@ import {
 import { shipHeader } from './tools/ship-header.mjs';
 import { assembleHtml } from './tools/assemble-html.mjs';
 import { buildInfo } from './tools/build-info.mjs';
+import { assertRequiredAssets } from './tools/required-assets.mjs';
 const root = dirname(fileURLToPath(import.meta.url));
 const test = process.argv.includes('--test');
 const oled = process.argv.includes('--oled');
@@ -170,6 +171,7 @@ for (const item of WebAssembly.Module.imports(new WebAssembly.Module(readFileSyn
     }
 }
 if (!test && !oled) {
+    assertRequiredAssets(root);
     // The optional synthetic-controller QA page is never a release artifact.
     rmSync(resolve(root, 'dist/coop-browser.html'), { force: true });
     // Every module under src/ ships as-is (a new file can never be forgotten); the dev

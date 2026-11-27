@@ -13,12 +13,18 @@ export class HangarStage {
         this.canvas = canvas;
         this.images = new Map();
         this.weapons = null;
+        this.weaponsFailed = false; // the weapon sheet could not be loaded
         this.key = '';
         this.version = 0;
-        const load = (src, done) => {
+        const load = (src, done, failed) => {
             const image = new Image();
             image.onload = () => {
                 done(image);
+                this.version++;
+                this.key = '';
+            };
+            image.onerror = () => {
+                failed?.();
                 this.version++;
                 this.key = '';
             };
@@ -42,9 +48,15 @@ export class HangarStage {
                 );
                 this.images.set(ship.id, side);
             });
-        load('./assets/weapons/icons.png', (image) => {
-            this.weapons = image;
-        });
+        load(
+            './assets/weapons/icons.png',
+            (image) => {
+                this.weapons = image;
+            },
+            () => {
+                this.weaponsFailed = true;
+            },
+        );
     }
     // Largest whole-pixel scale at which a w x h sprite fits `fraction` of the canvas.
     fit(canvas, w, h, fraction, tall = 0.8) {
@@ -71,7 +83,16 @@ export class HangarStage {
     }
     weapon(ctx, canvas, id, { fraction = 0.4, centre = 0.5, tall = 0.8 } = {}) {
         const at = WEAPON_ORDER.indexOf(id);
-        if (!this.weapons || at < 0) return;
+        if (at < 0) return;
+        if (this.weaponsFailed) {
+            // A missing sheet shows up as text, never as a silently blank card.
+            ctx.fillStyle = '#fff4cf';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Icon unavailable', Math.round(canvas.width * centre), canvas.height / 2);
+            return;
+        }
+        if (!this.weapons) return;
         const scale = this.fit(canvas, WEAPON, WEAPON, fraction, tall);
         ctx.drawImage(
             this.weapons,
