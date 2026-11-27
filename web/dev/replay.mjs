@@ -2,7 +2,7 @@
 // the same hashes as Node, and plays a saved replay with the real renderer.
 import { PixelRenderer, loadArt } from '../src/render/renderer.mjs';
 import { ReplayPlayer } from '../src/runtime/replay.mjs';
-import { decodeReplay } from '../src/runtime/replay-codec.mjs';
+import { readReplayFile } from '../src/runtime/replay-file.mjs';
 import { KINDS } from '../src/boss/scene.mjs';
 import { replayCheck } from './replay-check.mjs';
 
@@ -43,8 +43,7 @@ $('file').onchange = async () => {
     if (!file) return;
     try {
         // An .astr file (replay-codec.mjs) or a replay object as JSON.
-        const data = new Uint8Array(await file.arrayBuffer());
-        const replay = data[0] === 0x41 ? decodeReplay(data) : JSON.parse(await file.text());
+        const replay = await readReplayFile(file);
         player = await ReplayPlayer.open(bytes, replay);
         previous = null;
         accumulator = 0;

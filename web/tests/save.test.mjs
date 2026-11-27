@@ -157,3 +157,97 @@ test('a failed write puts every part back', () => {
     ])
         assert.deepEqual(after[part], before[part], part);
 });
+
+// ---- write outcomes (audit A06): committed, restored (verified unchanged) or partial ----------
+const { writeSaveDetailed, MAX_IMPORT_BYTES, checkImportSize } = await import(
+    '../src/state/save.mjs'
+);
+// A storage whose writes start failing after `allow` of them; `restores` keeps the rest working.
+function limited(base, allow, { persistent = true } = {}) {
+    let writes = 0;
+    return {
+        getItem: (k) => base.getItem(k),
+        removeItem: (k) => {
+            if (persistent && writes >= allow) throw new Error('denied');
+            base.removeItem(k);
+        },
+        setItem: (k, v) => {
+            writes++;
+            if (writes > allow && (persistent || writes === allow + 1)) throw new Error('quota');
+            base.setItem(k, v);
+        },
+    };
+}
+const incomingSave = () =>
+    mergeSaves(readSave(playedBrowser()), readSave(playedBrowser({ score: 9000 })));
+const dump = (storage) => JSON.stringify(readSave(storage));
+
+test('writeSaveDetailed: a clean write is committed', () => {
+    const storage = playedBrowser();
+    assert.equal(writeSaveDetailed(storage, incomingSave()), 'committed');
+    assert.equal(writeSave(playedBrowser(), incomingSave()), true);
+});
+
+test('writeSaveDetailed: a one-off failure is restored and verified unchanged', () => {
+    const base = playedBrowser();
+    const before = dump(base);
+    assert.equal(
+        writeSaveDetailed(limited(base, 3, { persistent: false }), incomingSave()),
+        'restored',
+    );
+    assert.equal(dump(base), before);
+});
+
+test('writeSaveDetailed: writes that fail from the start leave nothing changed, so restored', () => {
+    const base = playedBrowser();
+    const before = dump(base);
+    assert.equal(writeSaveDetailed(limited(base, 0), incomingSave()), 'restored');
+    assert.equal(dump(base), before);
+    assert.equal(writeSave(limited(base, 0), incomingSave()), false);
+});
+
+test('writeSaveDetailed: a persistent failure after a partial write is reported as partial', () => {
+    const base = playedBrowser();
+    const before = dump(base);
+    assert.equal(writeSaveDetailed(limited(base, 1), incomingSave()), 'partial');
+    assert.notEqual(dump(base), before); // the state really did change
+});
+
+test('writeSaveDetailed: keys that did not exist are removed again on a one-off failure', () => {
+    const base = memoryStorage();
+    assert.equal(
+        writeSaveDetailed(limited(base, 3, { persistent: false }), incomingSave()),
+        'restored',
+    );
+    assert.equal(base.getItem(SCORE_KEYS.hd), null);
+});
+
+test('writeSaveDetailed: unreadable storage writes nothing and says nothing changed', () => {
+    let wrote = 0;
+    const storage = {
+        getItem: () => {
+            throw new Error('blocked');
+        },
+        setItem: () => wrote++,
+        removeItem: () => wrote++,
+    };
+    assert.equal(writeSaveDetailed(storage, incomingSave()), 'restored');
+    assert.equal(wrote, 0);
+});
+
+// ---- file size (audit A07): refuse before reading ---------------------------------------------
+test('checkImportSize refuses over-limit files without reading them', () => {
+    const file = (size) => ({
+        size,
+        text: () => assert.fail('read'),
+        arrayBuffer: () => assert.fail('read'),
+    });
+    assert.throws(() => checkImportSize(file(MAX_IMPORT_BYTES + 1), MAX_IMPORT_BYTES), /too large/);
+    assert.doesNotThrow(() => checkImportSize(file(MAX_IMPORT_BYTES), MAX_IMPORT_BYTES));
+});
+
+test('parseSave measures text in bytes, not UTF-16 units', () => {
+    const wide = '€'.repeat(Math.ceil(MAX_IMPORT_BYTES / 3) + 10); // fewer units than bytes
+    assert.ok(wide.length < MAX_IMPORT_BYTES);
+    assert.throws(() => parseSave(wide), /too large/);
+});

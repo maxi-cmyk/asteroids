@@ -303,3 +303,35 @@ test('the replay file decoder refuses oversized shapes before building them', ()
     );
     assert.throws(() => decodeReplay(groups), /too many groups|too large/);
 });
+
+// ---- replay file intake (audit A07) ------------------------------------------------------------
+const { readReplayFile } = await import('../src/runtime/replay-file.mjs');
+const { MAX_REPLAY_BYTES } = await import('../src/runtime/replay-codec.mjs');
+const fileOf = (data, size = data.length) => ({
+    size,
+    arrayBuffer: async () => data.buffer.slice(data.byteOffset, data.byteOffset + data.length),
+    text: () => assert.fail('the JSON route must reuse the one read'),
+});
+
+test('an over-limit replay file is refused before either reader runs', async () => {
+    const throwing = {
+        size: MAX_REPLAY_BYTES + 1,
+        arrayBuffer: () => assert.fail('read'),
+        text: () => assert.fail('read'),
+    };
+    await assert.rejects(readReplayFile(throwing), /too large/);
+});
+
+test('both replay file routes read the file once and accept the exact limit', async () => {
+    const object = tape();
+    const json = new TextEncoder().encode(JSON.stringify(object));
+    assert.deepEqual(await readReplayFile(fileOf(json)), object);
+    assert.deepEqual(await readReplayFile(fileOf(encodeReplay(object))), object);
+    await assert.rejects(readReplayFile(fileOf(json, MAX_REPLAY_BYTES + 1)), /too large/);
+    const edge = fileOf(json, MAX_REPLAY_BYTES);
+    assert.deepEqual(await readReplayFile(edge), object);
+});
+
+test('a file that is not a replay is refused with a plain message', async () => {
+    await assert.rejects(readReplayFile(fileOf(new TextEncoder().encode('{nope'))), /not a replay/);
+});

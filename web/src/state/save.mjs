@@ -18,7 +18,12 @@ export const SCORE_KEYS = { hd: 'asteroids.web.hd.scores-v3', oled: 'asteroids.w
 const SCORE_BYTES = 42,
     SCORE_SLOTS = 5,
     SCORE_MAX = 999999;
-const MAX_IMPORT_BYTES = 512 * 1024;
+export const MAX_IMPORT_BYTES = 512 * 1024;
+
+// Refuses a file by its declared size before anything reads it (File.size is in bytes).
+export function checkImportSize(file, max = MAX_IMPORT_BYTES, what = 'a save') {
+    if (!(file.size <= max)) throw new Error(`That file is too large to be ${what}.`);
+}
 
 // ------------------------------------------------------------ top-five score tables
 // The engine's 42-byte record (docs/PRD.md): version 1, a count, then five slots of a
@@ -120,7 +125,7 @@ export function readSave(storage) {
 // it is written into a scratch storage and read back. Anything malformed is dropped part by
 // part; a file that is not a save at all throws.
 export function parseSave(text) {
-    if (typeof text !== 'string' || text.length > MAX_IMPORT_BYTES)
+    if (typeof text !== 'string' || new TextEncoder().encode(text).length > MAX_IMPORT_BYTES)
         throw new Error('That file is too large to be a save.');
     let data;
     try {
@@ -169,9 +174,12 @@ export function memoryStorage() {
     };
 }
 
-// Writes every part of a save. All or nothing: if any write fails, the earlier ones are put
-// back. Returns true on success.
-export function writeSave(storage, save) {
+// Writes every part of a save and says what became of it:
+//   'committed' every part is stored;
+//   'restored'  a write failed and every key was read back as it was before (nothing changed);
+//   'partial'   a write failed and the earlier ones could not be verified as put back, so the
+//               browser may hold a mix of old and new.
+export function writeSaveDetailed(storage, save) {
     const changes = [
         [SCORE_KEYS.hd, encodeScores(save.scores.hd)],
         [SCORE_KEYS.oled, encodeScores(save.scores.oled)],
@@ -195,19 +203,35 @@ export function writeSave(storage, save) {
     try {
         if (!storage) throw new Error('No storage');
         for (const [key] of changes) previous.push([key, storage.getItem(key)]);
+    } catch {
+        return 'restored'; // nothing was written yet
+    }
+    try {
         for (const [key, value] of changes) storage.setItem(key, JSON.stringify(value));
-        return true;
+        return 'committed';
     } catch {
         for (const [key, value] of previous) {
             try {
                 if (value === null || value === undefined) storage.removeItem(key);
                 else storage.setItem(key, value);
             } catch {
-                /* the reload after an import shows what is there */
+                /* verified below by reading every key back */
             }
         }
-        return false;
+        try {
+            const unchanged = previous.every(
+                ([key, value]) => (storage.getItem(key) ?? null) === (value ?? null),
+            );
+            return unchanged ? 'restored' : 'partial';
+        } catch {
+            return 'partial';
+        }
     }
+}
+
+// The boolean form: true only when the whole save was stored.
+export function writeSave(storage, save) {
+    return writeSaveDetailed(storage, save) === 'committed';
 }
 
 // ------------------------------------------------------------ merging

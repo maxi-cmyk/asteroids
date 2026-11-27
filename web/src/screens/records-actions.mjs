@@ -1,5 +1,12 @@
 import { element } from '../app/dom.mjs';
-import { readSave, parseSave, mergeSaves, writeSave, saveFileText } from '../state/save.mjs';
+import {
+    readSave,
+    parseSave,
+    mergeSaves,
+    writeSaveDetailed,
+    saveFileText,
+    checkImportSize,
+} from '../state/save.mjs';
 import { buildInfo } from '../version.mjs';
 export function createRecordsActions({ getRuntime, profileStore, draw, storage }) {
     let resetRecordsArmed = false;
@@ -92,6 +99,7 @@ export function createRecordsActions({ getRuntime, profileStore, draw, storage }
         const file = element('importSaveFile').files[0];
         if (!file) return;
         try {
+            checkImportSize(file); // before the file is read into memory
             incoming = parseSave(await file.text());
         } catch (error) {
             cancelImport();
@@ -112,12 +120,18 @@ export function createRecordsActions({ getRuntime, profileStore, draw, storage }
     element('confirmImport').addEventListener('click', () => {
         if (!incoming) return;
         const merged = mergeSaves(readSave(storage), incoming, { settingsFrom: 'a' });
-        if (writeSave(storage, merged)) {
+        const outcome = writeSaveDetailed(storage, merged);
+        if (outcome === 'committed') {
             saveStatus.textContent = 'Save imported. Reloading…';
             location.reload();
-        } else {
+        } else if (outcome === 'restored') {
             saveStatus.textContent =
                 'Could not import: browser storage refused the save. Nothing was changed.';
+        } else {
+            saveStatus.textContent =
+                'Import failed part-way: browser storage refused some of the save and the earlier ' +
+                'parts could not be put back, so your records may be partly changed. Export a save ' +
+                'now if you can, then check Records.';
         }
         cancelImport();
     });
