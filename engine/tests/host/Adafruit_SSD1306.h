@@ -1,10 +1,40 @@
 #pragma once
 #include <cstdint>
 #include <algorithm>
+#include "Wire.h"
+#define SSD1306_SWITCHCAPVCC 0
+#define SSD1306_SETDISPLAYOFFSET 0xD3
 #define SSD1306_WHITE 1
 #define SSD1306_BLACK 0
 class Adafruit_SSD1306 {
     public:
+    // What display_init asked of the driver (the real constructor's defaults are 400 / 100 kHz).
+    uint32_t clk_during = 400000UL;
+    uint32_t clk_after = 100000UL;
+    TwoWire *bus = nullptr;
+    int begin_calls = 0;
+    int begin_address = -1;
+    bool begin_result = true; // false mimics a failed frame-buffer allocation
+    int commands = 0;
+    int display_calls = 0;
+    Adafruit_SSD1306() = default;
+    Adafruit_SSD1306(int, int, TwoWire *wire, int, uint32_t during = 400000UL, uint32_t after = 100000UL)
+        : clk_during(during), clk_after(after), bus(wire) {
+    }
+    bool begin(int, int address) {
+        ++begin_calls;
+        begin_address = address;
+        return begin_result;
+    }
+    const uint8_t *getBuffer() {
+        return nullptr;
+    }
+    void display() {
+        ++display_calls;
+    }
+    void ssd1306_command(uint8_t) {
+        ++commands;
+    }
     int outline_calls = 0;
     int fill_calls = 0;
     int triangle_calls = 0;

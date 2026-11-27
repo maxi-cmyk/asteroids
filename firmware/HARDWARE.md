@@ -34,7 +34,9 @@ pio device monitor --baud 115200
 
 ## Troubleshooting
 
-**OLED not found** — check SDA/SCL wiring and I2C address (`0x3C`). The firmware halts with a rapid beep sequence if the display fails to initialise.
+**OLED not found** — check SDA/SCL wiring and I2C address (`0x3C`). The firmware halts with a rapid beep sequence if the display fails to initialise. The check is an I2C probe of `0x3C` before the driver starts; a probe that gets no answer prints `OLED not found`, a failed frame-buffer allocation prints a separate message. (The driver's own `begin()` returns true without confirming the panel is there.)
+
+**Frame time (not yet measured on the board).** `OLED_I2C_CLOCK_HZ` is now the driver's transfer clock. A changed full 128×64 frame is 1024 payload bytes; at 400 kbit/s with 9 bit-times per byte that is at least 23.04 ms, above the 20 ms game tick, before any other bus or CPU overhead. Measure full-frame duration and the simulation/wall-clock ratio on the real board and panel before changing the loop timing or raising the clock.
 
 **Joystick drifts** — hold the joystick centred on power-up; `inputInit()` reads centre calibration from 32 samples at boot.
 

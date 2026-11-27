@@ -28,4 +28,9 @@ done
 "${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -fsanitize="$sanitizers" \
     -Iengine/tests/host -Iengine/include engine/tests/host/game_test.cpp engine/src/input.cpp \
     "$artifact"/*.o -o "$artifact/game-test"
+"${CXX:-c++}" -std=c++17 -Wall -Wextra -Werror -fsanitize="$sanitizers" \
+    -DOLED_I2C_CLOCK_HZ=800000UL \
+    -Iengine/tests/host -Iengine/include engine/tests/host/display_test.cpp \
+    -o "$artifact/display-test"
+"$artifact/display-test"
 "$artifact/game-test"

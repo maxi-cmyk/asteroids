@@ -16,7 +16,7 @@ class Adafruit_SSD1306 {
     public:
     uint8_t pixels[128 * 64] = {};
     int display_offset = 0;
-    Adafruit_SSD1306(int, int, void *, int) {
+    Adafruit_SSD1306(int, int, void *, int, unsigned long = 0, unsigned long = 0) {
     }
     bool begin(int, int) {
         return true;

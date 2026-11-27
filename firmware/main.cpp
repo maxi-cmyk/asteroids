@@ -16,7 +16,12 @@ static const int CALIBRATION_TEXT_Y = 28;
 static void initialize_display() {
     // Display must be ready before showing the calibration message.
     if (!display_init()) {
-        Serial.println("ERROR: OLED not found!");
+        // A missing panel (no answer on the bus) and a failed buffer allocation need different fixes.
+        if (display_status() == DISPLAY_ALLOC_FAILED) {
+            Serial.println("ERROR: OLED driver could not allocate its frame buffer!");
+        } else {
+            Serial.println("ERROR: OLED not found!");
+        }
         sound_init();
 
         for (int i = 0; i < DISPLAY_ERROR_BEEPS; i++) {

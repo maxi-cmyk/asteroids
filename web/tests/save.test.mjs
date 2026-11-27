@@ -180,7 +180,7 @@ function limited(base, allow, { persistent = true } = {}) {
 }
 const incomingSave = () =>
     mergeSaves(readSave(playedBrowser()), readSave(playedBrowser({ score: 9000 })));
-const dump = (storage) => JSON.stringify(readSave(storage));
+const dump = (storage) => JSON.stringify({ ...readSave(storage), savedAt: null }); // savedAt is the read time
 
 test('writeSaveDetailed: a clean write is committed', () => {
     const storage = playedBrowser();

@@ -26,18 +26,35 @@ static const unsigned long HUD_CHAIN_WINDOW_MS = 3000;
 static const int SHAKE_OFFSET_CHOICES = 2;
 static const int OLED_OFFSET_MASK = 0x3F;
 
-static Adafruit_SSD1306 oled(SCREEN_W, SCREEN_H, &Wire, OLED_RESET_PIN);
+// The driver sets the bus clock itself around every transfer, so the clock must be given to its
+// constructor: Wire.setClock alone is overridden (400 kHz during, 100 kHz after by default).
+static Adafruit_SSD1306 oled(SCREEN_W, SCREEN_H, &Wire, OLED_RESET_PIN, OLED_I2C_CLOCK_HZ);
+static DisplayStatus status = DISPLAY_UNINITIALISED;
+
+DisplayStatus display_status() {
+    return status;
+}
 
 bool display_init() {
     Wire.begin(OLED_SDA_PIN, OLED_SCL_PIN);
     Wire.setClock(OLED_I2C_CLOCK_HZ);
 
+    // begin() reports success once its buffer is allocated and never checks the I2C ACK, so ask
+    // the bus whether anything answers at the panel's address first.
+    Wire.beginTransmission(OLED_ADDR);
+    if (Wire.endTransmission() != 0) {
+        status = DISPLAY_NO_ACK;
+        return false;
+    }
+
     if (!oled.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
+        status = DISPLAY_ALLOC_FAILED;
         return false;
     }
 
     oled.clearDisplay();
     oled.display();
+    status = DISPLAY_OK;
     return true;
 }
 
