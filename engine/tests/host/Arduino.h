@@ -58,10 +58,10 @@ inline long map(long value,
                 long input_max,
                 long output_min,
                 long output_max) {
-    // As Arduino-ESP32's map: an empty input range returns the middle of the output range.
+    // As Arduino-ESP32's map (cores/esp32/WMath.cpp): an empty input range returns -1.
     const long run = input_max - input_min;
     if (run == 0) {
-        return (output_min + output_max) / 2;
+        return -1;
     }
     return (value - input_min) * (output_max - output_min) / run + output_min;
 }

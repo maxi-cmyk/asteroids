@@ -24,9 +24,9 @@ static void test_random_range_intervals() {
 }
 
 static void test_map_guards_an_empty_input_range() {
-    // Arduino-ESP32's map returns the middle of the output range instead of dividing by zero.
-    assert(map(5, 3, 3, 0, 100) == 50);
-    assert(map(0, 0, 0, -100, 0) == -50);
+    // Arduino-ESP32's map (cores/esp32/WMath.cpp) returns -1 instead of dividing by zero.
+    assert(map(5, 3, 3, 0, 100) == -1);
+    assert(map(0, 0, 0, -100, 0) == -1);
     assert(map(7, 0, 10, 0, 100) == 70); // ordinary use is unchanged
     assert(map(2048, 2048, 4095, 0, 100) == 0);
 }
@@ -36,8 +36,7 @@ static void test_zero_calibration_centre_reads_as_centred() {
     joystick_raw_y = 0;
     input_init(); // calibrates the centre to 0
     input_update();
-    // A stick with no travel below its centre has nothing to deflect: it reads as centred
-    // (not as full deflection from a midpoint fallback).
+    // A stick with no travel below its centre has nothing to deflect: it reads as centred.
     assert(input_get().joystick_x == 0.0f);
     assert(input_get().joystick_y == 0.0f);
     joystick_raw_x = TEST_ADC_CENTER;

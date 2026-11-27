@@ -11,6 +11,10 @@ import { RECORDED_CALLS, SETTINGS, REPLAY_LIMITS, validateReplay } from './repla
 export { RECORDED_CALLS };
 export const REPLAY_FORMAT = 1;
 const LIMIT_TICKS = REPLAY_LIMITS.ticks;
+// Calls that only store a value (native/exports/practice.h): web_boss_assist, web_ascendant.
+const PURE_STORES = new Set(
+    ['web_boss_assist', 'web_ascendant'].map((n) => RECORDED_CALLS.indexOf(n)),
+);
 
 // A short fingerprint of the engine build (FNV-1a over the WASM bytes). A replay only plays on
 // the build that made it.
@@ -90,7 +94,21 @@ export class ReplayRecorder {
     }
     #write(id, args) {
         const values = args.map((v) => (typeof v === 'number' ? Math.fround(v) : +v));
+        // A pure store (last write wins) replaces an earlier one when nothing but other pure
+        // stores came between them, so Settings clicks while the world is paused cannot grow a
+        // group without bound. Anything else in between could have read the old value.
+        if (PURE_STORES.has(id)) {
+            for (let i = this.group.length - 1; i >= 0; i--) {
+                if (this.group[i][0] === id) {
+                    this.group.splice(i, 1);
+                    break;
+                }
+                if (!PURE_STORES.has(this.group[i][0])) break;
+            }
+        }
         this.group.push([id, ...values]);
+        // The player refuses a group this wide, so never keep a tape that has one.
+        if (this.group.length > REPLAY_LIMITS.callsPerGroup) return this.discard();
         if (id !== 0) return;
         const key = JSON.stringify(this.group);
         const ticks = this.tape.ticks;

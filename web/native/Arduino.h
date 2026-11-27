@@ -50,9 +50,9 @@ inline int analogRead(int pin) {
 inline int digitalRead(int pin) {
     return !(pin == 25 ? browser_fire : browser_click);
 }
-// As Arduino-ESP32's map: an empty input range returns the middle of the output range.
+// As Arduino-ESP32's map (cores/esp32/WMath.cpp): an empty input range returns -1.
 inline long map(long v, long a, long b, long c, long d) {
-    return b == a ? (c + d) / 2 : (v - a) * (d - c) / (b - a) + c;
+    return b == a ? -1 : (v - a) * (d - c) / (b - a) + c;
 }
 inline long random(long upper) {
     return upper > 0 ? browser_random() % upper : 0;

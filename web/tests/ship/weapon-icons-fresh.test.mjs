@@ -3,14 +3,21 @@ import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { decodePng } from '../../tools/ship-art/png.mjs';
 import { buildIconStrip } from '../../tools/weapon-icons.mjs';
 import { assertRequiredAssets, REQUIRED_ASSETS } from '../../tools/required-assets.mjs';
 
 const root = new URL('../../', import.meta.url).pathname;
 
-test('weapon icons.png is exactly what the generator produces', () => {
-    const committed = readFileSync(new URL('../../assets/weapons/icons.png', import.meta.url));
-    assert.deepEqual(Buffer.from(buildIconStrip()), committed);
+// Pixels, not file bytes: deflate output may differ between zlib builds and CPUs.
+test('weapon icons.png has exactly the pixels the generator produces', () => {
+    const committed = decodePng(
+        readFileSync(new URL('../../assets/weapons/icons.png', import.meta.url)),
+    );
+    const fresh = decodePng(Buffer.from(buildIconStrip()));
+    assert.equal(committed.width, fresh.width);
+    assert.equal(committed.height, fresh.height);
+    assert.ok(Buffer.from(committed.pixels).equals(Buffer.from(fresh.pixels)));
 });
 
 test('the required-asset list names the weapon icon sheet and every entry exists in the repo', () => {

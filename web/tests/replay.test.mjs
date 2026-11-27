@@ -335,3 +335,42 @@ test('both replay file routes read the file once and accept the exact limit', as
 test('a file that is not a replay is refused with a plain message', async () => {
     await assert.rejects(readReplayFile(fileOf(new TextEncoder().encode('{nope'))), /not a replay/);
 });
+
+// ---- the recorder never keeps a tape its own player would refuse (review finding) ---------------
+test('repeated settings applied while the world is not stepping are coalesced', async () => {
+    const g = await createRuntime(bytes, { storage: memory() });
+    g.start(true);
+    for (let i = 0; i < 100; i++) {
+        g.bossAssist({ longWarnings: i % 2 === 0, calm: i % 3 === 0 });
+        g.ascendant(i % 12);
+    }
+    g.step({});
+    g.menu();
+    const widest = Math.max(...g.replay.ticks.map(([, calls]) => calls.length));
+    assert.ok(widest <= REPLAY_LIMITS.callsPerGroup, `${widest} calls in one group`);
+    assert.doesNotThrow(() => validateReplay(g.replay));
+    assert.doesNotThrow(() => decodeReplay(encodeReplay(g.replay)));
+});
+
+test('a settings call between other calls is never coalesced away', async () => {
+    const g = await createRuntime(bytes, { storage: memory() });
+    g.start(true);
+    g.bossAssist({ calm: true });
+    g.setPractice({ rocks: 'none' }); // reads state the first call set
+    g.bossAssist({ calm: false });
+    g.step({});
+    g.menu();
+    const ids = g.replay.ticks[0][1].map((c) => c[0]);
+    const assist = RECORDED_CALLS.indexOf('web_boss_assist');
+    assert.equal(ids.filter((id) => id === assist).length, 2);
+});
+
+test('a tape that cannot stay within the group cap is dropped, not kept invalid', async () => {
+    const g = await createRuntime(bytes, { storage: memory() });
+    g.start(true);
+    for (let i = 0; i < REPLAY_LIMITS.callsPerGroup + 10; i++)
+        g.setPractice({ wave: 1 + (i % 29), rocks: i % 2 ? 'targets' : 'none' });
+    g.step({});
+    g.menu();
+    assert.equal(g.replay, null);
+});
